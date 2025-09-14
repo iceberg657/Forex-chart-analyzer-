@@ -1,0 +1,5 @@
+{
+  "name": "Grey Algo Apex Trader",
+  "description": "An AI-powered trading assistant that analyzes charts to provide trade setups, and generates custom trading bots and indicators using the Gemini API.",
+  "requestFramePermissions": []
+}
