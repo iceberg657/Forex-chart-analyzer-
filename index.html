@@ -34,8 +34,8 @@
     /* Light theme default */
     body {
         overflow-x: hidden;
-        background-color: #fce7f3; /* A light base for the gradient */
-        background-image: linear-gradient(var(--gradient-angle), #fecaca, #fed7aa, #fef08a, #d8b4fe, #fbcfe8);
+        background-color: #f9fafb; /* Lighter base */
+        background-image: linear-gradient(var(--gradient-angle), #fee2e2, #ffedd5, #fef9c3, #e9d5ff, #fce7f3);
         background-size: 400% 400%;
         animation: gradientBG 15s ease infinite, rotateGradient 20s linear infinite;
         min-height: 100vh;
@@ -43,8 +43,8 @@
     
     /* Dark theme override */
     .dark body {
-        background-color: #111827; /* A dark base for the gradient */
-        background-image: linear-gradient(var(--gradient-angle), #7f1d1d, #b45309, #a16207, #6b21a8, #831843);
+        background-color: #030712; /* Darker base */
+        background-image: linear-gradient(var(--gradient-angle), #450a0a, #7c2d12, #713f12, #581c87, #500724);
     }
     
     @keyframes gradientBG {
@@ -87,18 +87,18 @@
     }
 
     /* Shapes updated to match new theme */
-    .shape:nth-child(1) { top: 20%; left: 10%; width: 80px; height: 80px; background: #fca5a5; border-radius: 50%; animation-delay: 0s; animation-duration: 25s; }
-    .shape:nth-child(2) { top: 60%; left: 80%; width: 100px; height: 100px; background: #fb923c; border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%; animation-delay: 2s; animation-duration: 20s; }
-    .shape:nth-child(3) { top: 10%; left: 80%; width: 120px; height: 120px; background: #fde047; border-radius: 50% 50% 50% 70% / 50% 50% 70% 60%; animation-delay: 4s; animation-duration: 30s; }
-    .shape:nth-child(4) { top: 70%; left: 15%; width: 60px; height: 60px; background: #c084fc; border-radius: 50%; animation-delay: 1s; animation-duration: 15s; }
+    .shape:nth-child(1) { top: 20%; left: 10%; width: 80px; height: 80px; background: #fee2e2; border-radius: 50%; animation-delay: 0s; animation-duration: 25s; }
+    .shape:nth-child(2) { top: 60%; left: 80%; width: 100px; height: 100px; background: #ffedd5; border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%; animation-delay: 2s; animation-duration: 20s; }
+    .shape:nth-child(3) { top: 10%; left: 80%; width: 120px; height: 120px; background: #fef9c3; border-radius: 50% 50% 50% 70% / 50% 50% 70% 60%; animation-delay: 4s; animation-duration: 30s; }
+    .shape:nth-child(4) { top: 70%; left: 15%; width: 60px; height: 60px; background: #e9d5ff; border-radius: 50%; animation-delay: 1s; animation-duration: 15s; }
     /* Removed the 5th zigzag shape */
     .shape:nth-child(5) { display: none; }
     .shape:nth-child(6) { top: 5%; left: 40%; width: 60px; height: 120px; background-image: url('data:image/svg+xml;utf8,<svg width="50" height="100" viewBox="0 0 50 100" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="25" y1="0" x2="25" y2="100" stroke="%23f87171" stroke-width="4"/><rect x="10" y="20" width="30" height="50" fill="%23f87171"/></svg>'); background-repeat: no-repeat; background-size: contain; animation-delay: 8s; animation-duration: 22s; }
 
-    .dark .shape:nth-child(1) { background: #dc2626; }
-    .dark .shape:nth-child(2) { background: #ea580c; }
-    .dark .shape:nth-child(3) { background: #ca8a04; }
-    .dark .shape:nth-child(4) { background: #9333ea; }
+    .dark .shape:nth-child(1) { background: #991b1b; }
+    .dark .shape:nth-child(2) { background: #9a3412; }
+    .dark .shape:nth-child(3) { background: #a16207; }
+    .dark .shape:nth-child(4) { background: #6b21a8; }
     .dark .shape:nth-child(6) { background-image: url('data:image/svg+xml;utf8,<svg width="50" height="100" viewBox="0 0 50 100" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="25" y1="0" x2="25" y2="100" stroke="%23ef4444" stroke-width="4"/><rect x="10" y="20" width="30" height="50" fill="%23ef4444"/></svg>'); }
     
     @keyframes float {
