@@ -27,19 +27,24 @@
 }
 </script>
 <style>
+    :root {
+      --gradient-angle: 0deg;
+    }
+
     /* Light theme default */
     body {
         overflow-x: hidden;
-        background: linear-gradient(135deg, #fecaca, #fed7aa, #fef08a, #bbf7d0, #bfdbfe, #ddd6fe, #fbcfe8, #fecaca);
-        background-size: 600% 600%;
-        animation: gradientBG 20s ease infinite;
+        background-color: #fce7f3; /* A light base for the gradient */
+        background-image: linear-gradient(var(--gradient-angle), #fecaca, #fed7aa, #fef08a, #d8b4fe, #fbcfe8);
+        background-size: 400% 400%;
+        animation: gradientBG 15s ease infinite, rotateGradient 20s linear infinite;
         min-height: 100vh;
     }
     
     /* Dark theme override */
     .dark body {
-        background: linear-gradient(135deg, #450a0a, #7c2d12, #713f12, #14532d, #1e3a8a, #4c1d95, #831843, #450a0a);
-        background-size: 600% 600%;
+        background-color: #111827; /* A dark base for the gradient */
+        background-image: linear-gradient(var(--gradient-angle), #7f1d1d, #b45309, #a16207, #6b21a8, #831843);
     }
     
     @keyframes gradientBG {
@@ -47,7 +52,24 @@
         50% { background-position: 100% 50%; }
         100% { background-position: 0% 50%; }
     }
+    
+    @keyframes rotateGradient {
+      0% { --gradient-angle: 0deg; }
+      100% { --gradient-angle: 360deg; }
+    }
 
+    /* Edge Lighting Effect */
+    #root::before {
+        content: '';
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        z-index: -1;
+        margin: -2px; /* Adjust thickness */
+        border-radius: inherit;
+        background: linear-gradient(var(--gradient-angle), #ef4444, #f97316, #eab308, #8b5cf6, #d946ef);
+        animation: rotateGradient 10s linear infinite;
+    }
+    
     .floating-shapes {
         position: absolute;
         width: 100%;
@@ -64,21 +86,20 @@
         animation: float 20s infinite linear;
     }
 
-    /* Light theme shapes */
-    .shape:nth-child(1) { top: 20%; left: 10%; width: 80px; height: 80px; background: #fca5a5; border-radius: 50%; animation-delay: 0s; animation-duration: 25s; } /* red-300 */
-    .shape:nth-child(2) { top: 60%; left: 80%; width: 100px; height: 100px; background: #ef4444; border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%; animation-delay: 2s; animation-duration: 20s; } /* red-500 */
-    .shape:nth-child(3) { top: 10%; left: 80%; width: 120px; height: 120px; background: #9ca3af; border-radius: 50% 50% 50% 70% / 50% 50% 70% 60%; animation-delay: 4s; animation-duration: 30s; } /* gray-400 */
-    .shape:nth-child(4) { top: 70%; left: 15%; width: 60px; height: 60px; background: #4b5563; border-radius: 50%; animation-delay: 1s; animation-duration: 15s; } /* gray-600 */
-    .shape:nth-child(5) { top: 80%; left: 5%; width: 150px; height: 150px; background-image: url('data:image/svg+xml;utf8,<svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 90 L30 10 L50 90 L70 10 L90 90" stroke="%23f87171" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></svg>'); background-repeat: no-repeat; background-size: contain; animation-delay: 5s; animation-duration: 35s; } /* Zigzag */
-    .shape:nth-child(6) { top: 5%; left: 40%; width: 60px; height: 120px; background-image: url('data:image/svg+xml;utf8,<svg width="50" height="100" viewBox="0 0 50 100" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="25" y1="0" x2="25" y2="100" stroke="%234ade80" stroke-width="4"/><rect x="10" y="20" width="30" height="50" fill="%234ade80"/></svg>'); background-repeat: no-repeat; background-size: contain; animation-delay: 8s; animation-duration: 22s; } /* Candlestick */
+    /* Shapes updated to match new theme */
+    .shape:nth-child(1) { top: 20%; left: 10%; width: 80px; height: 80px; background: #fca5a5; border-radius: 50%; animation-delay: 0s; animation-duration: 25s; }
+    .shape:nth-child(2) { top: 60%; left: 80%; width: 100px; height: 100px; background: #fb923c; border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%; animation-delay: 2s; animation-duration: 20s; }
+    .shape:nth-child(3) { top: 10%; left: 80%; width: 120px; height: 120px; background: #fde047; border-radius: 50% 50% 50% 70% / 50% 50% 70% 60%; animation-delay: 4s; animation-duration: 30s; }
+    .shape:nth-child(4) { top: 70%; left: 15%; width: 60px; height: 60px; background: #c084fc; border-radius: 50%; animation-delay: 1s; animation-duration: 15s; }
+    /* Removed the 5th zigzag shape */
+    .shape:nth-child(5) { display: none; }
+    .shape:nth-child(6) { top: 5%; left: 40%; width: 60px; height: 120px; background-image: url('data:image/svg+xml;utf8,<svg width="50" height="100" viewBox="0 0 50 100" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="25" y1="0" x2="25" y2="100" stroke="%23f87171" stroke-width="4"/><rect x="10" y="20" width="30" height="50" fill="%23f87171"/></svg>'); background-repeat: no-repeat; background-size: contain; animation-delay: 8s; animation-duration: 22s; }
 
-    /* Dark theme shapes */
-    .dark .shape:nth-child(1) { background: #dc2626; } /* red-600 */
-    .dark .shape:nth-child(2) { background: #ef4444; } /* red-500 */
-    .dark .shape:nth-child(3) { background: #374151; } /* gray-700 */
-    .dark .shape:nth-child(4) { background: #ffffff; }
-    .dark .shape:nth-child(5) { background-image: url('data:image/svg+xml;utf8,<svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 90 L30 10 L50 90 L70 10 L90 90" stroke="%23ef4444" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></svg>'); }
-    .dark .shape:nth-child(6) { background-image: url('data:image/svg+xml;utf8,<svg width="50" height="100" viewBox="0 0 50 100" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="25" y1="0" x2="25" y2="100" stroke="%23dc2626" stroke-width="4"/><rect x="10" y="20" width="30" height="50" fill="%23dc2626"/></svg>'); }
+    .dark .shape:nth-child(1) { background: #dc2626; }
+    .dark .shape:nth-child(2) { background: #ea580c; }
+    .dark .shape:nth-child(3) { background: #ca8a04; }
+    .dark .shape:nth-child(4) { background: #9333ea; }
+    .dark .shape:nth-child(6) { background-image: url('data:image/svg+xml;utf8,<svg width="50" height="100" viewBox="0 0 50 100" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="25" y1="0" x2="25" y2="100" stroke="%23ef4444" stroke-width="4"/><rect x="10" y="20" width="30" height="50" fill="%23ef4444"/></svg>'); }
     
     @keyframes float {
         0% { transform: translate(0, 0) rotate(0deg); }
@@ -89,7 +110,7 @@
     }
 
     .animated-gradient-text {
-        background: linear-gradient(90deg, #ef4444, #f97316, #eab308, #22c55e, #3b82f6, #8b5cf6, #ef4444);
+        background: linear-gradient(90deg, #ef4444, #f97316, #eab308, #8b5cf6, #d946ef, #ef4444);
         background-size: 200% auto;
         -webkit-background-clip: text;
         background-clip: text;
@@ -101,6 +122,47 @@
             background-position: 200% center;
         }
     }
+
+    /* Gradient button style */
+    .btn-gradient {
+        background-image: linear-gradient(to right, #ef4444 0%, #f97316 33%, #eab308 66%, #8b5cf6 100%);
+        background-size: 200% auto;
+        transition: background-position 0.5s ease;
+    }
+    .btn-gradient:hover {
+        background-position: right center;
+    }
+    .btn-gradient:disabled {
+      background-image: none;
+    }
+
+    /* Gradient border for inputs/selects */
+    .input-gradient-border {
+      border: 2px solid transparent;
+      background-clip: padding-box;
+      position: relative;
+    }
+    .input-gradient-border::before {
+      content: '';
+      position: absolute;
+      top: 0; right: 0; bottom: 0; left: 0;
+      z-index: -1;
+      margin: -2px;
+      border-radius: inherit;
+      background: linear-gradient(var(--gradient-angle), #ef4444, #f97316, #eab308, #8b5cf6, #d946ef);
+      animation: rotateGradient 10s linear infinite;
+      opacity: 0;
+      transition: opacity 0.3s ease-in-out;
+    }
+    .input-gradient-border:focus-within::before,
+    .input-gradient-border:hover::before {
+      opacity: 1;
+    }
+    .input-gradient-border .form-element {
+        border: none;
+        outline: none;
+    }
+
 </style>
 </head>
   <body>
