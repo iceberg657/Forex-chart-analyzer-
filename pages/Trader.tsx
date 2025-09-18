@@ -1,43 +1,15 @@
+
 import React, { useState, useCallback } from 'react';
-import { AnalysisResult, TradeSetup, GroundingSource } from '../types';
+import { AnalysisResult, GroundingSource } from '../types';
 import { analyzeChart } from '../services/geminiService';
 import Spinner from '../components/Spinner';
 import { TRADING_STYLES } from '../constants';
-
-const AnalysisSetupCard: React.FC<{ setup: TradeSetup; index: number }> = ({ setup, index }) => {
-  const isBuy = setup.type.toLowerCase().includes('buy');
-  const isConfirmation = setup.type.toLowerCase().includes('confirmation') || setup.type.toLowerCase().includes('retracement');
-
-  return (
-    <div className="bg-gray-100 dark:bg-gray-900/70 p-6 rounded-lg border border-gray-300 dark:border-gray-700">
-      <h3 className={`text-xl font-bold mb-4 ${isBuy ? 'text-green-500 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`}>
-        {`Setup ${index + 1}: ${setup.type}`}
-        {isConfirmation && <span className="text-xs font-normal text-yellow-500 dark:text-yellow-400 ml-2">(Pending)</span>}
-      </h3>
-      {setup.notes && <p className="text-sm text-yellow-800 dark:text-yellow-300 bg-yellow-100 dark:bg-yellow-900/30 p-2 rounded-md mb-4">{setup.notes}</p>}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
-        <div className={`p-3 rounded-lg ${isBuy ? 'bg-green-100 dark:bg-green-900/50' : 'bg-blue-100 dark:bg-blue-900/50'}`}>
-          <p className={`text-sm ${isBuy ? 'text-green-700 dark:text-green-300' : 'text-blue-700 dark:text-blue-300'}`}>Entry Price</p>
-          <p className="text-lg font-mono text-gray-900 dark:text-white">{setup.entry}</p>
-        </div>
-        <div className="bg-red-100 dark:bg-red-900/50 p-3 rounded-lg">
-          <p className="text-sm text-red-700 dark:text-red-300">Stop Loss</p>
-          <p className="text-lg font-mono text-gray-900 dark:text-white">{setup.stopLoss}</p>
-        </div>
-        <div className="bg-green-100 dark:bg-green-900/50 p-3 rounded-lg">
-          <p className="text-sm text-green-700 dark:text-green-300">Take Profit</p>
-          <p className="text-lg font-mono text-gray-900 dark:text-white">{setup.takeProfit}</p>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 const SourcesCard: React.FC<{ sources: GroundingSource[] }> = ({ sources }) => {
   if (!sources || sources.length === 0) return null;
 
   return (
-    <div>
+    <div className="mt-8">
       <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Sources</h3>
       <div className="bg-gray-100 dark:bg-gray-900/70 p-4 rounded-lg">
         <ul className="space-y-2">
@@ -149,7 +121,7 @@ const Trader: React.FC = () => {
             </div>
         </div>
 
-        <button onClick={handleAnalyze} disabled={isLoading || !imageFile} className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white btn-gradient focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 dark:focus:ring-offset-gray-900 focus:ring-red-500 disabled:bg-gray-400 dark:disabled:bg-gray-500 disabled:cursor-not-allowed">
+        <button onClick={handleAnalyze} disabled={isLoading || !imageFile} className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white btn-gradient focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 dark:focus-ring-offset-gray-900 focus:ring-red-500 disabled:bg-gray-400 dark:disabled:bg-gray-500 disabled:cursor-not-allowed">
           {isLoading ? 'Analyzing...' : 'Analyze Chart'}
         </button>
       </div>
@@ -158,41 +130,60 @@ const Trader: React.FC = () => {
       {error && <div className="text-center text-red-700 dark:text-red-400 bg-red-100 dark:bg-red-900/50 p-4 rounded-lg max-w-4xl mx-auto">{error}</div>}
       
       {analysis && (
-        <div className="max-w-4xl mx-auto bg-white/80 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-300 dark:border-gray-700 rounded-lg p-8 mt-8 animate-fade-in">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Analysis Result</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <div className="bg-gray-100 dark:bg-gray-900/70 p-4 rounded-lg">
-              <p className="text-sm text-gray-500 dark:text-gray-400">Asset</p>
-              <p className="text-lg font-semibold text-gray-900 dark:text-white">{analysis.asset}</p>
+        <div className="max-w-4xl mx-auto bg-white/80 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-300 dark:border-gray-700 rounded-lg p-8 mt-8 animate-fade-in space-y-6">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white text-center">Analysis for {analysis.asset} ({analysis.timeframe})</h2>
+
+            <div className={`p-6 rounded-lg text-white text-center shadow-lg ${analysis.signal === 'BUY' ? 'bg-green-600' : 'bg-red-600'}`}>
+                <p className="text-sm uppercase tracking-wider font-semibold">Signal</p>
+                <p className="text-5xl font-bold my-2">{analysis.signal}</p>
+                <div className="mt-4">
+                    <p className="text-xs uppercase tracking-wider font-semibold">Confidence</p>
+                    <div className="w-full bg-white/30 rounded-full h-2.5 my-1">
+                        <div className="bg-white h-2.5 rounded-full" style={{ width: `${analysis.confidence}%` }}></div>
+                    </div>
+                    <p className="text-xl font-bold">{analysis.confidence}%</p>
+                </div>
             </div>
-            <div className="bg-gray-100 dark:bg-gray-900/70 p-4 rounded-lg">
-              <p className="text-sm text-gray-500 dark:text-gray-400">Timeframe</p>
-              <p className="text-lg font-semibold text-gray-900 dark:text-white">{analysis.timeframe}</p>
-            </div>
-            <div className="bg-gray-100 dark:bg-gray-900/70 p-4 rounded-lg col-span-1 md:col-span-2">
-              <p className="text-sm text-gray-500 dark:text-gray-400">Selected Strategies</p>
-              <div className="flex flex-wrap gap-2 mt-2">
-                  {analysis.strategies.map(strategy => (
-                      <span key={strategy} className="px-3 py-1 text-sm font-medium bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300 rounded-full">
-                          {strategy}
-                      </span>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+              <div className="bg-gray-100 dark:bg-gray-900/70 p-4 rounded-lg">
+                <p className="text-sm text-gray-500 dark:text-gray-400">Entry</p>
+                <p className="text-lg font-mono font-semibold text-gray-900 dark:text-white">{analysis.entry}</p>
+              </div>
+              <div className="bg-red-100 dark:bg-red-900/50 p-4 rounded-lg">
+                <p className="text-sm text-red-700 dark:text-red-300">Stop Loss</p>
+                <p className="text-lg font-mono font-semibold text-gray-900 dark:text-white">{analysis.stopLoss}</p>
+              </div>
+               <div className="bg-green-100 dark:bg-green-900/50 p-4 rounded-lg">
+                <p className="text-sm text-green-700 dark:text-green-300">Take Profit(s)</p>
+                <div className="flex flex-col">
+                  {analysis.takeProfits.map((tp, index) => (
+                    <p key={index} className="text-lg font-mono font-semibold text-gray-900 dark:text-white">{tp}</p>
                   ))}
+                </div>
               </div>
             </div>
-          </div>
-          
-          <div className="space-y-6">
-            {analysis.setups.map((setup, index) => (
-              <AnalysisSetupCard key={index} setup={setup} index={index} />
-            ))}
 
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Reasoning</h3>
-              <p className="text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-900/70 p-4 rounded-lg whitespace-pre-wrap">{analysis.reason}</p>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Main Reasoning</h3>
+              <p className="text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-900/70 p-4 rounded-lg">{analysis.reasoning}</p>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">10 Supporting Reasons</h3>
+              <div className="bg-gray-100 dark:bg-gray-900/70 p-4 rounded-lg">
+                <ul className="space-y-2 text-gray-700 dark:text-gray-300">
+                  {analysis.tenReasons.map((reason, index) => (
+                    <li key={index} className="flex items-start">
+                      <span className="mr-2 text-lg leading-tight">{reason.split(' ')[0]}</span>
+                      <span>{reason.substring(reason.indexOf(' ') + 1)}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
 
             <SourcesCard sources={analysis.sources || []} />
-          </div>
         </div>
       )}
     </div>

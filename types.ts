@@ -1,24 +1,22 @@
+
 export interface GroundingSource {
   uri: string;
   title: string;
 }
 
-export interface TradeSetup {
-  type: string; // e.g., "Current Sell", "Buy on Confirmation"
-  entry: string;
-  stopLoss: string;
-  takeProfit: string;
-  notes?: string; // e.g., "Wait for a break above 1.2345"
-}
-
 export interface AnalysisResult {
   asset: string;
   timeframe: string;
-  strategies: string[];
-  reason: string;
-  setups: TradeSetup[];
+  signal: 'BUY' | 'SELL';
+  confidence: number; // e.g., 85
+  entry: string;
+  stopLoss: string;
+  takeProfits: string[]; // Can be one or more
+  reasoning: string; // The main explanation
+  tenReasons: string[]; // e.g., ["✅ Bullish engulfing pattern identified."]
   sources?: GroundingSource[];
 }
+
 
 export interface GeneratedCode {
   code: string;
