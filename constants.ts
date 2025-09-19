@@ -14,7 +14,13 @@ export const FOREX_STRATEGIES = [
   "Break of Structure (BOS) & Change of Character (CHoCH)",
   "Inside Bar Breakout",
   "Fakeout / Stop Hunt",
-  "Supply & Demand Zones"
+  "Supply & Demand Zones",
+  "Breakout/Pullback with Measured Target",
+  "Wyckoff Spring (Terminal Shakeout) & Backup",
+  "Horizontal High Tight Flag Breakout",
+  "Flag/Pennant Breakout (Short-Term Continuation)",
+  "Measured Move (Price Swing Projection)",
+  "Volatility Contraction Pattern (VCP) Breakout"
 ];
 
 export const ALL_STRATEGIES = [...SYNTHETIC_STRATEGIES, ...FOREX_STRATEGIES];

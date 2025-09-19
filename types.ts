@@ -7,13 +7,14 @@ export interface GroundingSource {
 export interface AnalysisResult {
   asset: string;
   timeframe: string;
-  signal: 'BUY' | 'SELL';
+  signal: 'BUY' | 'SELL' | 'NEUTRAL';
   confidence: number; // e.g., 85
   entry: string;
   stopLoss: string;
   takeProfits: string[]; // Can be one or more
   reasoning: string; // The main explanation
   tenReasons: string[]; // e.g., ["✅ Bullish engulfing pattern identified."]
+  alternativeScenario?: string; // What would invalidate the thesis
   sources?: GroundingSource[];
 }
 
