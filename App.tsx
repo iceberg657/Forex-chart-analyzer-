@@ -12,22 +12,35 @@ import SignUp from './pages/SignUp';
 import Analysis from './pages/Analysis';
 import { AuthProvider, useAuth } from './hooks/useAuth';
 import { ThemeProvider } from './hooks/useTheme';
+import { ApiStatusProvider, useApiStatus } from './hooks/useApiStatus';
+import ApiKeyErrorModal from './components/ApiKeyErrorModal';
 
 const App: React.FC = () => {
   return (
     <AuthProvider>
       <ThemeProvider>
-        <HashRouter>
-          <div className="relative isolate flex flex-col min-h-screen text-gray-800 dark:text-gray-200 font-sans">
-            <Header />
-            <main className="flex-grow container mx-auto px-4 py-8">
-              <AppRoutes />
-            </main>
-            <Footer />
-          </div>
-        </HashRouter>
+        <ApiStatusProvider>
+          <HashRouter>
+            <AppContent />
+          </HashRouter>
+        </ApiStatusProvider>
       </ThemeProvider>
     </AuthProvider>
+  );
+};
+
+const AppContent: React.FC = () => {
+  const { isApiConfigured } = useApiStatus();
+
+  return (
+    <div className="relative isolate flex flex-col min-h-screen text-gray-800 dark:text-gray-200 font-sans">
+      {!isApiConfigured && <ApiKeyErrorModal />}
+      <Header />
+      <main className="flex-grow container mx-auto px-4 py-8">
+        <AppRoutes />
+      </main>
+      <Footer />
+    </div>
   );
 };
 

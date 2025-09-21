@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { INDICATOR_LANGUAGES } from '../constants';
 import { IndicatorLanguage } from '../types';
 import { createIndicator } from '../services/geminiService';
@@ -7,6 +7,7 @@ import CodeBlock from '../components/CodeBlock';
 import { useAuth } from '../hooks/useAuth';
 import { Link } from 'react-router-dom';
 import ErrorDisplay from '../components/ErrorDisplay';
+import { useApiStatus } from '../hooks/useApiStatus';
 
 const IndicatorMaker: React.FC = () => {
   const [language, setLanguage] = useState<IndicatorLanguage>(IndicatorLanguage.PINE_SCRIPT);
@@ -16,20 +17,14 @@ const IndicatorMaker: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const { user, usage, incrementIndicatorUsage } = useAuth();
   
-  const isApiConfigured = !!process.env.API_KEY;
-
-  useEffect(() => {
-    if (!isApiConfigured) {
-      setError('Configuration Error: An API Key is required to generate indicators. Please ensure the API_KEY environment variable is set. The form is disabled.');
-    }
-  }, [isApiConfigured]);
+  const { apiKey, isApiConfigured } = useApiStatus();
   
   const limitReached = user?.plan === 'Free' && usage.indicators >= 1;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isApiConfigured) {
-        setError('Configuration Error: Cannot generate indicator without an API Key.');
+    if (!isApiConfigured || !apiKey) {
+        setError('API Key is not configured. Please provide your key.');
         return;
     }
     if (limitReached) {
@@ -49,7 +44,7 @@ const IndicatorMaker: React.FC = () => {
     setGeneratedCode(null);
 
     try {
-      const code = await createIndicator({ description, language });
+      const code = await createIndicator({ description, language }, apiKey);
       setGeneratedCode(code);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'An unknown error occurred.');

@@ -88,9 +88,10 @@ You MUST respond ONLY with a single, valid JSON object matching the schema below
 // --- Public API ---
 // These functions are called by the components and use the Gemini API directly on the client-side.
 
-export const analyzeChart = async (chartFiles: { [key: string]: File | null }, riskReward: string, tradingStyle: string): Promise<AnalysisResult> => {
+export const analyzeChart = async (chartFiles: { [key: string]: File | null }, riskReward: string, tradingStyle: string, apiKey: string): Promise<AnalysisResult> => {
+  if (!apiKey) throw new Error("API Key is missing.");
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+    const ai = new GoogleGenAI({ apiKey });
     
     const parts: any[] = [];
     parts.push({ text: getAnalysisPrompt(tradingStyle, riskReward) });
@@ -156,9 +157,10 @@ export const analyzeChart = async (chartFiles: { [key: string]: File | null }, r
   }
 };
 
-export const createBot = async ({ description, language }: { description: string; language: BotLanguage; }): Promise<string> => {
+export const createBot = async ({ description, language }: { description: string; language: BotLanguage; }, apiKey: string): Promise<string> => {
+  if (!apiKey) throw new Error("API Key is missing.");
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+    const ai = new GoogleGenAI({ apiKey });
     const prompt = `You are an expert MQL developer. Your task is to generate the code for a trading bot (Expert Advisor) based on the user's description.
 - Language: ${language}
 - User Description of desired behavior: "${description}"
@@ -179,9 +181,10 @@ After these properties, generate the complete, functional, and well-commented ${
   }
 };
 
-export const createIndicator = async ({ description, language }: { description: string; language: IndicatorLanguage; }): Promise<string> => {
+export const createIndicator = async ({ description, language }: { description: string; language: IndicatorLanguage; }, apiKey: string): Promise<string> => {
+  if (!apiKey) throw new Error("API Key is missing.");
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+    const ai = new GoogleGenAI({ apiKey });
     let prompt: string;
     if (language === IndicatorLanguage.PINE_SCRIPT) {
         prompt = `You are an expert Pine Script developer. Your task is to generate the code for a trading indicator based on the user's description.

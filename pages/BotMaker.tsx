@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { BOT_LANGUAGES } from '../constants';
 import { BotLanguage } from '../types';
 import { createBot } from '../services/geminiService';
@@ -7,6 +7,7 @@ import CodeBlock from '../components/CodeBlock';
 import { useAuth } from '../hooks/useAuth';
 import { Link } from 'react-router-dom';
 import ErrorDisplay from '../components/ErrorDisplay';
+import { useApiStatus } from '../hooks/useApiStatus';
 
 const BotMaker: React.FC = () => {
   const [language, setLanguage] = useState<BotLanguage>(BotLanguage.MQL5);
@@ -16,20 +17,14 @@ const BotMaker: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const { user, usage, incrementBotUsage } = useAuth();
   
-  const isApiConfigured = !!process.env.API_KEY;
-
-  useEffect(() => {
-    if (!isApiConfigured) {
-      setError('Configuration Error: An API Key is required to generate bots. Please ensure the API_KEY environment variable is set. The form is disabled.');
-    }
-  }, [isApiConfigured]);
+  const { apiKey, isApiConfigured } = useApiStatus();
 
   const limitReached = user?.plan === 'Free' && usage.bots >= 1;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isApiConfigured) {
-        setError('Configuration Error: Cannot generate bot without an API Key.');
+    if (!isApiConfigured || !apiKey) {
+        setError('API Key is not configured. Please provide your key.');
         return;
     }
     if (limitReached) {
@@ -49,7 +44,7 @@ const BotMaker: React.FC = () => {
     setGeneratedCode(null);
 
     try {
-      const code = await createBot({ description, language });
+      const code = await createBot({ description, language }, apiKey);
       setGeneratedCode(code);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'An unknown error occurred.');

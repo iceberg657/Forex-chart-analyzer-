@@ -1,9 +1,10 @@
-import React, { useState, useCallback, DragEvent, useEffect } from 'react';
+import React, { useState, useCallback, DragEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { analyzeChart } from '../services/geminiService';
 import { TRADING_STYLES } from '../constants';
 import Dashboard from '../components/Dashboard';
 import CandleStickLoader from '../components/CandleStickLoader';
+import { useApiStatus } from '../hooks/useApiStatus';
 
 const ChartUploadSlot: React.FC<{
   timeframe: 'higher' | 'primary' | 'entry';
@@ -100,13 +101,7 @@ const Trader: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  const isApiConfigured = !!process.env.API_KEY;
-
-  useEffect(() => {
-    if (!isApiConfigured) {
-      setError('Configuration Error: An API Key is required for analysis. Please ensure the API_KEY environment variable is set. The form is disabled.');
-    }
-  }, [isApiConfigured]);
+  const { apiKey, isApiConfigured } = useApiStatus();
 
   const handleFileChange = (file: File, timeframe: string) => {
     setChartFiles(prev => ({ ...prev, [timeframe]: file }));
@@ -115,9 +110,7 @@ const Trader: React.FC = () => {
       setPreviewUrls(prev => ({ ...prev, [timeframe]: reader.result as string }));
     };
     reader.readAsDataURL(file);
-    if (isApiConfigured) {
-        setError(null);
-    }
+    setError(null);
   };
 
   const handleFileRemove = (timeframe: string) => {
@@ -126,8 +119,8 @@ const Trader: React.FC = () => {
   };
 
   const handleSubmit = useCallback(async () => {
-    if (!isApiConfigured) {
-      setError('Configuration Error: Cannot analyze chart without an API Key.');
+    if (!isApiConfigured || !apiKey) {
+      setError('API Key is not configured. Please provide your key.');
       return;
     }
     if (!chartFiles.primary) {
@@ -139,7 +132,7 @@ const Trader: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const analysisResult = await analyzeChart(chartFiles, riskReward, tradingStyle);
+      const analysisResult = await analyzeChart(chartFiles, riskReward, tradingStyle, apiKey);
       navigate('/analysis', { state: { result: analysisResult } });
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.';
@@ -147,7 +140,7 @@ const Trader: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [chartFiles, riskReward, tradingStyle, navigate, isApiConfigured]);
+  }, [chartFiles, riskReward, tradingStyle, navigate, isApiConfigured, apiKey]);
   
   const riskRewardOptions = ['1:1', '1:2', '1:3', '1:4', '1:5'];
   const isAnalyzeDisabled = isLoading || !chartFiles.primary || !isApiConfigured;
