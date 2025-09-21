@@ -1,0 +1,17 @@
+{
+  "short_name": "Apex Trader",
+  "name": "Grey Algo Apex Trader",
+  "description": "An AI-powered trading assistant that analyzes charts to provide trade setups, and generates custom trading bots and indicators using the Gemini API.",
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "type": "image/svg+xml",
+      "sizes": "192x192 512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#1e1b4b",
+  "background_color": "#0b1120"
+}

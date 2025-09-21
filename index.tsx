@@ -1,4 +1,3 @@
-
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
@@ -14,3 +13,13 @@ root.render(
     <App />
   </React.StrictMode>
 );
+
+const splashScreen = document.getElementById('splash-screen');
+if (splashScreen) {
+  setTimeout(() => {
+    splashScreen.style.opacity = '0';
+    splashScreen.addEventListener('transitionend', () => {
+      splashScreen.remove();
+    });
+  }, 5000);
+}

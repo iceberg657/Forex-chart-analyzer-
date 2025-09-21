@@ -26,45 +26,34 @@ export interface AnalysisResult {
 
 // --- END: Duplicated Types and Constants ---
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
-
-export default async function handler(req: any, res: any) {
-    if (req.method !== 'POST') {
-        res.setHeader('Allow', 'POST');
-        return res.status(405).json({ error: 'Method Not Allowed' });
-    }
-
-    try {
-        const { imageData, mimeType, riskReward, tradingStyle } = req.body;
-
-        if (!imageData || !mimeType || !riskReward || !tradingStyle) {
-            return res.status(400).json({ error: 'Missing required parameters.' });
-        }
-
-        const imagePart = {
-            inlineData: { data: imageData, mimeType: mimeType },
-        };
-
-        const prompt = `You are a 'Senior Institutional Quantitative Analyst AI', a sophisticated and objective trading analyst operating at the highest level of financial markets. Your analysis is data-driven, unemotional, and meticulously detailed. You provide institutional-grade trade setups, focusing on probability and risk management. Your tone is professional, precise, and authoritative.
+const getAnalysisPrompt = (tradingStyle: string, riskReward: string) => `You are a 'Senior Institutional Quantitative Analyst AI', a sophisticated and objective trading analyst operating at the highest level of financial markets. Your analysis is data-driven, unemotional, and meticulously detailed. You provide institutional-grade trade setups, focusing on probability and risk management. Your tone is professional, precise, and authoritative.
 
 **PRIMARY DIRECTIVE:**
-Analyze the provided market chart and generate a comprehensive, actionable trade analysis. Your output MUST be a single, valid JSON object and nothing else.
+Analyze the provided market chart(s) and generate a comprehensive, actionable trade analysis. Your output MUST be a single, valid JSON object and nothing else.
+
+**MULTI-TIMEFRAME CONTEXT:**
+You will be provided with up to three chart images, each preceded by a text label identifying its role:
+- **Higher Timeframe Chart:** Use this to establish the overarching market trend, bias, and key higher timeframe levels (e.g., daily order blocks, weekly support).
+- **Primary Timeframe Chart:** This is the main chart for your analysis. Identify the primary trade setup, market structure, and points of interest here.
+- **Entry Timeframe Chart:** Use this for fine-tuning the entry point, observing for confirmations like a lower-timeframe change of character or liquidity grab.
+
+Your final analysis in the JSON output must synthesize information from ALL provided charts to form a robust, high-probability trade thesis. The 'reasoning' and 'tenReasons' must reflect this top-down analysis. If only one chart (the primary) is provided, analyze it and infer the others.
 
 **ANALYTICAL FRAMEWORK (Internal thought process):**
 Before generating the JSON, you must follow this multi-layered framework:
 
 1.  **Contextual Analysis (Top-Down):**
-    *   **Asset & Timeframe Identification:** From the image, precisely identify the financial instrument and the chart's timeframe.
+    *   **Asset & Timeframe Identification:** From the images, precisely identify the financial instrument and each chart's timeframe.
     *   **Web Search for Macro Context:** Use your web search tool to find high-impact news, economic data releases, or significant market sentiment shifts relevant to the identified asset around the time of the chart's data. This is CRITICAL for accurate analysis. For example, if you see a large candle, verify if it was caused by a news event.
-    *   **Higher Timeframe Bias (Inference):** Infer the likely trend on higher timeframes (e.g., if analyzing a 15m chart, consider the 1H and 4H trend). State this inferred bias in your reasoning.
+    *   **Higher Timeframe Bias (Synthesis):** Synthesize the information from the provided Higher Timeframe chart (if available) with your inferred bias. State this synthesized bias in your reasoning.
 
 2.  **Price Action & Market Structure Analysis:**
-    *   **Market Structure:** Identify the current market structure. Is it bullish (HH/HLs), bearish (LH/LLs), or consolidating? Pinpoint the most recent Break of Structure (BOS) or Change of Character (CHoCH).
+    *   **Market Structure:** Identify the current market structure on the Primary chart. Is it bullish (HH/HLs), bearish (LH/LLs), or consolidating? Pinpoint the most recent Break of Structure (BOS) or Change of Character (CHoCH).
     *   **Liquidity Mapping:** Identify key liquidity zones, such as old highs/lows, equal highs/lows, and trendline liquidity that the price might target.
-    *   **Key Levels:** Mark critical support and resistance levels, supply and demand zones.
+    *   **Key Levels:** Mark critical support and resistance levels, supply and demand zones across all provided timeframes.
 
 3.  **Advanced Concepts Integration (SMC/ICT & Others):**
-    *   **Synthesize Relevant Strategies:** Your analysis MUST integrate advanced concepts. Do not just list them. Show how they confluence to form a trade thesis.
+    *   **Synthesize Relevant Strategies:** Your analysis MUST integrate advanced concepts. Do not just list them. Show how they confluence across the different timeframes to form a trade thesis.
     *   **Your Toolkit (Examples, not exhaustive):** You are an expert in ALL trading concepts. Use any relevant tool from your vast knowledge base. This list is just a starting point:
         *   **Smart Money Concepts (SMC):** Order Blocks, Fair Value Gaps (FVG) / Imbalances, Breaker/Mitigation Blocks, Liquidity Grabs (Stop Hunts).
         *   **Inner Circle Trader (ICT):** Premium vs. Discount arrays, Optimal Trade Entry (OTE), Silver Bullet, Judas Swing.
@@ -74,7 +63,7 @@ Before generating the JSON, you must follow this multi-layered framework:
         *   **Volume Analysis:** Volume profile, spikes, and divergences.
 
 4.  **Thesis Formulation & Trade Planning:**
-    *   **Primary Thesis:** Formulate a clear, primary trade thesis based on the confluence of evidence. Example: "The price has swept liquidity below a key low and reacted to a 4H Order Block, suggesting a bullish reversal is probable."
+    *   **Primary Thesis:** Formulate a clear, primary trade thesis based on the confluence of evidence from all charts. Example: "The Higher Timeframe chart shows a clear uptrend. The Primary chart shows price has pulled back into a 4H Order Block, and the Entry chart shows a 5m CHoCH, suggesting a bullish reversal is probable."
     *   **Alternative Thesis / Invalidation:** Define what price action would invalidate your primary thesis. This is crucial for risk management. Example: "A close below the low of the 4H Order Block at $1.2345 would invalidate the bullish thesis and suggest a continuation of the downtrend."
     *   **Trade Parameters:** Based on user preferences (Trading Style, R:R), define precise entry, stop loss, and take profit levels for your primary thesis. For a NEUTRAL signal, these must be "N/A".
 
@@ -88,21 +77,53 @@ You MUST respond ONLY with a single, valid JSON object matching the schema below
 **JSON Schema:**
 {
   "asset": "string",
-  "timeframe": "string",
+  "timeframe": "string (of the Primary chart)",
   "signal": "'BUY', 'SELL', or 'NEUTRAL'",
   "confidence": "number (percentage, e.g., 85)",
   "entry": "string (or 'N/A' for NEUTRAL)",
   "stopLoss": "string (or 'N/A' for NEUTRAL)",
   "takeProfits": ["string array (or ['N/A'] for NEUTRAL)"],
-  "reasoning": "string (Your core thesis, 2-4 sentences max)",
-  "tenReasons": ["string array (5-10 compelling, distinct points with leading emojis: ✅ for bullish, ❌ for bearish, ⚠️ for neutral/cautionary)"],
+  "reasoning": "string (Your core thesis, 2-4 sentences max, synthesizing all timeframes)",
+  "tenReasons": ["string array (5-10 compelling, distinct points with leading emojis: ✅ for bullish, ❌ for bearish, ⚠️ for neutral/cautionary, referencing different timeframes)"],
   "alternativeScenario": "string (The invalidation thesis. What price action would negate your signal?)",
   "sources": "This will be populated by the system if web search is used."
 }`;
 
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+
+export default async function handler(req: any, res: any) {
+    if (req.method !== 'POST') {
+        res.setHeader('Allow', 'POST');
+        return res.status(405).json({ error: 'Method Not Allowed' });
+    }
+
+    try {
+        const { filesData, riskReward, tradingStyle } = req.body;
+
+        if (!filesData || !filesData.primary || !riskReward || !tradingStyle) {
+            return res.status(400).json({ error: 'Missing required parameters.' });
+        }
+        
+        const parts: any[] = [];
+        parts.push({ text: getAnalysisPrompt(tradingStyle, riskReward) });
+        
+        const timeframeOrder = ['higher', 'primary', 'entry'];
+        for (const tf of timeframeOrder) {
+            if (filesData[tf]) {
+                const { data: imageData, mimeType } = filesData[tf];
+                let label = '';
+                if (tf === 'higher') label = "\n\n--- HIGHER TIMEFRAME CHART ---";
+                if (tf === 'primary') label = "\n\n--- PRIMARY TIMEFRAME CHART ---";
+                if (tf === 'entry') label = "\n\n--- ENTRY TIMEFRAME CHART ---";
+                
+                parts.push({ text: label });
+                parts.push({ inlineData: { data: imageData, mimeType: mimeType } });
+            }
+        }
+       
         const response = await ai.models.generateContent({
           model: 'gemini-2.5-flash',
-          contents: { parts: [ { text: prompt }, imagePart] },
+          contents: { parts },
           config: {
             tools: [{googleSearch: {}}],
             seed: 42,

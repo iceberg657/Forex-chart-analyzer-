@@ -52,21 +52,21 @@ const IndicatorMaker: React.FC = () => {
         <p className="text-gray-600 dark:text-gray-400 mt-2">Generate a custom trading indicator for MT4, MT5, or TradingView.</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-white/80 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-300 dark:border-gray-700 rounded-lg p-8 space-y-6">
+      <form onSubmit={handleSubmit} className="bg-white/20 dark:bg-black/20 backdrop-blur-xl border border-white/30 dark:border-white/10 rounded-2xl shadow-lg p-8 space-y-6">
          {limitReached && (
-            <div className="bg-red-100 dark:bg-red-900/50 border border-red-500 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg text-center">
-                You have used your 1 free indicator generation. <Link to="/pricing" className="font-bold underline hover:text-gray-900 dark:hover:text-white">Upgrade your plan</Link> to create more.
+            <div className="bg-red-500/10 border border-red-500/50 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg text-center">
+                You have used your 1 free indicator generation. <Link to="/pricing" className="font-bold underline hover:text-red-100 dark:hover:text-white">Upgrade your plan</Link> to create more.
             </div>
         )}
         <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Language</label>
-            <select value={language} onChange={e => setLanguage(e.target.value as IndicatorLanguage)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm rounded-md text-gray-900 dark:text-white">
+            <select value={language} onChange={e => setLanguage(e.target.value as IndicatorLanguage)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-gray-500/10 dark:bg-gray-900/40 border-gray-400/30 dark:border-gray-500/50 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm rounded-md text-gray-900 dark:text-white">
               {INDICATOR_LANGUAGES.map(lang => <option key={lang} value={lang}>{lang}</option>)}
             </select>
         </div>
         <div>
           <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Describe Indicator Logic</label>
-          <textarea id="description" rows={8} value={description} onChange={e => setDescription(e.target.value)} className="mt-1 block w-full bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:ring-green-500 focus:border-green-500 sm:text-sm rounded-md text-gray-900 dark:text-white p-2" placeholder="e.g., 'Create an indicator that plots arrows on the chart. A green up arrow should appear when the 10 EMA crosses above the 20 EMA...'"></textarea>
+          <textarea id="description" rows={8} value={description} onChange={e => setDescription(e.target.value)} className="mt-1 block w-full bg-gray-500/10 dark:bg-gray-900/40 border-gray-400/30 dark:border-gray-500/50 focus:ring-green-500 focus:border-green-500 sm:text-sm rounded-md text-gray-900 dark:text-white p-2" placeholder="e.g., 'Create an indicator that plots arrows on the chart. A green up arrow should appear when the 10 EMA crosses above the 20 EMA...'"></textarea>
         </div>
         <button type="submit" disabled={isLoading || limitReached} className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 dark:focus:ring-offset-gray-900 focus:ring-green-500 disabled:bg-gray-400 dark:disabled:bg-gray-500 disabled:cursor-not-allowed">
           {isLoading ? 'Generating Code...' : 'Generate Indicator'}
@@ -74,7 +74,7 @@ const IndicatorMaker: React.FC = () => {
       </form>
       
       {isLoading && <div className="mt-8"><Spinner /></div>}
-      {error && <div className="text-center text-red-700 dark:text-red-400 bg-red-100 dark:bg-red-900/50 p-4 rounded-lg mt-8">{error}</div>}
+      {error && <div className="text-center text-red-700 dark:text-red-400 bg-red-500/10 p-4 rounded-lg mt-8">{error}</div>}
       {generatedCode && (
         <div className="mt-8">
           <h2 className="text-2xl font-bold text-center mb-4">Your Generated Indicator Code</h2>

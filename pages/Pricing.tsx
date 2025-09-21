@@ -21,7 +21,7 @@ const PricingCard: React.FC<{ plan: PricingPlan }> = ({ plan }) => {
   const isCurrentPlan = plan.name === 'Free Tier';
 
   return (
-    <div className={`border rounded-lg p-8 flex flex-col transition-all ${plan.isFeatured ? 'border-red-500 bg-white dark:bg-gray-800/80 scale-105' : 'border-gray-300 dark:border-gray-700 bg-white/80 dark:bg-gray-800/50'}`}>
+    <div className={`rounded-2xl p-8 flex flex-col transition-all shadow-lg ${plan.isFeatured ? 'bg-red-500/5 dark:bg-red-900/10 backdrop-blur-xl border-red-500/50 scale-105 border' : 'bg-white/20 dark:bg-black/20 backdrop-blur-xl border-white/30 dark:border-white/10 border'}`}>
       {plan.isFeatured && (
         <div className="text-center mb-4">
           <span className="bg-red-500 text-white text-xs font-semibold px-3 py-1 rounded-full uppercase">Most Popular</span>
@@ -46,7 +46,7 @@ const PricingCard: React.FC<{ plan: PricingPlan }> = ({ plan }) => {
         <button 
           onClick={isCurrentPlan ? undefined : handleGetStarted}
           disabled={isCurrentPlan}
-          className={`w-full py-3 px-4 rounded-md font-medium transition-colors ${plan.isFeatured ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200'} disabled:bg-gray-400 dark:disabled:bg-gray-500 disabled:cursor-not-allowed`}
+          className={`w-full py-3 px-4 rounded-md font-medium transition-colors ${plan.isFeatured ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-white/30 dark:bg-white/10 hover:bg-white/40 dark:hover:bg-white/20 text-gray-800 dark:text-gray-200'} disabled:bg-gray-400 dark:disabled:bg-gray-500 disabled:cursor-not-allowed`}
         >
           {isCurrentPlan ? 'Your Current Plan' : 'Get Started'}
         </button>

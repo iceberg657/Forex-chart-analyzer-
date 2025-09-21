@@ -10,7 +10,7 @@ const Introduction: React.FC = () => {
       </p>
       
       <div className="grid md:grid-cols-2 gap-8">
-        <div className="bg-white/80 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-300 dark:border-gray-700 rounded-lg p-8 hover:border-red-500 transition-all transform hover:-translate-y-1">
+        <div className="bg-white/20 dark:bg-black/20 backdrop-blur-xl border border-white/30 dark:border-white/10 rounded-2xl shadow-lg p-8 hover:border-red-500/80 transition-all transform hover:-translate-y-1">
           <h2 className="text-2xl font-bold text-red-500 mb-4">AI Bot Maker</h2>
           <p className="text-gray-500 dark:text-gray-400 mb-6">
             Describe your trading strategy, select your parameters, and let our AI generate a complete Expert Advisor in MQL4 or MQL5. Automate your trading without writing a single line of code.
@@ -20,7 +20,7 @@ const Introduction: React.FC = () => {
           </Link>
         </div>
 
-        <div className="bg-white/80 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-300 dark:border-gray-700 rounded-lg p-8 hover:border-green-500 transition-all transform hover:-translate-y-1">
+        <div className="bg-white/20 dark:bg-black/20 backdrop-blur-xl border border-white/30 dark:border-white/10 rounded-2xl shadow-lg p-8 hover:border-green-500/80 transition-all transform hover:-translate-y-1">
           <h2 className="text-2xl font-bold text-green-500 mb-4">AI Indicator Maker</h2>
           <p className="text-gray-500 dark:text-gray-400 mb-6">
             Need a custom indicator for MetaTrader or TradingView? Just tell the AI what you want to measure or visualize, and it will generate the necessary code in MQL4, MQL5, or Pine Script.
@@ -31,7 +31,7 @@ const Introduction: React.FC = () => {
         </div>
       </div>
 
-      <div className="mt-12 bg-gray-100 dark:bg-gray-900/70 p-6 rounded-lg">
+      <div className="mt-12 bg-black/5 dark:bg-white/5 backdrop-blur-sm p-6 rounded-2xl border border-white/20 dark:border-white/10">
         <h3 className="text-xl font-semibold mb-3">How It Works</h3>
         <ol className="list-decimal list-inside text-left space-y-2 text-gray-600 dark:text-gray-300">
             <li>Select whether you want to create a Bot or an Indicator.</li>
