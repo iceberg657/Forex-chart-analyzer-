@@ -1,10 +1,10 @@
+
 import React, { useState, useCallback, DragEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { analyzeChart } from '../services/geminiService';
 import { TRADING_STYLES } from '../constants';
 import Dashboard from '../components/Dashboard';
 import CandleStickLoader from '../components/CandleStickLoader';
-import { useApiStatus } from '../hooks/useApiStatus';
 
 const ChartUploadSlot: React.FC<{
   timeframe: 'higher' | 'primary' | 'entry';
@@ -101,8 +101,6 @@ const Trader: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  const { apiKey, isApiConfigured } = useApiStatus();
-
   const handleFileChange = (file: File, timeframe: string) => {
     setChartFiles(prev => ({ ...prev, [timeframe]: file }));
     const reader = new FileReader();
@@ -119,10 +117,6 @@ const Trader: React.FC = () => {
   };
 
   const handleSubmit = useCallback(async () => {
-    if (!isApiConfigured || !apiKey) {
-      setError('API Key is not configured. Please provide your key.');
-      return;
-    }
     if (!chartFiles.primary) {
       setError('Please upload at least the Primary Timeframe chart.');
       return;
@@ -132,7 +126,7 @@ const Trader: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const analysisResult = await analyzeChart(chartFiles, riskReward, tradingStyle, apiKey);
+      const analysisResult = await analyzeChart(chartFiles, riskReward, tradingStyle);
       navigate('/analysis', { state: { result: analysisResult } });
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.';
@@ -140,10 +134,10 @@ const Trader: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [chartFiles, riskReward, tradingStyle, navigate, isApiConfigured, apiKey]);
+  }, [chartFiles, riskReward, tradingStyle, navigate]);
   
   const riskRewardOptions = ['1:1', '1:2', '1:3', '1:4', '1:5'];
-  const isAnalyzeDisabled = isLoading || !chartFiles.primary || !isApiConfigured;
+  const isAnalyzeDisabled = isLoading || !chartFiles.primary;
 
   return (
     <div>
@@ -162,7 +156,6 @@ const Trader: React.FC = () => {
                 previewUrl={previewUrls.higher}
                 onFileChange={handleFileChange}
                 onFileRemove={handleFileRemove}
-                disabled={!isApiConfigured}
               />
               <ChartUploadSlot
                 timeframe="primary"
@@ -172,7 +165,6 @@ const Trader: React.FC = () => {
                 onFileChange={handleFileChange}
                 onFileRemove={handleFileRemove}
                 isPrimary
-                disabled={!isApiConfigured}
               />
               <ChartUploadSlot
                 timeframe="entry"
@@ -181,7 +173,6 @@ const Trader: React.FC = () => {
                 previewUrl={previewUrls.entry}
                 onFileChange={handleFileChange}
                 onFileRemove={handleFileRemove}
-                disabled={!isApiConfigured}
               />
             </div>
           </div>
@@ -189,13 +180,13 @@ const Trader: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label htmlFor="trading-style" className="block text-sm font-medium text-gray-700 dark:text-gray-300">2. Trading Style</label>
-              <select id="trading-style" value={tradingStyle} onChange={e => setTradingStyle(e.target.value)} disabled={!isApiConfigured} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-gray-500/10 dark:bg-gray-900/40 border-gray-400/30 dark:border-gray-500/50 focus:ring-red-500/50 focus:border-red-500 sm:text-sm rounded-md text-gray-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed">
+              <select id="trading-style" value={tradingStyle} onChange={e => setTradingStyle(e.target.value)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-gray-500/10 dark:bg-gray-900/40 border-gray-400/30 dark:border-gray-500/50 focus:ring-red-500/50 focus:border-red-500 sm:text-sm rounded-md text-gray-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed">
                 {TRADING_STYLES.map(style => <option key={style} value={style}>{style}</option>)}
               </select>
             </div>
             <div>
               <label htmlFor="risk-reward" className="block text-sm font-medium text-gray-700 dark:text-gray-300">3. Risk/Reward Ratio</label>
-              <select id="risk-reward" value={riskReward} onChange={e => setRiskReward(e.target.value)} disabled={!isApiConfigured} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-gray-500/10 dark:bg-gray-900/40 border-gray-400/30 dark:border-gray-500/50 focus:ring-red-500/50 focus:border-red-500 sm:text-sm rounded-md text-gray-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed">
+              <select id="risk-reward" value={riskReward} onChange={e => setRiskReward(e.target.value)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-gray-500/10 dark:bg-gray-900/40 border-gray-400/30 dark:border-gray-500/50 focus:ring-red-500/50 focus:border-red-500 sm:text-sm rounded-md text-gray-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed">
                 {riskRewardOptions.map(option => <option key={option} value={option}>{option}</option>)}
               </select>
             </div>
