@@ -1,27 +1,7 @@
 
+
 import { GoogleGenAI } from "@google/genai";
 import { AnalysisResult, BotLanguage, IndicatorLanguage, GroundingSource } from '../types';
-
-// --- Environment Detection ---
-// In AI Studio, process.env.API_KEY is available client-side.
-// In a production build (like on Vercel), it will be undefined in the browser.
-const isAiStudio = !!process.env.API_KEY;
-
-// --- START: Duplicated Constants ---
-// These are used in the prompt construction for the AI Studio path.
-const SYNTHETIC_STRATEGIES = [
-  "Volatility Squeeze Release", "Mean-Reversion Booster", "Algorithmic Rejection at Round Numbers",
-  "Momentum Ignition & Follow-Through", "False Spike & Immediate Reversion", "Session Open Volatility Shift Scalp"
-];
-
-const FOREX_STRATEGIES = [
-  "Order Block (Institutional Concept)", "Break of Structure (BOS) & Change of Character (CHoCH)",
-  "Inside Bar Breakout", "Fakeout / Stop Hunt", "Supply & Demand Zones", "Breakout/Pullback with Measured Target",
-  "Wyckoff Spring (Terminal Shakeout) & Backup", "Horizontal High Tight Flag Breakout", "Flag/Pennant Breakout (Short-Term Continuation)",
-  "Measured Move (Price Swing Projection)", "Volatility Contraction Pattern (VCP) Breakout"
-];
-// --- END: Duplicated Constants ---
-
 
 // Utility to convert file to base64
 const fileToBase64 = (file: File): Promise<{ data: string; mimeType: string }> => {
@@ -104,8 +84,12 @@ You MUST respond ONLY with a single, valid JSON object matching the schema below
   "sources": "This will be populated by the system if web search is used."
 }`;
 
-// --- Client-side AI Studio Logic ---
-const analyzeChartClientSide = async (chartFiles: { [key: string]: File | null }, riskReward: string, tradingStyle: string): Promise<AnalysisResult> => {
+
+// --- Public API ---
+// These functions are called by the components and use the Gemini API directly on the client-side.
+
+export const analyzeChart = async (chartFiles: { [key: string]: File | null }, riskReward: string, tradingStyle: string): Promise<AnalysisResult> => {
+  try {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
     
     const parts: any[] = [];
@@ -163,9 +147,17 @@ const analyzeChartClientSide = async (chartFiles: { [key: string]: File | null }
         })).filter((source: GroundingSource) => source.uri && source.title);
     }
     return result;
+  } catch (error) {
+    console.error("Error analyzing chart:", error);
+    if (error instanceof Error) {
+        throw new Error(error.message);
+    }
+    throw new Error("An unknown error occurred while analyzing the chart.");
+  }
 };
 
-const createBotClientSide = async ({ description, language }: { description: string; language: BotLanguage; }): Promise<string> => {
+export const createBot = async ({ description, language }: { description: string; language: BotLanguage; }): Promise<string> => {
+  try {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
     const prompt = `You are an expert MQL developer. Your task is to generate the code for a trading bot (Expert Advisor) based on the user's description.
 - Language: ${language}
@@ -178,9 +170,17 @@ After these properties, generate the complete, functional, and well-commented ${
 
     const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
     return response.text;
+  } catch (error) {
+    console.error("Error creating bot:", error);
+    if (error instanceof Error) {
+      throw new Error(error.message);
+    }
+    throw new Error("An unknown error occurred while generating the bot code.");
+  }
 };
 
-const createIndicatorClientSide = async ({ description, language }: { description: string; language: IndicatorLanguage; }): Promise<string> => {
+export const createIndicator = async ({ description, language }: { description: string; language: IndicatorLanguage; }): Promise<string> => {
+  try {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
     let prompt: string;
     if (language === IndicatorLanguage.PINE_SCRIPT) {
@@ -204,104 +204,6 @@ After these properties, generate the complete, functional, and well-commented ${
     }
     const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
     return response.text;
-};
-
-
-// --- Server-side (Vercel) Fetching Logic ---
-const analyzeChartServerSide = async (chartFiles: { [key: string]: File | null }, riskReward: string, tradingStyle: string): Promise<AnalysisResult> => {
-    const filesData: { [key: string]: { data: string; mimeType: string } } = {};
-    const timeframeOrder = ['higher', 'primary', 'entry'];
-
-    for (const tf of timeframeOrder) {
-        const file = chartFiles[tf];
-        if (file) {
-            filesData[tf] = await fileToBase64(file);
-        }
-    }
-
-    const response = await fetch('/api/analyzeChart', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ filesData, riskReward, tradingStyle }),
-    });
-    if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to analyze chart.');
-    }
-    return response.json();
-};
-
-const createBotServerSide = async ({ description, language }: { description: string; language: BotLanguage; }): Promise<string> => {
-    const response = await fetch('/api/createBot', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ description, language }),
-    });
-    if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create bot.');
-    }
-    const result = await response.json();
-    return result.code;
-};
-
-const createIndicatorServerSide = async ({ description, language }: { description: string; language: IndicatorLanguage; }): Promise<string> => {
-    const response = await fetch('/api/createIndicator', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ description, language }),
-    });
-    if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create indicator.');
-    }
-    const result = await response.json();
-    return result.code;
-};
-
-
-// --- Public API ---
-// These functions are called by the components and decide which implementation to use.
-
-export const analyzeChart = async (chartFiles: { [key: string]: File | null }, riskReward: string, tradingStyle: string): Promise<AnalysisResult> => {
-  try {
-    if (isAiStudio) {
-      return await analyzeChartClientSide(chartFiles, riskReward, tradingStyle);
-    } else {
-      return await analyzeChartServerSide(chartFiles, riskReward, tradingStyle);
-    }
-  } catch (error) {
-    console.error("Error analyzing chart:", error);
-    if (error instanceof Error) {
-        throw new Error(error.message);
-    }
-    throw new Error("An unknown error occurred while analyzing the chart.");
-  }
-};
-
-export const createBot = async ({ description, language }: { description: string; language: BotLanguage; }): Promise<string> => {
-  try {
-    if (isAiStudio) {
-      return await createBotClientSide({ description, language });
-    } else {
-      return await createBotServerSide({ description, language });
-    }
-  } catch (error) {
-    console.error("Error creating bot:", error);
-    if (error instanceof Error) {
-      throw new Error(error.message);
-    }
-    throw new Error("An unknown error occurred while generating the bot code.");
-  }
-};
-
-export const createIndicator = async ({ description, language }: { description: string; language: IndicatorLanguage; }): Promise<string> => {
-  try {
-    if (isAiStudio) {
-      return await createIndicatorClientSide({ description, language });
-    } else {
-      return await createIndicatorServerSide({ description, language });
-    }
   } catch (error) {
     console.error("Error creating indicator:", error);
     if (error instanceof Error) {
