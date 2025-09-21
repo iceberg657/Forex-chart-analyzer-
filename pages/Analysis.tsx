@@ -1,6 +1,7 @@
 import React from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { AnalysisResult, GroundingSource } from '../types';
+import ErrorDisplay from '../components/ErrorDisplay';
 
 const SourcesCard: React.FC<{ sources: GroundingSource[] }> = ({ sources }) => {
   if (!sources || sources.length === 0) return null;
@@ -72,9 +73,7 @@ const Analysis: React.FC = () => {
         return (
             <div className="max-w-2xl mx-auto text-center py-10">
                 <h1 className="text-3xl font-bold text-red-600 dark:text-red-500 mb-4">Analysis Failed</h1>
-                <div className="text-center text-red-700 dark:text-red-400 bg-red-500/10 p-6 rounded-lg mb-8">
-                    <p>{error}</p>
-                </div>
+                <ErrorDisplay error={error} />
                 <Link to="/" className="inline-block bg-red-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-red-700 transition-colors">
                     Try Again
                 </Link>

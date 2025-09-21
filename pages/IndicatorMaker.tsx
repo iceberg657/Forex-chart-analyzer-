@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { INDICATOR_LANGUAGES } from '../constants';
 import { IndicatorLanguage } from '../types';
 import { createIndicator } from '../services/geminiService';
@@ -6,6 +6,7 @@ import Spinner from '../components/Spinner';
 import CodeBlock from '../components/CodeBlock';
 import { useAuth } from '../hooks/useAuth';
 import { Link } from 'react-router-dom';
+import ErrorDisplay from '../components/ErrorDisplay';
 
 const IndicatorMaker: React.FC = () => {
   const [language, setLanguage] = useState<IndicatorLanguage>(IndicatorLanguage.PINE_SCRIPT);
@@ -15,10 +16,22 @@ const IndicatorMaker: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const { user, usage, incrementIndicatorUsage } = useAuth();
   
+  const isApiConfigured = !!process.env.API_KEY;
+
+  useEffect(() => {
+    if (!isApiConfigured) {
+      setError('Configuration Error: An API Key is required to generate indicators. Please ensure the API_KEY environment variable is set. The form is disabled.');
+    }
+  }, [isApiConfigured]);
+  
   const limitReached = user?.plan === 'Free' && usage.indicators >= 1;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isApiConfigured) {
+        setError('Configuration Error: Cannot generate indicator without an API Key.');
+        return;
+    }
     if (limitReached) {
         setError('You have reached your limit for the free plan.');
         return;
@@ -60,21 +73,21 @@ const IndicatorMaker: React.FC = () => {
         )}
         <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Language</label>
-            <select value={language} onChange={e => setLanguage(e.target.value as IndicatorLanguage)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-gray-500/10 dark:bg-gray-900/40 border-gray-400/30 dark:border-gray-500/50 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm rounded-md text-gray-900 dark:text-white">
+            <select value={language} onChange={e => setLanguage(e.target.value as IndicatorLanguage)} disabled={!isApiConfigured} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-gray-500/10 dark:bg-gray-900/40 border-gray-400/30 dark:border-gray-500/50 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm rounded-md text-gray-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed">
               {INDICATOR_LANGUAGES.map(lang => <option key={lang} value={lang}>{lang}</option>)}
             </select>
         </div>
         <div>
           <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Describe Indicator Logic</label>
-          <textarea id="description" rows={8} value={description} onChange={e => setDescription(e.target.value)} className="mt-1 block w-full bg-gray-500/10 dark:bg-gray-900/40 border-gray-400/30 dark:border-gray-500/50 focus:ring-green-500 focus:border-green-500 sm:text-sm rounded-md text-gray-900 dark:text-white p-2" placeholder="e.g., 'Create an indicator that plots arrows on the chart. A green up arrow should appear when the 10 EMA crosses above the 20 EMA...'"></textarea>
+          <textarea id="description" rows={8} value={description} onChange={e => setDescription(e.target.value)} disabled={!isApiConfigured} className="mt-1 block w-full bg-gray-500/10 dark:bg-gray-900/40 border-gray-400/30 dark:border-gray-500/50 focus:ring-green-500 focus:border-green-500 sm:text-sm rounded-md text-gray-900 dark:text-white p-2 disabled:opacity-50 disabled:cursor-not-allowed" placeholder="e.g., 'Create an indicator that plots arrows on the chart. A green up arrow should appear when the 10 EMA crosses above the 20 EMA...'"></textarea>
         </div>
-        <button type="submit" disabled={isLoading || limitReached} className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 dark:focus:ring-offset-gray-900 focus:ring-green-500 disabled:bg-gray-400 dark:disabled:bg-gray-500 disabled:cursor-not-allowed">
+        <button type="submit" disabled={isLoading || limitReached || !isApiConfigured} className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 dark:focus:ring-offset-gray-900 focus:ring-green-500 disabled:bg-gray-400 dark:disabled:bg-gray-500 disabled:cursor-not-allowed">
           {isLoading ? 'Generating Code...' : 'Generate Indicator'}
         </button>
       </form>
       
       {isLoading && <div className="mt-8"><Spinner /></div>}
-      {error && <div className="text-center text-red-700 dark:text-red-400 bg-red-500/10 p-4 rounded-lg mt-8">{error}</div>}
+      {error && <ErrorDisplay error={error} />}
       {generatedCode && (
         <div className="mt-8">
           <h2 className="text-2xl font-bold text-center mb-4">Your Generated Indicator Code</h2>

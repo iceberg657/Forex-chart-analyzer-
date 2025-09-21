@@ -1,4 +1,4 @@
-import React, { useState, useCallback, DragEvent } from 'react';
+import React, { useState, useCallback, DragEvent, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { analyzeChart } from '../services/geminiService';
 import { TRADING_STYLES } from '../constants';
@@ -13,24 +13,28 @@ const ChartUploadSlot: React.FC<{
   onFileChange: (file: File, timeframe: string) => void;
   onFileRemove: (timeframe: string) => void;
   isPrimary?: boolean;
-}> = ({ timeframe, title, description, previewUrl, onFileChange, onFileRemove, isPrimary = false }) => {
+  disabled?: boolean;
+}> = ({ timeframe, title, description, previewUrl, onFileChange, onFileRemove, isPrimary = false, disabled = false }) => {
   const [isDragging, setIsDragging] = useState(false);
   const inputId = `file-upload-${timeframe}`;
 
   const handleDrag = (e: DragEvent<HTMLLabelElement>, dragging: boolean) => {
     e.preventDefault();
     e.stopPropagation();
+    if (disabled) return;
     setIsDragging(dragging);
   };
 
   const handleDrop = (e: DragEvent<HTMLLabelElement>) => {
     handleDrag(e, false);
+    if (disabled) return;
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       onFileChange(e.dataTransfer.files[0], timeframe);
     }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (disabled) return;
     if (e.target.files && e.target.files[0]) {
       onFileChange(e.target.files[0], timeframe);
     }
@@ -43,11 +47,12 @@ const ChartUploadSlot: React.FC<{
       </label>
       <div className="relative">
         {previewUrl ? (
-          <div className="relative group">
+          <div className={`relative group ${disabled ? 'opacity-50' : ''}`}>
             <img src={previewUrl} alt={`${title} preview`} className="rounded-md w-full h-48 object-cover border-2 border-white/30 dark:border-white/10" />
             <button
               onClick={() => onFileRemove(timeframe)}
-              className="absolute top-2 right-2 bg-black/50 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+              disabled={disabled}
+              className="absolute top-2 right-2 bg-black/50 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity disabled:cursor-not-allowed"
               aria-label={`Remove ${title} image`}
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
@@ -62,15 +67,15 @@ const ChartUploadSlot: React.FC<{
             onDragLeave={(e) => handleDrag(e, false)}
             onDragOver={(e) => e.preventDefault()}
             onDrop={handleDrop}
-            className={`mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-md cursor-pointer transition-colors ${isDragging ? 'border-red-500 bg-red-500/10' : 'border-gray-400/50 dark:border-gray-500/50 hover:border-red-400/80'}`}
+            className={`mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-md transition-colors ${disabled ? 'opacity-50 cursor-not-allowed bg-gray-500/5' : 'cursor-pointer'} ${isDragging ? 'border-red-500 bg-red-500/10' : 'border-gray-400/50 dark:border-gray-500/50 hover:border-red-400/80'}`}
           >
             <div className="space-y-1 text-center">
               <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true"><path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" /></svg>
               <div className="flex text-sm text-gray-600 dark:text-gray-400">
-                <span className="relative bg-transparent rounded-md font-medium text-red-600 dark:text-red-500 hover:text-red-500">
+                <span className={`relative bg-transparent rounded-md font-medium ${disabled ? '' : 'text-red-600 dark:text-red-500 hover:text-red-500'}`}>
                   Click to upload
                 </span>
-                <input id={inputId} name={inputId} type="file" className="sr-only" accept="image/png, image/jpeg, image/webp" onChange={handleInputChange} />
+                <input id={inputId} name={inputId} type="file" className="sr-only" accept="image/png, image/jpeg, image/webp" onChange={handleInputChange} disabled={disabled} />
                 <p className="pl-1">or drag & drop</p>
               </div>
               <p className="text-xs text-gray-500 dark:text-gray-500">{description}</p>
@@ -95,6 +100,14 @@ const Trader: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
+  const isApiConfigured = !!process.env.API_KEY;
+
+  useEffect(() => {
+    if (!isApiConfigured) {
+      setError('Configuration Error: An API Key is required for analysis. Please ensure the API_KEY environment variable is set. The form is disabled.');
+    }
+  }, [isApiConfigured]);
+
   const handleFileChange = (file: File, timeframe: string) => {
     setChartFiles(prev => ({ ...prev, [timeframe]: file }));
     const reader = new FileReader();
@@ -102,7 +115,9 @@ const Trader: React.FC = () => {
       setPreviewUrls(prev => ({ ...prev, [timeframe]: reader.result as string }));
     };
     reader.readAsDataURL(file);
-    setError(null);
+    if (isApiConfigured) {
+        setError(null);
+    }
   };
 
   const handleFileRemove = (timeframe: string) => {
@@ -111,6 +126,10 @@ const Trader: React.FC = () => {
   };
 
   const handleSubmit = useCallback(async () => {
+    if (!isApiConfigured) {
+      setError('Configuration Error: Cannot analyze chart without an API Key.');
+      return;
+    }
     if (!chartFiles.primary) {
       setError('Please upload at least the Primary Timeframe chart.');
       return;
@@ -128,10 +147,10 @@ const Trader: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [chartFiles, riskReward, tradingStyle, navigate]);
+  }, [chartFiles, riskReward, tradingStyle, navigate, isApiConfigured]);
   
   const riskRewardOptions = ['1:1', '1:2', '1:3', '1:4', '1:5'];
-  const isAnalyzeDisabled = isLoading || !chartFiles.primary;
+  const isAnalyzeDisabled = isLoading || !chartFiles.primary || !isApiConfigured;
 
   return (
     <div>
@@ -150,6 +169,7 @@ const Trader: React.FC = () => {
                 previewUrl={previewUrls.higher}
                 onFileChange={handleFileChange}
                 onFileRemove={handleFileRemove}
+                disabled={!isApiConfigured}
               />
               <ChartUploadSlot
                 timeframe="primary"
@@ -159,6 +179,7 @@ const Trader: React.FC = () => {
                 onFileChange={handleFileChange}
                 onFileRemove={handleFileRemove}
                 isPrimary
+                disabled={!isApiConfigured}
               />
               <ChartUploadSlot
                 timeframe="entry"
@@ -167,6 +188,7 @@ const Trader: React.FC = () => {
                 previewUrl={previewUrls.entry}
                 onFileChange={handleFileChange}
                 onFileRemove={handleFileRemove}
+                disabled={!isApiConfigured}
               />
             </div>
           </div>
@@ -174,13 +196,13 @@ const Trader: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label htmlFor="trading-style" className="block text-sm font-medium text-gray-700 dark:text-gray-300">2. Trading Style</label>
-              <select id="trading-style" value={tradingStyle} onChange={e => setTradingStyle(e.target.value)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-gray-500/10 dark:bg-gray-900/40 border-gray-400/30 dark:border-gray-500/50 focus:ring-red-500/50 focus:border-red-500 sm:text-sm rounded-md text-gray-900 dark:text-white">
+              <select id="trading-style" value={tradingStyle} onChange={e => setTradingStyle(e.target.value)} disabled={!isApiConfigured} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-gray-500/10 dark:bg-gray-900/40 border-gray-400/30 dark:border-gray-500/50 focus:ring-red-500/50 focus:border-red-500 sm:text-sm rounded-md text-gray-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed">
                 {TRADING_STYLES.map(style => <option key={style} value={style}>{style}</option>)}
               </select>
             </div>
             <div>
               <label htmlFor="risk-reward" className="block text-sm font-medium text-gray-700 dark:text-gray-300">3. Risk/Reward Ratio</label>
-              <select id="risk-reward" value={riskReward} onChange={e => setRiskReward(e.target.value)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-gray-500/10 dark:bg-gray-900/40 border-gray-400/30 dark:border-gray-500/50 focus:ring-red-500/50 focus:border-red-500 sm:text-sm rounded-md text-gray-900 dark:text-white">
+              <select id="risk-reward" value={riskReward} onChange={e => setRiskReward(e.target.value)} disabled={!isApiConfigured} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-gray-500/10 dark:bg-gray-900/40 border-gray-400/30 dark:border-gray-500/50 focus:ring-red-500/50 focus:border-red-500 sm:text-sm rounded-md text-gray-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed">
                 {riskRewardOptions.map(option => <option key={option} value={option}>{option}</option>)}
               </select>
             </div>
