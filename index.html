@@ -8,6 +8,12 @@
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/logo.svg">
     <meta name="theme-color" content="#0b1120"/>
+    <script>
+      // Redirect to hash-based URL for PWA compatibility
+      if (window.location.pathname === '/' && window.location.hash === '') {
+        window.location.replace('/#/');
+      }
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script>

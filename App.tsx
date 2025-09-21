@@ -43,6 +43,7 @@ const AppRoutes: React.FC = () => {
         <Route path="/bot-maker" element={<BotMaker />} />
         <Route path="/indicator-maker" element={<IndicatorMaker />} />
         <Route path="/pricing" element={<Pricing />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
   );
 };
