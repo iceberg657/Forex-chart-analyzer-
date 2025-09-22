@@ -1,4 +1,3 @@
-
 import { GoogleGenAI } from "@google/genai";
 import { IndicatorLanguage } from '../types';
 

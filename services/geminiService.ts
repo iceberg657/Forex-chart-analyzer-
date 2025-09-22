@@ -1,18 +1,12 @@
 import { GoogleGenAI } from "@google/genai";
 import { AnalysisResult, BotLanguage, IndicatorLanguage, GroundingSource } from '../types';
 
-// Helper function to get the AI client, performs JIT check for API key
-const getAiClient = () => {
-  const apiKey = process.env.API_KEY;
-  if (!apiKey) {
-    // This error will be caught by the calling function's try/catch block
-    throw new Error("API Key not configured. Please set the API_KEY environment variable.");
-  }
-  return new GoogleGenAI({ apiKey });
-};
+// This flag checks for a client-side API key, which is present in environments like AI Studio.
+const isDirectApiAvailable = !!process.env.API_KEY;
+const ai = isDirectApiAvailable ? new GoogleGenAI({ apiKey: process.env.API_KEY! }) : null;
 
+// --- UTILITIES ---
 
-// Utility to convert file to base64
 const fileToBase64 = (file: File): Promise<{ data: string; mimeType: string }> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -29,6 +23,16 @@ const fileToBase64 = (file: File): Promise<{ data: string; mimeType: string }> =
     reader.onerror = error => reject(error);
   });
 };
+
+const handleApiResponse = async (response: Response) => {
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'An unknown error occurred.', details: response.statusText }));
+        throw new Error(errorData.details || errorData.error || 'API request failed');
+    }
+    return response;
+};
+
+// --- PROMPT GENERATION LOGIC (mirrors backend) ---
 
 const getAnalysisPrompt = (tradingStyle: string, riskReward: string) => `You are a 'Senior Institutional Quantitative Analyst AI', a sophisticated and objective trading analyst operating at the highest level of financial markets. Your analysis is data-driven, unemotional, and meticulously detailed. You provide institutional-grade trade setups, focusing on probability and risk management. Your tone is professional, precise, and authoritative.
 
@@ -93,85 +97,7 @@ You MUST respond ONLY with a single, valid JSON object matching the schema below
   "sources": "This will be populated by the system if web search is used."
 }`;
 
-
-// --- Public API ---
-export const analyzeChart = async (chartFiles: { [key: string]: File | null }, riskReward: string, tradingStyle: string): Promise<AnalysisResult> => {
-  try {
-    const ai = getAiClient();
-    const parts: any[] = [];
-    parts.push({ text: getAnalysisPrompt(tradingStyle, riskReward) });
-    
-    const timeframeOrder = ['higher', 'primary', 'entry'];
-    for (const tf of timeframeOrder) {
-      const file = chartFiles[tf];
-      if (file) {
-        const { data, mimeType } = await fileToBase64(file);
-        let label = '';
-        if (tf === 'higher') label = "\n\n--- HIGHER TIMEFRAME CHART ---";
-        if (tf === 'primary') label = "\n\n--- PRIMARY TIMEFRAME CHART ---";
-        if (tf === 'entry') label = "\n\n--- ENTRY TIMEFRAME CHART ---";
-
-        parts.push({ text: label });
-        parts.push({ inlineData: { data, mimeType } });
-      }
-    }
-    
-    console.log("Sending analysis request to Gemini...");
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: { parts: parts },
-      config: {
-        tools: [{ googleSearch: {} }],
-        seed: 42,
-      }
-    });
-    console.log("Received response from Gemini.");
-    
-    let jsonString = response.text.trim();
-    console.log("Raw AI Response:", jsonString);
-
-    const match = jsonString.match(/```(json)?\s*(\{[\s\S]*\})\s*```/);
-    if (match && match[2]) {
-      jsonString = match[2];
-    } else {
-      const jsonStart = jsonString.indexOf('{');
-      const jsonEnd = jsonString.lastIndexOf('}');
-      if (jsonStart !== -1 && jsonEnd > jsonStart) {
-        jsonString = jsonString.substring(jsonStart, jsonEnd + 1);
-      }
-    }
-
-    let result: AnalysisResult;
-    try {
-      result = JSON.parse(jsonString);
-    } catch (parseError) {
-      console.error("Failed to parse JSON from AI response:", jsonString);
-      throw new Error("Failed to analyze chart. The AI returned an invalid format.");
-    }
-
-    const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
-    if (groundingChunks) {
-      result.sources = groundingChunks.map((chunk: any) => ({
-        uri: chunk.web.uri,
-        title: chunk.web.title,
-      })).filter((source: GroundingSource) => source.uri && source.title);
-    }
-
-    return result;
-
-  } catch (error) {
-    console.error("Error analyzing chart:", error);
-    if (error instanceof Error) {
-        throw new Error(error.message);
-    }
-    throw new Error("An unknown error occurred while analyzing the chart.");
-  }
-};
-
-export const createBot = async ({ description, language }: { description: string; language: BotLanguage; }): Promise<string> => {
-  try {
-    const ai = getAiClient();
-    const prompt = `You are an expert MQL developer. Your task is to generate the code for a trading bot (Expert Advisor) based on the user's description.
+const getBotPrompt = (description: string, language: BotLanguage) => `You are an expert MQL developer. Your task is to generate the code for a trading bot (Expert Advisor) based on the user's description.
 - Language: ${language}
 - User Description of desired behavior: "${description}"
 IMPORTANT: At the very top of the generated code, you MUST include the following MQL properties:
@@ -180,27 +106,9 @@ IMPORTANT: At the very top of the generated code, you MUST include the following
 #property description "Also visit Quant Systems Trading: https://quant-systems-trading.netlify.app"
 After these properties, generate the complete, functional, and well-commented ${language} code. The code must be ready to be compiled in MetaEditor. Respond with ONLY the raw code, without any surrounding text, explanations, or markdown code blocks.`;
 
-    console.log("Sending bot creation request to Gemini...");
-    const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
-    console.log("Received bot code from Gemini.");
-    
-    return response.text;
-
-  } catch (error) {
-    console.error("Error creating bot:", error);
-    if (error instanceof Error) {
-      throw new Error(error.message);
-    }
-    throw new Error("An unknown error occurred while generating the bot code.");
-  }
-};
-
-export const createIndicator = async ({ description, language }: { description: string; language: IndicatorLanguage; }): Promise<string> => {
-    try {
-      const ai = getAiClient();
-      let prompt: string;
-      if (language === IndicatorLanguage.PINE_SCRIPT) {
-          prompt = `You are an expert Pine Script developer. Your task is to generate the code for a trading indicator based on the user's description.
+const getIndicatorPrompt = (description: string, language: IndicatorLanguage) => {
+    if (language === IndicatorLanguage.PINE_SCRIPT) {
+        return `You are an expert Pine Script developer. Your task is to generate the code for a trading indicator based on the user's description.
 - Language: Pine Script
 - User Description of desired behavior: "${description}"
 IMPORTANT: At the very top of the generated code, you MUST include the following header comment:
@@ -208,8 +116,9 @@ IMPORTANT: At the very top of the generated code, you MUST include the following
 // Grey Algo Trading: https://greyalgo-trading.netlify.app
 // Quant Systems Trading: https://quant-systems-trading.netlify.app
 After this header, generate the complete, functional, and well-commented Pine Script code, starting with the required \`//@version=5\` declaration. The code must be ready to be used directly in TradingView. Respond with ONLY the raw code, without any surrounding text, explanations, or markdown code blocks.`;
-      } else { // MQL4 or MQL5
-          prompt = `You are an expert MQL developer. Your task is to generate the code for a trading indicator based on the user's description.
+    }
+    // MQL4 or MQL5
+    return `You are an expert MQL developer. Your task is to generate the code for a trading indicator based on the user's description.
 - Language: ${language}
 - User Description of desired behavior: "${description}"
 IMPORTANT: At the very top of the generated code, you MUST include the following MQL properties:
@@ -217,19 +126,120 @@ IMPORTANT: At the very top of the generated code, you MUST include the following
 #property link      "https://greyalgo-trading.netlify.app"
 #property description "Also visit Quant Systems Trading: https://quant-systems-trading.netlify.app"
 After these properties, generate the complete, functional, and well-commented ${language} code. The code must be ready to be compiled in MetaEditor. Respond with ONLY the raw code, without any surrounding text, explanations, or markdown code blocks.`;
-      }
-      
-      console.log("Sending indicator creation request to Gemini...");
-      const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
-      console.log("Received indicator code from Gemini.");
+};
+
+
+// --- API FUNCTIONS ---
+
+export const analyzeChart = async (chartFiles: { [key: string]: File | null }, riskReward: string, tradingStyle: string): Promise<AnalysisResult> => {
+  try {
+    const chartFilesBase64: { [key: string]: { data: string; mimeType: string } } = {};
+    const timeframeOrder = ['higher', 'primary', 'entry'];
+    for (const tf of timeframeOrder) {
+        const file = chartFiles[tf];
+        if (file) {
+            chartFilesBase64[tf] = await fileToBase64(file);
+        }
+    }
+
+    // AI Studio / Direct API path
+    if (isDirectApiAvailable && ai) {
+        console.log("Sending analysis request directly to Gemini API...");
+        const parts: any[] = [];
+        parts.push({ text: getAnalysisPrompt(tradingStyle, riskReward) });
+
+        for (const tf of timeframeOrder) {
+            const file = chartFilesBase64[tf];
+            if (file && file.data && file.mimeType) {
+                let label = '';
+                if (tf === 'higher') label = "\n\n--- HIGHER TIMEFRAME CHART ---";
+                if (tf === 'primary') label = "\n\n--- PRIMARY TIMEFRAME CHART ---";
+                if (tf === 'entry') label = "\n\n--- ENTRY TIMEFRAME CHART ---";
+                parts.push({ text: label });
+                parts.push({ inlineData: { data: file.data, mimeType: file.mimeType } });
+            }
+        }
         
-      return response.text;
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: { parts },
+            config: { tools: [{ googleSearch: {} }], seed: 42 }
+        });
+
+        let jsonString = response.text.trim().replace(/^```(json)?|```$/g, '');
+        let result: AnalysisResult = JSON.parse(jsonString);
+        
+        const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
+        if (groundingChunks) {
+            result.sources = groundingChunks.map((chunk: any) => ({
+                uri: chunk.web.uri,
+                title: chunk.web.title,
+            })).filter((source: GroundingSource) => source.uri && source.title);
+        }
+        return result;
+    }
+
+    // Deployed Website / PWA path
+    console.log("Sending analysis request to backend API...");
+    const response = await fetch('/api/analyzeChart', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chartFiles: chartFilesBase64, riskReward, tradingStyle }),
+    });
+    
+    const handledResponse = await handleApiResponse(response);
+    return await handledResponse.json();
+
+  } catch (error) {
+    console.error("Error analyzing chart:", error);
+    throw new Error(error instanceof Error ? error.message : "An unknown error occurred while analyzing the chart.");
+  }
+};
+
+export const createBot = async ({ description, language }: { description: string; language: BotLanguage; }): Promise<string> => {
+  try {
+    if (isDirectApiAvailable && ai) {
+        console.log("Sending bot creation request directly to Gemini API...");
+        const prompt = getBotPrompt(description, language);
+        const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
+        return response.text;
+    }
+    
+    console.log("Sending bot creation request to backend API...");
+    const response = await fetch('/api/createBot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ description, language }),
+    });
+    const handledResponse = await handleApiResponse(response);
+    return await handledResponse.text();
+
+  } catch (error) {
+    console.error("Error creating bot:", error);
+    throw new Error(error instanceof Error ? error.message : "An unknown error occurred while generating the bot code.");
+  }
+};
+
+export const createIndicator = async ({ description, language }: { description: string; language: IndicatorLanguage; }): Promise<string> => {
+    try {
+        if (isDirectApiAvailable && ai) {
+            console.log("Sending indicator creation request directly to Gemini API...");
+            const prompt = getIndicatorPrompt(description, language);
+            const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
+            return response.text;
+        }
+
+      console.log("Sending indicator creation request to backend API...");
+      const response = await fetch('/api/createIndicator', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ description, language }),
+      });
+      const handledResponse = await handleApiResponse(response);
+      return await handledResponse.text();
         
     } catch (error) {
-    console.error("Error creating indicator:", error);
-    if (error instanceof Error) {
-      throw new Error(error.message);
-    }
-    throw new Error("An unknown error occurred while generating the indicator code.");
+        console.error("Error creating indicator:", error);
+        throw new Error(error instanceof Error ? error.message : "An unknown error occurred while generating the indicator code.");
   }
 };
