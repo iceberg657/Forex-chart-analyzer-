@@ -129,6 +129,7 @@ const Trader: React.FC = () => {
       const analysisResult = await analyzeChart(chartFiles, riskReward, tradingStyle);
       navigate('/analysis', { state: { result: analysisResult } });
     } catch (err) {
+      console.error("Analysis submission failed:", err);
       const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.';
       navigate('/analysis', { state: { error: errorMessage } });
     } finally {
