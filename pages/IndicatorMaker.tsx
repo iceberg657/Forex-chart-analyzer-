@@ -1,4 +1,5 @@
 
+
 import React, { useState } from 'react';
 import { INDICATOR_LANGUAGES } from '../constants';
 import { IndicatorLanguage } from '../types';
@@ -48,7 +49,7 @@ const IndicatorMaker: React.FC = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div>
       <div className="text-center mb-8">
         <h1 className="text-4xl font-bold text-gray-900 dark:text-white">AI Indicator Maker</h1>
         <p className="text-gray-600 dark:text-gray-400 mt-2">Generate a custom trading indicator for MT4, MT5, or TradingView.</p>

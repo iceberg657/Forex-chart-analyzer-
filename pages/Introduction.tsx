@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 
 const Introduction: React.FC = () => {
   return (
-    <div className="max-w-4xl mx-auto text-center">
+    <div className="text-center">
       <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">Welcome to the AI Coders Hub</h1>
       <p className="text-lg text-gray-600 dark:text-gray-300 mb-8">
         Harness the power of Gemini AI to build your custom trading tools. Whether you need a fully automated trading bot (Expert Advisor) or a sophisticated indicator, our AI can write the code for you in minutes.

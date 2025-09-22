@@ -1,4 +1,5 @@
 
+
 import React, { useState, useCallback, DragEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { analyzeChart } from '../services/geminiService';
@@ -144,7 +145,7 @@ const Trader: React.FC = () => {
     <div>
       {isLoading && <CandleStickLoader />}
       <Dashboard />
-      <div className="max-w-3xl mx-auto mt-12">
+      <div className="mt-12">
         <div className="bg-white/20 dark:bg-black/20 backdrop-blur-xl border border-white/30 dark:border-white/10 rounded-2xl shadow-lg p-6 space-y-6">
           <div>
             <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-1">1. Upload Charts for Top-Down Analysis</h2>
