@@ -29,6 +29,8 @@ const App: React.FC = () => {
 const AppContent: React.FC = () => {
   return (
     <div className="relative isolate flex flex-col min-h-screen text-gray-800 dark:text-gray-200 font-sans">
+      <div className="floating-element"></div>
+      <div className="floating-element"></div>
       <Header />
       <main className="flex-grow container mx-auto px-4 py-8">
         <AppRoutes />
