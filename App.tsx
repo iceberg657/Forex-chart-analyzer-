@@ -1,5 +1,3 @@
-
-
 import React from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Header from './components/Header';
@@ -14,6 +12,7 @@ import SignUp from './pages/SignUp';
 import Analysis from './pages/Analysis';
 import { AuthProvider, useAuth } from './hooks/useAuth';
 import { ThemeProvider } from './hooks/useTheme';
+import ResponsiveFix from './components/ResponsiveFix';
 
 const App: React.FC = () => {
   return (
@@ -29,15 +28,17 @@ const App: React.FC = () => {
 
 const AppContent: React.FC = () => {
   return (
-    <div className="relative isolate flex flex-col min-h-screen text-gray-800 dark:text-gray-200 font-sans">
-      <div className="floating-element"></div>
-      <div className="floating-element"></div>
-      <Header />
-      <main className="flex-grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <AppRoutes />
-      </main>
-      <Footer />
-    </div>
+    <ResponsiveFix>
+      <div className="relative isolate flex flex-col min-h-screen text-gray-800 dark:text-gray-200 font-sans">
+        <div className="floating-element"></div>
+        <div className="floating-element"></div>
+        <Header />
+        <main className="flex-grow w-full py-8">
+          <AppRoutes />
+        </main>
+        <Footer />
+      </div>
+    </ResponsiveFix>
   );
 };
 
