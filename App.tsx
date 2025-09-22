@@ -29,7 +29,7 @@ const App: React.FC = () => {
 const AppContent: React.FC = () => {
   return (
     <ResponsiveFix>
-      <div className="relative isolate flex flex-col min-h-screen text-gray-800 dark:text-gray-200 font-sans">
+      <div className="relative isolate flex flex-col min-h-screen text-gray-800 dark:text-gray-200 font-sans overflow-x-hidden">
         <div className="floating-element"></div>
         <div className="floating-element"></div>
         <Header />
