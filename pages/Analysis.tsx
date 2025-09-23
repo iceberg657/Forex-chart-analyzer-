@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { AnalysisResult, GroundingSource } from '../types';
 import ErrorDisplay from '../components/ErrorDisplay';
+import { useEdgeLighting } from '../hooks/useEdgeLighting';
+
 
 const SourcesCard: React.FC<{ sources: GroundingSource[] }> = ({ sources }) => {
   if (!sources || sources.length === 0) return null;
@@ -32,24 +34,27 @@ const SignalCard: React.FC<{ signal: 'BUY' | 'SELL' | 'NEUTRAL'; confidence: num
             bgColor: 'bg-green-500/10 dark:bg-green-500/20',
             textColor: 'text-green-800 dark:text-green-200',
             borderColor: 'border-green-500',
+            glowClasses: 'shadow-2xl shadow-green-500/60 dark:shadow-green-400/50',
         },
         SELL: {
             text: 'Strong Sell Signal',
             bgColor: 'bg-red-500/10 dark:bg-red-500/20',
             textColor: 'text-red-800 dark:text-red-200',
             borderColor: 'border-red-500',
+            glowClasses: 'shadow-2xl shadow-red-500/60 dark:shadow-red-400/50',
         },
         NEUTRAL: {
             text: 'Neutral / Awaiting Breakout',
             bgColor: 'bg-gray-500/10 dark:bg-gray-500/20',
             textColor: 'text-gray-800 dark:text-gray-200',
             borderColor: 'border-gray-500',
+            glowClasses: 'shadow-lg',
         }
     }
-    const { text, bgColor, textColor, borderColor } = signalInfo[signal];
+    const { text, bgColor, textColor, borderColor, glowClasses } = signalInfo[signal];
 
     return (
-        <div className={`p-6 rounded-xl border ${borderColor} ${bgColor} shadow-md`}>
+        <div className={`p-6 rounded-xl border ${borderColor} ${bgColor} ${glowClasses} transition-all duration-300`}>
             <div className="flex justify-between items-center">
                 <div>
                     <p className={`text-sm font-medium ${textColor}`}>Signal</p>
@@ -68,6 +73,26 @@ const Analysis: React.FC = () => {
     const location = useLocation();
     const result: AnalysisResult | null = location.state?.result;
     const error: string | null = location.state?.error;
+    const { setEdgeLight } = useEdgeLighting();
+
+    useEffect(() => {
+        if (result) {
+            if (result.signal === 'BUY') {
+                setEdgeLight('green');
+            } else if (result.signal === 'SELL') {
+                setEdgeLight('red');
+            } else {
+                setEdgeLight('default');
+            }
+        } else {
+            setEdgeLight('default');
+        }
+
+        // Cleanup function to reset on unmount
+        return () => {
+            setEdgeLight('default');
+        };
+    }, [result, setEdgeLight]);
 
     if (error) {
         return (
@@ -106,8 +131,14 @@ const Analysis: React.FC = () => {
                     <SignalCard signal={result.signal} confidence={result.confidence} />
                     <div className="mt-6 space-y-4">
                         <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div className="bg-black/5 dark:bg-white/5 p-3 rounded-lg"><span className="font-semibold text-gray-600 dark:text-gray-400">Asset:</span> <span className="font-mono">{result.asset}</span></div>
-                          <div className="bg-black/5 dark:bg-white/5 p-3 rounded-lg"><span className="font-semibold text-gray-600 dark:text-gray-400">Timeframe:</span> <span className="font-mono">{result.timeframe}</span></div>
+                          <div className="bg-black/5 dark:bg-white/5 p-3 rounded-lg flex items-baseline justify-between">
+                            <span className="font-semibold text-gray-600 dark:text-gray-400">Asset:</span> 
+                            <span className="font-mono font-bold text-lg animated-gradient-text">{result.asset}</span>
+                          </div>
+                          <div className="bg-black/5 dark:bg-white/5 p-3 rounded-lg flex items-baseline justify-between">
+                            <span className="font-semibold text-gray-600 dark:text-gray-400">Timeframe:</span> 
+                            <span className="font-mono text-lg">{result.timeframe}</span>
+                          </div>
                         </div>
 
                         {result.signal !== 'NEUTRAL' ? (

@@ -12,15 +12,18 @@ import SignUp from './pages/SignUp';
 import Analysis from './pages/Analysis';
 import { AuthProvider, useAuth } from './hooks/useAuth';
 import { ThemeProvider } from './hooks/useTheme';
+import { EdgeLightingProvider } from './hooks/useEdgeLighting';
 import ResponsiveFix from './components/ResponsiveFix';
 
 const App: React.FC = () => {
   return (
     <AuthProvider>
       <ThemeProvider>
-        <HashRouter>
-          <AppContent />
-        </HashRouter>
+        <EdgeLightingProvider>
+          <HashRouter>
+            <AppContent />
+          </HashRouter>
+        </EdgeLightingProvider>
       </ThemeProvider>
     </AuthProvider>
   );

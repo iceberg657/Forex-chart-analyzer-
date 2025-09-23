@@ -99,6 +99,7 @@
         pointer-events: none;
         z-index: 9999;
         box-shadow: inset 0 0 10px 2px var(--glow-color-1), inset 0 0 25px 8px var(--glow-color-2);
+        transition: box-shadow 0.7s ease-in-out;
     }
 
     .dark {
@@ -112,6 +113,23 @@
 
     .dark body {
         background: linear-gradient(135deg, #0b1120 0%, #1e1b4b 100%);
+    }
+    
+    body.edge-light-green {
+      --glow-color-1: rgba(74, 222, 128, 0.5);
+      --glow-color-2: rgba(34, 197, 94, 0.4);
+    }
+    body.edge-light-red {
+      --glow-color-1: rgba(239, 68, 68, 0.5);
+      --glow-color-2: rgba(220, 38, 38, 0.4);
+    }
+    .dark body.edge-light-green {
+        --glow-color-1: rgba(74, 222, 128, 0.4);
+        --glow-color-2: rgba(34, 197, 94, 0.3);
+    }
+    .dark body.edge-light-red {
+        --glow-color-1: rgba(248, 113, 113, 0.4);
+        --glow-color-2: rgba(220, 38, 38, 0.3);
     }
 
     .floating-element {
