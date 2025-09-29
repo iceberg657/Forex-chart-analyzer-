@@ -69,6 +69,55 @@ const SignalCard: React.FC<{ signal: 'BUY' | 'SELL' | 'NEUTRAL'; confidence: num
     )
 }
 
+const SetupQualityCard: React.FC<{ quality: string }> = ({ quality }) => {
+    // FIX: Changed JSX.Element to React.ReactElement to resolve "Cannot find namespace 'JSX'" error.
+    const qualityInfo: { [key: string]: { text: string; bgColor: string; textColor: string; borderColor: string; icon: React.ReactElement } } = {
+        'A+ Setup': {
+            text: 'A+ Setup',
+            bgColor: 'bg-teal-500/10 dark:bg-teal-400/20',
+            textColor: 'text-teal-800 dark:text-teal-200',
+            borderColor: 'border-teal-500/80',
+            icon: <i className="fas fa-rocket text-teal-500"></i>,
+        },
+        'A Setup': {
+            text: 'A Setup',
+            bgColor: 'bg-sky-500/10 dark:bg-sky-400/20',
+            textColor: 'text-sky-800 dark:text-sky-200',
+            borderColor: 'border-sky-500/80',
+            icon: <i className="fas fa-thumbs-up text-sky-500"></i>,
+        },
+        'B Setup': {
+            text: 'B Setup',
+            bgColor: 'bg-yellow-500/10 dark:bg-yellow-400/20',
+            textColor: 'text-yellow-800 dark:text-yellow-200',
+            borderColor: 'border-yellow-500/80',
+            icon: <i className="fas fa-check-circle text-yellow-500"></i>,
+        },
+        'C Setup': {
+            text: 'C Setup',
+            bgColor: 'bg-orange-500/10 dark:bg-orange-400/20',
+            textColor: 'text-orange-800 dark:text-orange-200',
+            borderColor: 'border-orange-500/80',
+            icon: <i className="fas fa-exclamation-triangle text-orange-500"></i>,
+        }
+    };
+
+    const info = qualityInfo[quality] || qualityInfo['C Setup'];
+
+    return (
+        <div className={`p-3 rounded-lg border ${info.borderColor} ${info.bgColor}`}>
+            <div className="flex items-center justify-center space-x-3 text-center">
+                <span className="text-2xl">{info.icon}</span>
+                <div>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Setup Quality</p>
+                    <p className={`text-xl font-bold ${info.textColor}`}>{info.text}</p>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+
 const Analysis: React.FC = () => {
     const location = useLocation();
     const result: AnalysisResult | null = location.state?.result;
@@ -130,7 +179,7 @@ const Analysis: React.FC = () => {
                 <div className="w-full animate-fade-in">
                     <SignalCard signal={result.signal} confidence={result.confidence} />
                     <div className="mt-6 space-y-4">
-                        <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                           <div className="bg-black/5 dark:bg-white/5 p-3 rounded-lg flex items-baseline justify-between">
                             <span className="font-semibold text-gray-600 dark:text-gray-400">Asset:</span> 
                             <span className="font-mono font-bold text-lg animated-gradient-text">{result.asset}</span>
@@ -140,6 +189,10 @@ const Analysis: React.FC = () => {
                             <span className="font-mono text-lg">{result.timeframe}</span>
                           </div>
                         </div>
+
+                         {result.setupQuality && result.signal !== 'NEUTRAL' && (
+                            <SetupQualityCard quality={result.setupQuality} />
+                        )}
 
                         {result.signal !== 'NEUTRAL' ? (
                           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm text-center">

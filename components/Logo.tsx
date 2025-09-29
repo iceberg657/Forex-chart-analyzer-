@@ -1,9 +1,13 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
 
 const Logo: React.FC = () => {
+  const { user } = useAuth();
+  const homePath = user.isGuest ? "/" : "/dashboard";
+
   return (
-    <NavLink to="/" className="flex items-center space-x-2" end>
+    <NavLink to={homePath} className="flex items-center space-x-2" end>
       <svg
         width="36"
         height="36"

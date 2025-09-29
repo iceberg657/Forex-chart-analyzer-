@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, ReactNode, useCallback } from 'react';
+import React, { createContext, useState, useContext, useEffect, ReactNode, useCallback } from 'react';
 
 interface User {
   email?: string;
@@ -22,8 +22,33 @@ const MAX_FREE_BOTS = 1;
 const MAX_FREE_INDICATORS = 1;
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User>({ plan: 'Free', isGuest: true });
+  const [user, setUser] = useState<User>(() => {
+    try {
+      const storedUser = localStorage.getItem('authUser');
+      if (storedUser) {
+        return JSON.parse(storedUser);
+      }
+    } catch (error) {
+      console.error("Could not parse auth user from localStorage", error);
+      localStorage.removeItem('authUser');
+    }
+    return { plan: 'Free', isGuest: true };
+  });
+
   const [usage, setUsage] = useState({ bots: 0, indicators: 0 });
+
+  useEffect(() => {
+    try {
+      if (!user.isGuest) {
+        localStorage.setItem('authUser', JSON.stringify(user));
+      } else {
+        localStorage.removeItem('authUser');
+      }
+    } catch (error) {
+      console.error("Could not save auth user to localStorage", error);
+    }
+  }, [user]);
+
 
   const login = (email: string) => {
     setUser({ email, plan: 'Free', isGuest: false });

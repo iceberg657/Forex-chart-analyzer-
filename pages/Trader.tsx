@@ -1,10 +1,7 @@
-
-
 import React, { useState, useCallback, DragEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { analyzeChart } from '../services/geminiService';
 import { TRADING_STYLES } from '../constants';
-import Dashboard from '../components/Dashboard';
 import CandleStickLoader from '../components/CandleStickLoader';
 
 const ChartUploadSlot: React.FC<{
@@ -144,7 +141,14 @@ const Trader: React.FC = () => {
   return (
     <div>
       {isLoading && <CandleStickLoader />}
-      <Dashboard />
+      <div className="text-center">
+        <h1 className="text-4xl lg:text-5xl font-bold mb-4">
+            <span className="text-gray-900 dark:text-white">Dashboard</span>
+        </h1>
+        <p className="text-lg max-w-3xl mx-auto text-gray-600 dark:text-slate-400">
+            Welcome! Upload your chart(s) below to receive an institutional-grade trade setup from our AI analyst.
+        </p>
+      </div>
       <div className="mt-12">
         <div className="bg-white/20 dark:bg-black/20 backdrop-blur-xl border border-white/30 dark:border-white/10 rounded-2xl shadow-lg p-6 space-y-6">
           <div>

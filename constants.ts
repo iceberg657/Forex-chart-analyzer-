@@ -1,12 +1,16 @@
 import { BotLanguage, IndicatorLanguage, PricingPlan } from './types';
 
 export const SYNTHETIC_STRATEGIES = [
-  "Volatility Squeeze Release",
-  "Mean-Reversion Booster",
+  "Boom/Crash Spike Hunting (Counter-Trend Scalp)",
+  "Boom/Crash Trend Following (Main Trend)",
+  "Volatility Index Range Breakout",
+  "Volatility Index Support/Resistance Flip",
+  "Step Index Trend Riding",
   "Algorithmic Rejection at Round Numbers",
   "Momentum Ignition & Follow-Through",
   "False Spike & Immediate Reversion",
-  "Session Open Volatility Shift Scalp"
+  "Volatility Squeeze Release",
+  "Mean-Reversion Booster",
 ];
 
 export const FOREX_STRATEGIES = [

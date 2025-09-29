@@ -16,6 +16,10 @@ const Header: React.FC = () => {
   const activeClassName = "bg-red-600 text-white hover:bg-red-600 dark:hover:bg-red-600";
   
   const getNavLinkClass = ({ isActive }: { isActive: boolean }) => `${navLinkClassName} ${isActive ? activeClassName : ''}`;
+  
+  const homePath = user.isGuest ? "/" : "/dashboard";
+  const dashboardText = user.isGuest ? "Home" : "Dashboard";
+
 
   return (
     <header className="bg-white/50 dark:bg-gray-900/50 backdrop-blur-lg shadow-md sticky top-0 z-50 border-b border-white/20 dark:border-white/10">
@@ -25,7 +29,10 @@ const Header: React.FC = () => {
         </div>
         <div className="hidden md:block">
           <div className="ml-10 flex items-center space-x-4">
-            <NavLink to="/" className={getNavLinkClass} end>Chart Analysis</NavLink>
+            <NavLink to={homePath} className={getNavLinkClass} end>{dashboardText}</NavLink>
+            <NavLink to="/market-news" className={getNavLinkClass}>Market News</NavLink>
+            <NavLink to="/journal" className={getNavLinkClass}>Journal</NavLink>
+            <NavLink to="/apex-ai" className={getNavLinkClass}>Apex AI</NavLink>
             <NavLink to="/introduction" className={getNavLinkClass}>AI Coders</NavLink>
             <NavLink to="/pricing" className={getNavLinkClass}>Pricing</NavLink>
             {user.isGuest ? (
@@ -59,7 +66,10 @@ const Header: React.FC = () => {
       {isOpen && (
         <div className="md:hidden">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-              <NavLink to="/" className="block px-3 py-2 rounded-md text-base font-medium text-gray-600 dark:text-gray-300 hover:bg-black/10 dark:hover:bg-white/10">Chart Analysis</NavLink>
+              <NavLink to={homePath} className="block px-3 py-2 rounded-md text-base font-medium text-gray-600 dark:text-gray-300 hover:bg-black/10 dark:hover:bg-white/10">{dashboardText}</NavLink>
+              <NavLink to="/market-news" className="block px-3 py-2 rounded-md text-base font-medium text-gray-600 dark:text-gray-300 hover:bg-black/10 dark:hover:bg-white/10">Market News</NavLink>
+              <NavLink to="/journal" className="block px-3 py-2 rounded-md text-base font-medium text-gray-600 dark:text-gray-300 hover:bg-black/10 dark:hover:bg-white/10">Journal</NavLink>
+              <NavLink to="/apex-ai" className="block px-3 py-2 rounded-md text-base font-medium text-gray-600 dark:text-gray-300 hover:bg-black/10 dark:hover:bg-white/10">Apex AI</NavLink>
               <NavLink to="/introduction" className="block px-3 py-2 rounded-md text-base font-medium text-gray-600 dark:text-gray-300 hover:bg-black/10 dark:hover:bg-white/10">AI Coders</NavLink>
               <NavLink to="/pricing" className="block px-3 py-2 rounded-md text-base font-medium text-gray-600 dark:text-gray-300 hover:bg-black/10 dark:hover:bg-white/10">Pricing</NavLink>
               {user.isGuest ? (
