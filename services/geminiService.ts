@@ -1,12 +1,11 @@
 
 
-
-import { GoogleGenAI, Type, Tool } from "@google/genai";
+import { GoogleGenAI, Type, Tool, GenerateContentResponse, Part } from "@google/genai";
 import { AnalysisResult, BotLanguage, IndicatorLanguage, GroundingSource, MarketSentimentResult, TradeEntry, JournalFeedback } from '../types';
 
-// This flag checks for a client-side API key, which is present in environments like AI Studio.
-const isDirectApiAvailable = !!process.env.API_KEY;
-const ai = isDirectApiAvailable ? new GoogleGenAI({ apiKey: process.env.API_KEY! }) : null;
+// Per instructions, assume API_KEY is available in the execution environment.
+// The 'ai' instance is initialized directly.
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
 
 // --- AI AGENT TOOLS ---
 
@@ -81,14 +80,6 @@ const fileToBase64 = (file: File): Promise<{ data: string; mimeType: string }> =
     };
     reader.onerror = error => reject(error);
   });
-};
-
-const handleApiResponse = async (response: Response) => {
-    if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'An unknown error occurred.', details: response.statusText }));
-        throw new Error(errorData.details || errorData.error || 'API request failed');
-    }
-    return response;
 };
 
 const robustJsonParse = (jsonString: string) => {
@@ -290,9 +281,8 @@ IMPORTANT: At the very top of the generated code, you MUST include the following
 // Grey Algo Trading: https://greyalgo-trading.netlify.app
 // Quant Systems Trading: https://quant-systems-trading.netlify.app
 After this header, generate the complete, functional, and well-commented Pine Script code, starting with the required \`//@version=5\` declaration. The code must be ready to be used directly in TradingView. Respond with ONLY the raw code, without any surrounding text, explanations, or markdown code blocks.`;
-    }
-    // MQL4 or MQL5
-    return `You are an expert MQL developer. Your task is to generate the code for a trading indicator based on the user's description.
+    } else { // MQL4 or MQL5
+        return `You are an expert MQL developer. Your task is to generate the code for a trading indicator based on the user's description.
 - Language: ${language}
 - User Description of desired behavior: "${description}"
 IMPORTANT: At the very top of the generated code, you MUST include the following MQL properties:
@@ -300,211 +290,121 @@ IMPORTANT: At the very top of the generated code, you MUST include the following
 #property link      "https://greyalgo-trading.netlify.app"
 #property description "Also visit Quant Systems Trading: https://quant-systems-trading.netlify.app"
 After these properties, generate the complete, functional, and well-commented ${language} code. The code must be ready to be compiled in MetaEditor. Respond with ONLY the raw code, without any surrounding text, explanations, or markdown code blocks.`;
-};
-
-
-// --- API FUNCTIONS ---
-export const processCommandWithAgent = async (command: string) => {
-     if (!isDirectApiAvailable || !ai) {
-        throw new Error("Direct API access is not available.");
-    }
-    try {
-        console.log("Processing command with AI Agent:", command);
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: command,
-            config: { tools: agentTools }
-        });
-        
-        const functionCalls = response.candidates?.[0]?.content?.parts
-            .filter(part => !!part.functionCall)
-            .map(part => part.functionCall);
-
-        if (functionCalls && functionCalls.length > 0) {
-            return { functionCalls };
-        }
-        
-        return { text: response.text };
-
-    } catch (error) {
-        console.error("Error processing agent command:", error);
-        throw new Error(error instanceof Error ? error.message : "An unknown error occurred with the AI agent.");
     }
 };
 
-export const getTradingJournalFeedback = async (trades: TradeEntry[]): Promise<JournalFeedback> => {
-    try {
-        if (isDirectApiAvailable && ai) {
-            console.log("Sending journal feedback request directly to Gemini API...");
-            const prompt = getJournalFeedbackPrompt(trades);
-            const response = await ai.models.generateContent({
-                model: 'gemini-2.5-flash',
-                contents: prompt,
-                 config: {
-                    responseMimeType: "application/json",
-                    responseSchema: {
-                        type: Type.OBJECT,
-                        properties: {
-                            overallPnl: { type: Type.NUMBER },
-                            winRate: { type: Type.NUMBER },
-                            strengths: { type: Type.ARRAY, items: { type: Type.STRING } },
-                            weaknesses: { type: Type.ARRAY, items: { type: Type.STRING } },
-                            suggestions: { type: Type.ARRAY, items: { type: Type.STRING } },
-                        },
-                        required: ["overallPnl", "winRate", "strengths", "weaknesses", "suggestions"]
-                    }
-                }
-            });
+// --- SERVICE FUNCTIONS ---
 
-            return robustJsonParse(response.text);
-        }
+export const analyzeChart = async (
+  chartFiles: { [key: string]: File | null },
+  riskReward: string,
+  tradingStyle: string
+): Promise<AnalysisResult> => {
+  const parts: Part[] = [
+    { text: getAnalysisPrompt(tradingStyle, riskReward) },
+  ];
 
-        console.log("Sending journal feedback request to backend API...");
-        // This is a placeholder for a potential backend implementation
-        throw new Error("Backend not implemented for journal feedback.");
-
-    } catch (error) {
-        console.error("Error getting journal feedback:", error);
-        throw new Error(error instanceof Error ? error.message : "An unknown error occurred while analyzing the journal.");
+  const fileTypeMap: { [key: string]: string } = {
+    higher: 'Higher Timeframe Chart:',
+    primary: 'Primary Timeframe Chart:',
+    entry: 'Entry Timeframe Chart:',
+  };
+  
+  for (const key of ['higher', 'primary', 'entry']) {
+    if (chartFiles[key]) {
+      const { data, mimeType } = await fileToBase64(chartFiles[key]!);
+      parts.push({ text: fileTypeMap[key] });
+      parts.push({
+        inlineData: { mimeType, data },
+      });
     }
+  }
+
+  const response = await ai.models.generateContent({
+    model: 'gemini-2.5-flash',
+    contents: { parts },
+    config: {
+        tools: [{googleSearch: {}}],
+    }
+  });
+
+  const parsedResult = robustJsonParse(response.text) as AnalysisResult;
+
+  if (response.candidates?.[0]?.groundingMetadata?.groundingChunks) {
+    parsedResult.sources = response.candidates[0].groundingMetadata.groundingChunks
+      .map((chunk: any) => ({
+        uri: chunk.web?.uri || '',
+        title: chunk.web?.title || 'Source',
+      }))
+      .filter((source: GroundingSource) => source.uri);
+  }
+
+  return parsedResult;
+};
+
+export const createBot = async ({ description, language }: { description: string; language: BotLanguage; }): Promise<string> => {
+    const prompt = getBotPrompt(description, language);
+    const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt
+    });
+    // FIX: Use response.text to directly get the string output.
+    return response.text;
+};
+
+export const createIndicator = async ({ description, language }: { description: string; language: IndicatorLanguage; }): Promise<string> => {
+    const prompt = getIndicatorPrompt(description, language);
+    const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt
+    });
+    // FIX: Use response.text to directly get the string output.
+    return response.text;
 };
 
 export const getMarketSentiment = async (asset: string): Promise<MarketSentimentResult> => {
-    try {
-        if (isDirectApiAvailable && ai) {
-            console.log("Sending sentiment request directly to Gemini API...");
-            const prompt = getMarketSentimentPrompt(asset);
-            const response = await ai.models.generateContent({
-                model: 'gemini-2.5-flash',
-                contents: prompt,
-                config: { tools: [{ googleSearch: {} }], seed: 42, thinkingConfig: { thinkingBudget: 0 } }
-            });
-
-            let result: MarketSentimentResult = robustJsonParse(response.text);
-
-            const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
-            if (groundingChunks && Array.isArray(groundingChunks)) {
-                result.sources = groundingChunks.map((chunk: any) => ({
-                    uri: chunk.web?.uri || '',
-                    title: chunk.web?.title || 'Unknown Source'
-                })).filter(source => source.uri);
-            }
-
-            return result;
+    const prompt = getMarketSentimentPrompt(asset);
+    const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+        config: {
+            tools: [{googleSearch: {}}],
         }
+    });
 
-        console.log("Sending sentiment request to backend API...");
-        const res = await handleApiResponse(await fetch('/api/marketSentiment', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ asset })
-        }));
-        return res.json();
+    const parsedResult = robustJsonParse(response.text) as MarketSentimentResult;
 
-    } catch (error) {
-        console.error("Error getting market sentiment:", error);
-        throw new Error(error instanceof Error ? error.message : "An unknown error occurred while fetching market sentiment.");
+    if (response.candidates?.[0]?.groundingMetadata?.groundingChunks) {
+        parsedResult.sources = response.candidates[0].groundingMetadata.groundingChunks
+            .map((chunk: any) => ({
+                uri: chunk.web?.uri || '',
+                title: chunk.web?.title || 'Source',
+            }))
+            .filter((source: GroundingSource) => source.uri);
     }
+
+    return parsedResult;
 };
 
-export const analyzeChart = async (
-    chartFiles: { [key: string]: File | null },
-    riskReward: string,
-    tradingStyle: string
-): Promise<AnalysisResult> => {
-    try {
-        const parts: ({ text: string } | { inlineData: { data: string; mimeType: string; } })[] = [];
-        parts.push({ text: getAnalysisPrompt(tradingStyle, riskReward) });
-        
-        const processFile = async (file: File | null, label: string) => {
-            if (file) {
-                const { data, mimeType } = await fileToBase64(file);
-                parts.push({ text: label });
-                parts.push({ inlineData: { data, mimeType } });
-            }
-        };
-
-        await processFile(chartFiles.higher, "\nHigher Timeframe Chart:\n");
-        await processFile(chartFiles.primary, "\nPrimary Timeframe Chart:\n");
-        await processFile(chartFiles.entry, "\nEntry Timeframe Chart:\n");
-        
-        if (isDirectApiAvailable && ai) {
-            console.log("Sending analysis request directly to Gemini API...");
-            const response = await ai.models.generateContent({
-                model: 'gemini-2.5-flash',
-                contents: { parts },
-                config: { tools: [{ googleSearch: {} }], seed: 42, thinkingConfig: { thinkingBudget: 0 } }
-            });
-            
-            let result: AnalysisResult = robustJsonParse(response.text);
-
-            const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
-            if (groundingChunks && Array.isArray(groundingChunks)) {
-                 result.sources = groundingChunks.map((chunk: any) => ({
-                    uri: chunk.web?.uri || '',
-                    title: chunk.web?.title || 'Unknown Source'
-                })).filter(source => source.uri);
-            }
-            return result;
+export const getTradingJournalFeedback = async (trades: TradeEntry[]): Promise<JournalFeedback> => {
+    const prompt = getJournalFeedbackPrompt(trades);
+    const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+        config: {
+            responseMimeType: 'application/json',
         }
-
-        console.log("Sending analysis request to backend API...");
-        const formData = new FormData();
-        Object.entries(chartFiles).forEach(([key, file]) => {
-            if (file) formData.append(key, file);
-        });
-        formData.append('riskReward', riskReward);
-        formData.append('tradingStyle', tradingStyle);
-        const res = await handleApiResponse(await fetch('/api/analyzeChart', { method: 'POST', body: formData }));
-        return res.json();
-        
-    } catch (error) {
-        console.error("Error analyzing chart:", error);
-        throw new Error(error instanceof Error ? error.message : "An unknown error occurred during analysis.");
-    }
+    });
+    return robustJsonParse(response.text) as JournalFeedback;
 };
 
-export const createBot = async ({ description, language }: { description: string; language: BotLanguage }): Promise<string> => {
-    try {
-        if (isDirectApiAvailable && ai) {
-            console.log("Sending bot creation request directly to Gemini API...");
-            const prompt = getBotPrompt(description, language);
-            const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
-            return response.text;
+export const processCommandWithAgent = async (command: string): Promise<GenerateContentResponse> => {
+    const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: command,
+        config: {
+            tools: agentTools
         }
-
-        console.log("Sending bot creation request to backend API...");
-        const res = await handleApiResponse(await fetch('/api/createBot', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ description, language })
-        }));
-        return res.text();
-    } catch (error) {
-        console.error("Error creating bot:", error);
-        throw new Error(error instanceof Error ? error.message : "An unknown error occurred while creating the bot.");
-    }
-};
-
-
-export const createIndicator = async ({ description, language }: { description: string; language: IndicatorLanguage }): Promise<string> => {
-    try {
-        if (isDirectApiAvailable && ai) {
-            console.log("Sending indicator creation request directly to Gemini API...");
-            const prompt = getIndicatorPrompt(description, language);
-            const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
-            return response.text;
-        }
-        
-        console.log("Sending indicator creation request to backend API...");
-        const res = await handleApiResponse(await fetch('/api/createIndicator', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ description, language })
-        }));
-        return res.text();
-    } catch (error) {
-        console.error("Error creating indicator:", error);
-        throw new Error(error instanceof Error ? error.message : "An unknown error occurred while creating the indicator.");
-    }
+    });
+    return response;
 };

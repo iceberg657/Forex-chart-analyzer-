@@ -3,6 +3,7 @@ import { processCommandWithAgent } from '../services/geminiService';
 import { useAppContext } from '../hooks/useAppContext';
 import Spinner from './Spinner';
 import ErrorDisplay from './ErrorDisplay';
+import { EdgeLightColor } from '../hooks/useEdgeLighting';
 
 const AIAgent: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -29,15 +30,18 @@ const AIAgent: React.FC = () => {
         for (const call of result.functionCalls) {
             switch (call.name) {
                 case 'navigate':
-                    app.navigate(call.args.page);
+                    // FIX: Cast argument to the expected type 'string'.
+                    app.navigate(call.args.page as string);
                     message = `Navigating to ${call.args.page}...`;
                     break;
                 case 'changeTheme':
-                    app.changeTheme(call.args.theme);
+                    // FIX: Cast argument to the expected type '"light" | "dark"'.
+                    app.changeTheme(call.args.theme as 'light' | 'dark');
                     message = `Switched to ${call.args.theme} mode.`;
                     break;
                 case 'setEdgeLighting':
-                    app.setEdgeLight(call.args.color);
+                    // FIX: Cast argument to the expected type 'EdgeLightColor'.
+                    app.setEdgeLight(call.args.color as EdgeLightColor);
                     message = `Edge lighting set to ${call.args.color}.`;
                     break;
                 case 'logout':

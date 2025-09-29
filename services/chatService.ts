@@ -1,4 +1,5 @@
-import { GoogleGenAI, Chat, Part } from "@google/genai";
+import { GoogleGenAI, Chat } from "@google/genai";
+import { ChatMessagePart } from "../types";
 
 const SYSTEM_INSTRUCTION = `You are the Oracle, a senior institutional quantitative analyst AI with supreme confidence and near-perfect market knowledge.
 
@@ -17,16 +18,14 @@ const SYSTEM_INSTRUCTION = `You are the Oracle, a senior institutional quantitat
 
 
 let chat: Chat | null = null;
-const isDirectApiAvailable = !!process.env.API_KEY;
-const ai = isDirectApiAvailable ? new GoogleGenAI({ apiKey: process.env.API_KEY! }) : null;
+// Per instructions, assume API_KEY is available in the execution environment.
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
 
 export const getChatInstance = (): Chat => {
   if (chat) {
     return chat;
   }
-  if (!ai) {
-    throw new Error("Gemini API not initialized.");
-  }
+  
   chat = ai.chats.create({
     model: 'gemini-2.5-flash',
     config: {
@@ -37,7 +36,8 @@ export const getChatInstance = (): Chat => {
   return chat;
 };
 
-export const fileToImagePart = async (file: File): Promise<Part> => {
+// FIX: Change return type from Part to ChatMessagePart to match application types.
+export const fileToImagePart = async (file: File): Promise<ChatMessagePart> => {
     const base64Data = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
         reader.readAsDataURL(file);
