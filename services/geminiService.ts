@@ -1,11 +1,20 @@
 
 
+
 import { GoogleGenAI, Type, Tool, GenerateContentResponse, Part } from "@google/genai";
 import { AnalysisResult, BotLanguage, IndicatorLanguage, GroundingSource, MarketSentimentResult, TradeEntry, JournalFeedback } from '../types';
 
-// Per instructions, assume API_KEY is available in the execution environment.
-// The 'ai' instance is initialized directly.
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
+let ai: GoogleGenAI;
+
+const getAI = () => {
+    if (!ai) {
+        // Per instructions, assume API_KEY is available in the execution environment.
+        // The 'ai' instance is initialized on first use.
+        ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
+    }
+    return ai;
+}
+
 
 // --- AI AGENT TOOLS ---
 
@@ -320,7 +329,7 @@ export const analyzeChart = async (
     }
   }
 
-  const response = await ai.models.generateContent({
+  const response = await getAI().models.generateContent({
     model: 'gemini-2.5-flash',
     contents: { parts },
     config: {
@@ -344,7 +353,7 @@ export const analyzeChart = async (
 
 export const createBot = async ({ description, language }: { description: string; language: BotLanguage; }): Promise<string> => {
     const prompt = getBotPrompt(description, language);
-    const response = await ai.models.generateContent({
+    const response = await getAI().models.generateContent({
         model: 'gemini-2.5-flash',
         contents: prompt
     });
@@ -354,7 +363,7 @@ export const createBot = async ({ description, language }: { description: string
 
 export const createIndicator = async ({ description, language }: { description: string; language: IndicatorLanguage; }): Promise<string> => {
     const prompt = getIndicatorPrompt(description, language);
-    const response = await ai.models.generateContent({
+    const response = await getAI().models.generateContent({
         model: 'gemini-2.5-flash',
         contents: prompt
     });
@@ -364,7 +373,7 @@ export const createIndicator = async ({ description, language }: { description: 
 
 export const getMarketSentiment = async (asset: string): Promise<MarketSentimentResult> => {
     const prompt = getMarketSentimentPrompt(asset);
-    const response = await ai.models.generateContent({
+    const response = await getAI().models.generateContent({
         model: 'gemini-2.5-flash',
         contents: prompt,
         config: {
@@ -388,7 +397,7 @@ export const getMarketSentiment = async (asset: string): Promise<MarketSentiment
 
 export const getTradingJournalFeedback = async (trades: TradeEntry[]): Promise<JournalFeedback> => {
     const prompt = getJournalFeedbackPrompt(trades);
-    const response = await ai.models.generateContent({
+    const response = await getAI().models.generateContent({
         model: 'gemini-2.5-flash',
         contents: prompt,
         config: {
@@ -399,7 +408,7 @@ export const getTradingJournalFeedback = async (trades: TradeEntry[]): Promise<J
 };
 
 export const processCommandWithAgent = async (command: string): Promise<GenerateContentResponse> => {
-    const response = await ai.models.generateContent({
+    const response = await getAI().models.generateContent({
         model: 'gemini-2.5-flash',
         contents: command,
         config: {

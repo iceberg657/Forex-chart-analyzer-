@@ -1,3 +1,5 @@
+
+
 import React, { useEffect } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { AnalysisResult, GroundingSource } from '../types';
@@ -70,8 +72,8 @@ const SignalCard: React.FC<{ signal: 'BUY' | 'SELL' | 'NEUTRAL'; confidence: num
 }
 
 const SetupQualityCard: React.FC<{ quality: string }> = ({ quality }) => {
-    // FIX: Changed JSX.Element to React.ReactElement to resolve "Cannot find namespace 'JSX'" error.
-    const qualityInfo: { [key: string]: { text: string; bgColor: string; textColor: string; borderColor: string; icon: React.ReactElement } } = {
+    // FIX: Replaced JSX.Element with React.ReactNode to fix "Cannot find namespace 'JSX'" error.
+    const qualityInfo: { [key: string]: { text: string; bgColor: string; textColor: string; borderColor: string; icon: React.ReactNode } } = {
         'A+ Setup': {
             text: 'A+ Setup',
             bgColor: 'bg-teal-500/10 dark:bg-teal-400/20',

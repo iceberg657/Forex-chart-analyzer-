@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Chat } from "@google/genai";
 import { ChatMessagePart } from "../types";
 
@@ -18,15 +19,22 @@ const SYSTEM_INSTRUCTION = `You are the Oracle, a senior institutional quantitat
 
 
 let chat: Chat | null = null;
-// Per instructions, assume API_KEY is available in the execution environment.
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
+let ai: GoogleGenAI | null = null;
+
+const getAI = () => {
+    if (!ai) {
+        // Per instructions, assume API_KEY is available in the execution environment.
+        ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
+    }
+    return ai;
+}
 
 export const getChatInstance = (): Chat => {
   if (chat) {
     return chat;
   }
   
-  chat = ai.chats.create({
+  chat = getAI().chats.create({
     model: 'gemini-2.5-flash',
     config: {
       systemInstruction: SYSTEM_INSTRUCTION,

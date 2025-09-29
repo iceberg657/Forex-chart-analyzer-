@@ -1,4 +1,5 @@
-import React from 'react';
+
+import React, { useEffect } from 'react';
 import { HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -41,6 +42,16 @@ const App: React.FC = () => {
 const AppContent: React.FC = () => {
   const location = useLocation();
   const isApexAiPage = location.pathname === '/apex-ai';
+  
+  useEffect(() => {
+    const splashScreen = document.getElementById('splash-screen');
+    if (splashScreen) {
+      splashScreen.style.opacity = '0';
+      splashScreen.addEventListener('transitionend', () => {
+        splashScreen.remove();
+      });
+    }
+  }, []);
 
   return (
     <ResponsiveFix>
