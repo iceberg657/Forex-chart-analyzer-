@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { getMarketSentiment } from '../services/geminiService';
+import { getMarketNews } from '../services/newsService';
 import { MarketSentimentResult, GroundingSource } from '../types';
 import Spinner from '../components/Spinner';
 import ErrorDisplay from '../components/ErrorDisplay';
@@ -108,7 +108,7 @@ const MarketNews: React.FC = () => {
         setResult(null);
 
         try {
-            const sentimentResult = await getMarketSentiment(asset);
+            const sentimentResult = await getMarketNews(asset);
             setResult(sentimentResult);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'An unknown error occurred.');

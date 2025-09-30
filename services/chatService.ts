@@ -1,6 +1,7 @@
 
-import { GoogleGenAI, Chat } from "@google/genai";
-import { ChatMessagePart } from "../types";
+import { GoogleGenAI } from "@google/genai";
+import { ChatMessage, ChatMessagePart } from "../types";
+import { apiClient } from './apiClient';
 
 const SYSTEM_INSTRUCTION = `You are the Oracle, a senior institutional quantitative analyst AI with supreme confidence and near-perfect market knowledge.
 
@@ -13,38 +14,12 @@ const SYSTEM_INSTRUCTION = `You are the Oracle, a senior institutional quantitat
     *   **AI Coders (Bot/Indicator Maker):** AI code generation for MQL4, MQL5, and Pine Script.
     *   **Market News:** AI-powered sentiment analysis on any given asset.
     *   **Journal:** A tool for users to log their trades and receive AI feedback.
+    *   **Catalyst Predictor:** Predicts market-moving economic events.
     *   **Apex AI:** That's you. A conversational AI assistant.
 5.  **Safety Protocol:** For ANY response that could be interpreted as financial advice, you MUST include this exact disclaimer at the end of your response on a new line: "⚠️ This is not financial advice." This is non-negotiable.
 `;
 
 
-let chat: Chat | null = null;
-let ai: GoogleGenAI | null = null;
-
-const getAI = () => {
-    if (!ai) {
-        // Per instructions, assume API_KEY is available in the execution environment.
-        ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
-    }
-    return ai;
-}
-
-export const getChatInstance = (): Chat => {
-  if (chat) {
-    return chat;
-  }
-  
-  chat = getAI().chats.create({
-    model: 'gemini-2.5-flash',
-    config: {
-      systemInstruction: SYSTEM_INSTRUCTION,
-      tools: [{ googleSearch: {} }],
-    },
-  });
-  return chat;
-};
-
-// FIX: Change return type from Part to ChatMessagePart to match application types.
 export const fileToImagePart = async (file: File): Promise<ChatMessagePart> => {
     const base64Data = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
@@ -59,4 +34,36 @@ export const fileToImagePart = async (file: File): Promise<ChatMessagePart> => {
             data: base64Data,
         },
     };
+};
+
+export const sendMessage = async (history: ChatMessage[], newMessage: ChatMessagePart[]): Promise<ChatMessage> => {
+    if (process.env.API_KEY) {
+        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+        const contents = history.map(msg => ({ role: msg.role, parts: msg.parts }));
+        contents.push({ role: 'user', parts: newMessage });
+
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: contents,
+            config: {
+                systemInstruction: SYSTEM_INSTRUCTION,
+                tools: [{ googleSearch: {} }],
+            },
+        });
+        
+        const modelResponse: ChatMessage = {
+            id: Date.now().toString(),
+            role: 'model',
+            parts: [{ text: response.text }],
+        };
+
+        if (response.candidates?.[0]?.groundingMetadata?.groundingChunks) {
+            modelResponse.sources = response.candidates[0].groundingMetadata.groundingChunks.map((c: any) => ({ uri: c.web?.uri || '', title: c.web?.title || 'Source' })).filter((s: any) => s.uri);
+        }
+
+        return modelResponse;
+
+    } else {
+        return apiClient.post<ChatMessage>('sendMessage', { history, newMessage });
+    }
 };

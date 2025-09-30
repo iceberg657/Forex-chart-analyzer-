@@ -1,6 +1,7 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { ChatMessage, GroundingSource, ChatMessagePart } from '../types';
-import { getChatInstance, fileToImagePart } from '../services/chatService';
+import { sendMessage, fileToImagePart } from '../services/chatService';
 import ErrorDisplay from '../components/ErrorDisplay';
 import ChatBubble from '../components/ChatBubble';
 import TypingIndicator from '../components/TypingIndicator';
@@ -73,42 +74,18 @@ const ApexAI: React.FC = () => {
             role: 'user',
             parts: userParts,
         };
-        setMessages(prev => [...prev, userMessage]);
+
+        const currentHistory = [...messages, userMessage];
+        setMessages(currentHistory);
         
         // Reset inputs
         setInput('');
         removeImage();
 
         try {
-            const chat = getChatInstance();
-            const stream = await chat.sendMessageStream({ message: userParts });
-            
-            const modelMessageId = (Date.now() + 1).toString();
-            setMessages(prev => [...prev, { id: modelMessageId, role: 'model', parts: [{ text: '' }] }]);
+            const modelResponse = await sendMessage(messages, userParts);
+            setMessages([...currentHistory, modelResponse]);
 
-            let fullResponse = '';
-            let sources: GroundingSource[] = [];
-
-            for await (const chunk of stream) {
-                const chunkText = chunk.text;
-                if (chunkText) {
-                    fullResponse += chunkText;
-                }
-                
-                const groundingChunks = chunk.candidates?.[0]?.groundingMetadata?.groundingChunks;
-                if (groundingChunks && Array.isArray(groundingChunks)) {
-                    sources = groundingChunks.map((c: any) => ({
-                        uri: c.web?.uri || '',
-                        title: c.web?.title || 'Unknown Source'
-                    })).filter(s => s.uri);
-                }
-
-                setMessages(prev => prev.map(msg => 
-                    msg.id === modelMessageId 
-                    ? { ...msg, parts: [{ text: fullResponse }], sources: sources.length > 0 ? sources : undefined } 
-                    : msg
-                ));
-            }
         } catch (err) {
             setError(err instanceof Error ? err.message : 'An unknown error occurred with the AI assistant.');
             setMessages(prev => [...prev, {

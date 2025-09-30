@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import { processCommandWithAgent } from '../services/geminiService';
+import { processCommandWithAgent } from '../services/agentService';
 import { useAppContext } from '../hooks/useAppContext';
 import Spinner from './Spinner';
 import ErrorDisplay from './ErrorDisplay';

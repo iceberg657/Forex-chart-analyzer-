@@ -86,3 +86,13 @@ export interface ChatMessage {
   parts: ChatMessagePart[];
   sources?: GroundingSource[];
 }
+
+export interface PredictedEvent {
+    eventName: string;
+    time: string; // e.g., "YYYY-MM-DD HH:MM UTC"
+    currency: string;
+    directionalBias: 'BUY' | 'SELL';
+    confidence: number; // 0-100
+    rationale: string;
+    sources: GroundingSource[];
+}

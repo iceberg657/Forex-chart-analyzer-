@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { TradeEntry, JournalFeedback } from '../types';
-import { getTradingJournalFeedback } from '../services/geminiService';
+import { getTradingJournalFeedback } from '../services/journalService';
 import Spinner from '../components/Spinner';
 import ErrorDisplay from '../components/ErrorDisplay';
 

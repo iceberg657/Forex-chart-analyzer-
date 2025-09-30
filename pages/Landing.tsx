@@ -79,14 +79,6 @@ const Landing: React.FC = () => {
                 </div>
             </section>
             
-            {/* Dashboard Preview */}
-            <section>
-                 <div className="relative">
-                    <div className="absolute -inset-2 bg-gradient-to-r from-red-500 to-purple-600 rounded-lg blur-xl opacity-25 dark:opacity-40"></div>
-                    <img src="/dashboard_preview.png" alt="Dashboard preview" className="relative rounded-2xl shadow-2xl border border-white/20 dark:border-black/20 w-full" />
-                </div>
-            </section>
-
             {/* Features Section */}
             <section id="features" className="text-center">
                 <h2 className="text-3xl lg:text-4xl font-bold mb-4 text-gray-900 dark:text-white">Your Ultimate Trading Toolkit</h2>

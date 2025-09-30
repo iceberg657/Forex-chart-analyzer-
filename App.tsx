@@ -15,12 +15,14 @@ import MarketNews from './pages/MarketNews';
 import Journal from './pages/Journal';
 import Landing from './pages/Landing'; // Import Landing page
 import ApexAI from './pages/ApexAI'; // Import Apex AI page
+import Predictor from './pages/Predictor'; // Import Predictor page
 import { AuthProvider, useAuth } from './hooks/useAuth';
 import { ThemeProvider } from './hooks/useTheme';
 import { EdgeLightingProvider } from './hooks/useEdgeLighting';
 import ResponsiveFix from './components/ResponsiveFix';
 import { AppContextProvider } from './hooks/useAppContext';
 import AIAgent from './components/AIAgent';
+import { EnvironmentProvider } from './hooks/useEnvironment';
 
 
 const App: React.FC = () => {
@@ -28,11 +30,13 @@ const App: React.FC = () => {
     <AuthProvider>
       <ThemeProvider>
         <EdgeLightingProvider>
-          <HashRouter>
-            <AppContextProvider>
-              <AppContent />
-            </AppContextProvider>
-          </HashRouter>
+          <EnvironmentProvider>
+            <HashRouter>
+              <AppContextProvider>
+                <AppContent />
+              </AppContextProvider>
+            </HashRouter>
+          </EnvironmentProvider>
         </EdgeLightingProvider>
       </ThemeProvider>
     </AuthProvider>
@@ -55,7 +59,7 @@ const AppContent: React.FC = () => {
 
   return (
     <ResponsiveFix>
-      <div className="relative isolate flex flex-col min-h-screen text-gray-800 dark:text-gray-200 font-sans overflow-x-hidden">
+      <div className="relative isolate flex flex-col flex-1 text-gray-800 dark:text-gray-200 font-sans overflow-x-hidden">
         <div className="floating-element"></div>
         <div className="floating-element"></div>
         <Header />
@@ -90,6 +94,7 @@ const AppRoutes: React.FC = () => {
         <Route path="/bot-maker" element={<BotMaker />} />
         <Route path="/indicator-maker" element={<IndicatorMaker />} />
         <Route path="/market-news" element={<MarketNews />} />
+        <Route path="/predictor" element={<Predictor />} />
         <Route path="/journal" element={<Journal />} />
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/apex-ai" element={<ApexAI />} />

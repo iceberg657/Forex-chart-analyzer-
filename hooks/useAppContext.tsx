@@ -32,6 +32,7 @@ export const AppContextProvider: React.FC<{ children: ReactNode }> = ({ children
         pricing: '/pricing',
         login: '/login',
         signup: '/signup',
+        predictor: '/predictor'
     };
     const path = pageMap[page.toLowerCase()] || '/';
     navigateHook(path);
