@@ -15,8 +15,8 @@ const Header: React.FC = () => {
     // Note: Kept as `a` tags for same-page scrolling on landing page.
     return (
         <>
-            <a href="/#/ " onClick={() => setIsOpen(false)} className={`${navLinkClassName} ${mobileClass}`}>Features</a>
-            <a href="/#/ " onClick={() => setIsOpen(false)} className={`${navLinkClassName} ${mobileClass}`}>Pricing</a>
+            <a href="#features" onClick={() => setIsOpen(false)} className={`${navLinkClassName} ${mobileClass}`}>Features</a>
+            <a href="#pricing" onClick={() => setIsOpen(false)} className={`${navLinkClassName} ${mobileClass}`}>Pricing</a>
             <Link to="/login" onClick={() => setIsOpen(false)} className={`${navLinkClassName} ${mobileClass}`}>Login</Link>
             <Link to="/signup" onClick={() => setIsOpen(false)} className={`${navLinkClassName} ${mobileClass}`}>Sign Up</Link>
         </>
