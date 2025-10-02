@@ -1,4 +1,4 @@
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { TradeEntry, JournalFeedback } from '../types';
 import { apiClient } from './apiClient';
 import { detectEnvironment } from '../hooks/useEnvironment';
@@ -12,6 +12,19 @@ if (environment === 'aistudio') {
         console.error("API Key not found for AI Studio environment. Direct API calls will fail.");
     }
 }
+
+const getResponseText = (response: GenerateContentResponse): string => {
+    if (response?.candidates?.[0]?.content?.parts) {
+        const textParts = response.candidates[0].content.parts
+            .filter((part: any) => typeof part.text === 'string')
+            .map((part: any) => part.text);
+        
+        if (textParts.length > 0) {
+            return textParts.join('');
+        }
+    }
+    return response?.text ?? '';
+};
 
 const robustJsonParse = (jsonString: string) => {
     let cleanJsonString = jsonString.trim();
@@ -84,6 +97,6 @@ export const getTradingJournalFeedback = async (trades: TradeEntry[]): Promise<J
             }
         });
         
-        return robustJsonParse(response.text) as JournalFeedback;
+        return robustJsonParse(getResponseText(response)) as JournalFeedback;
     }
 };

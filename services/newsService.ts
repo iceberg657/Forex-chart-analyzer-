@@ -1,4 +1,4 @@
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { MarketSentimentResult, GroundingSource } from '../types';
 import { apiClient } from './apiClient';
 import { detectEnvironment } from '../hooks/useEnvironment';
@@ -12,6 +12,20 @@ if (environment === 'aistudio') {
         console.error("API Key not found for AI Studio environment. Direct API calls will fail.");
     }
 }
+
+const getResponseText = (response: GenerateContentResponse): string => {
+    if (response?.candidates?.[0]?.content?.parts) {
+        const textParts = response.candidates[0].content.parts
+            .filter((part: any) => typeof part.text === 'string')
+            .map((part: any) => part.text);
+        
+        if (textParts.length > 0) {
+            return textParts.join('');
+        }
+    }
+    return response?.text ?? '';
+};
+
 
 const robustJsonParse = (jsonString: string) => {
     let cleanJsonString = jsonString.trim();
@@ -74,7 +88,7 @@ export const getMarketNews = async (asset: string): Promise<MarketSentimentResul
             } 
         });
 
-        const parsedResult = robustJsonParse(response.text) as MarketSentimentResult;
+        const parsedResult = robustJsonParse(getResponseText(response)) as MarketSentimentResult;
 
         if (response.candidates?.[0]?.groundingMetadata?.groundingChunks) {
             parsedResult.sources = response.candidates[0].groundingMetadata.groundingChunks

@@ -1,4 +1,4 @@
-import { GoogleGenAI, Part } from "@google/genai";
+import { GoogleGenAI, Part, GenerateContentResponse } from "@google/genai";
 import { AnalysisResult, BotLanguage, IndicatorLanguage, GroundingSource } from '../types';
 import { apiClient } from './apiClient';
 import { detectEnvironment } from '../hooks/useEnvironment';
@@ -14,6 +14,20 @@ if (environment === 'aistudio') {
 }
 
 // --- UTILITIES ---
+
+const getResponseText = (response: GenerateContentResponse): string => {
+    if (response?.candidates?.[0]?.content?.parts) {
+        const textParts = response.candidates[0].content.parts
+            .filter((part: any) => typeof part.text === 'string')
+            .map((part: any) => part.text);
+        
+        if (textParts.length > 0) {
+            return textParts.join('');
+        }
+    }
+    // Fallback to the simple text property if the main method yields nothing.
+    return response?.text ?? '';
+};
 
 const fileToBase64 = (file: File): Promise<{ data: string; mimeType: string }> => {
   return new Promise((resolve, reject) => {
@@ -236,7 +250,7 @@ export const analyzeChart = async (
             }
         });
 
-        const parsedResult = robustJsonParse(response.text) as AnalysisResult;
+        const parsedResult = robustJsonParse(getResponseText(response)) as AnalysisResult;
 
         if (response.candidates?.[0]?.groundingMetadata?.groundingChunks) {
             parsedResult.sources = response.candidates[0].groundingMetadata.groundingChunks
@@ -258,7 +272,7 @@ export const createBot = async ({ description, language }: { description: string
         if (!ai) throw new Error("Gemini AI not initialized for AI Studio. An API_KEY environment variable is required.");
         const prompt = getBotPrompt(description, language);
         const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
-        return response.text;
+        return getResponseText(response);
     }
 };
 
@@ -269,6 +283,6 @@ export const createIndicator = async ({ description, language }: { description: 
          if (!ai) throw new Error("Gemini AI not initialized for AI Studio. An API_KEY environment variable is required.");
         const prompt = getIndicatorPrompt(description, language);
         const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
-        return response.text;
+        return getResponseText(response);
     }
 };

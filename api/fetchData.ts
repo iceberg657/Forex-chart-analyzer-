@@ -1,5 +1,4 @@
-
-import { GoogleGenAI, Part, Type, Tool } from "@google/genai";
+import { GoogleGenAI, Part, Type, Tool, GenerateContentResponse } from "@google/genai";
 import { 
     AnalysisResult, 
     BotLanguage, 
@@ -13,7 +12,25 @@ import {
     PredictedEvent
 } from '../types';
 
-// --- UTILITY ---
+// --- UTILITIES ---
+
+const getResponseText = (response: GenerateContentResponse): string => {
+    // This is a robust way to get text, handling cases where the response might be blocked
+    // or doesn't contain text parts, which might cause the simple `response.text` getter to fail.
+    if (response?.candidates?.[0]?.content?.parts) {
+        const textParts = response.candidates[0].content.parts
+            .filter((part: any) => typeof part.text === 'string')
+            .map((part: any) => part.text);
+        
+        if (textParts.length > 0) {
+            return textParts.join('');
+        }
+    }
+    // Fallback to the official .text getter if the main method yields nothing, with nullish coalescing for safety.
+    return response?.text ?? '';
+};
+
+
 const robustJsonParse = (jsonString: string, expectedType: 'object' | 'array' = 'object') => {
     let cleanJsonString = jsonString.trim();
     const regex = expectedType === 'object' 
@@ -98,9 +115,9 @@ Generate complete, functional, well-commented ${language} code. Respond with ONL
 
 const getMarketSentimentPrompt = (asset: string) => `You are 'Oracle', an apex-level trading AI. Analyze the latest market news and sentiment for **${asset}** from the last 24-48 hours. You MUST return a single, valid JSON object. Schema: { "asset": "string", "sentiment": "'Bullish'|'Bearish'|'Neutral'", "confidence": "number", "summary": "string", "keyPoints": ["string"], "sources": "populated by system" }`;
 
-const getJournalFeedbackPrompt = (trades: TradeEntry[]) => `You are 'Oracle', an apex-level trading AI and performance coach. Analyze the provided trader's journal and give objective, actionable feedback. You MUST return a single, valid JSON object. Data: ${JSON.stringify(trades, null, 2)}. Schema: { "overallPnl": "number", "winRate": "number", "strengths": ["string"], "weaknesses": ["string"], "suggestions": ["string"] }`;
+const getJournalFeedbackPrompt = (trades: TradeEntry[]) => `You are 'Oracle', an apex-level trading AI and performance coach. Analyze the provided trader's journal and provide objective, actionable feedback. You MUST return a single, valid JSON object. Data: ${JSON.stringify(trades, null, 2)}. Schema: { "overallPnl": "number", "winRate": "number", "strengths": ["string"], "weaknesses": ["string"], "suggestions": ["string"] }`;
 
-const getPredictorPrompt = () => `You are 'Oracle', an apex-level trading AI predicting market impact of economic news. Identify the top 3-5 HIGHEST impact events for the next 7 days. You must DECLARE the initial price spike direction (BUY/SELL). You MUST return a single, valid JSON array of objects. Schema: [{ "eventName": "string", "time": "string (YYYY-MM-DD HH:MM UTC)", "currency": "string", "directionalBias": "'BUY'|'SELL'", "confidence": "number (0-100)", "rationale": "string", "sources": "populated by system" }]`;
+const getPredictorPrompt = () => `You are 'Oracle', an apex-level trading AI predicting market impact of economic news. Identify the top 3-5 HIGHEST impact events for the next 7 days. You must DECLARE the initial price spike direction (BUY/SELL). You MUST return a single, valid JSON array of objects. Schema: [{ "eventName": "string", "time": "string (YYYY-DD-MM HH:MM UTC)", "currency": "string", "directionalBias": "'BUY'|'SELL'", "confidence": "number (0-100)", "rationale": "string", "sources": "populated by system" }]`;
 
 const CHAT_SYSTEM_INSTRUCTION = `You are the Oracle, a senior institutional quantitative analyst AI with supreme confidence and near-perfect market knowledge.
 
@@ -159,7 +176,7 @@ export default async function handler(req: any, res: any) {
                     }
                 }
                 const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: { parts }, config: { tools: [{googleSearch: {}}] } });
-                const parsedResult = robustJsonParse(response.text ?? '') as AnalysisResult;
+                const parsedResult = robustJsonParse(getResponseText(response)) as AnalysisResult;
                 if (response.candidates?.[0]?.groundingMetadata?.groundingChunks) {
                     parsedResult.sources = response.candidates[0].groundingMetadata.groundingChunks.map((c: any) => ({ uri: c.web?.uri || '', title: c.web?.title || 'Source' })).filter((s: any) => s.uri);
                 }
@@ -170,21 +187,21 @@ export default async function handler(req: any, res: any) {
                 const { description, language } = body;
                 const prompt = getBotPrompt(description, language);
                 const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
-                return res.status(200).send(response.text ?? '');
+                return res.status(200).send(getResponseText(response));
             }
 
             case 'createIndicator': {
                 const { description, language } = body;
                 const prompt = getIndicatorPrompt(description, language);
                 const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
-                return res.status(200).send(response.text ?? '');
+                return res.status(200).send(getResponseText(response));
             }
 
             case 'getMarketNews': {
                 const { asset } = body;
                 const prompt = getMarketSentimentPrompt(asset);
                 const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt, config: { tools: [{googleSearch: {}}] } });
-                const parsedResult = robustJsonParse(response.text ?? '') as MarketSentimentResult;
+                const parsedResult = robustJsonParse(getResponseText(response)) as MarketSentimentResult;
                 if (response.candidates?.[0]?.groundingMetadata?.groundingChunks) {
                     parsedResult.sources = response.candidates[0].groundingMetadata.groundingChunks.map((c: any) => ({ uri: c.web?.uri || '', title: c.web?.title || 'Source' })).filter((s: any) => s.uri);
                 }
@@ -195,14 +212,14 @@ export default async function handler(req: any, res: any) {
                 const { trades } = body;
                 const prompt = getJournalFeedbackPrompt(trades);
                 const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt, config: { responseMimeType: 'application/json' } });
-                const parsedResult = robustJsonParse(response.text ?? '') as JournalFeedback;
+                const parsedResult = robustJsonParse(getResponseText(response)) as JournalFeedback;
                 return res.status(200).json(parsedResult);
             }
             
             case 'processCommandWithAgent': {
                 const { command } = body;
                 const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: command, config: { tools: agentTools } });
-                return res.status(200).json({ text: response.text ?? '', functionCalls: response.functionCalls || null });
+                return res.status(200).json({ text: getResponseText(response), functionCalls: response.functionCalls || null });
             }
 
             case 'sendMessage': {
@@ -210,7 +227,7 @@ export default async function handler(req: any, res: any) {
                 const contents = history.map(msg => ({ role: msg.role, parts: msg.parts }));
                 contents.push({ role: 'user', parts: newMessage });
                 const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents, config: { systemInstruction: CHAT_SYSTEM_INSTRUCTION, tools: [{ googleSearch: {} }] } });
-                const modelResponse: ChatMessage = { id: Date.now().toString(), role: 'model', parts: [{ text: response.text ?? '' }] };
+                const modelResponse: ChatMessage = { id: Date.now().toString(), role: 'model', parts: [{ text: getResponseText(response) }] };
                 if (response.candidates?.[0]?.groundingMetadata?.groundingChunks) {
                     modelResponse.sources = response.candidates[0].groundingMetadata.groundingChunks.map((c: any) => ({ uri: c.web?.uri || '', title: c.web?.title || 'Source' })).filter((s: any) => s.uri);
                 }
@@ -220,7 +237,7 @@ export default async function handler(req: any, res: any) {
             case 'getPredictions': {
                 const prompt = getPredictorPrompt();
                 const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt, config: { tools: [{googleSearch: {}}] } });
-                const parsedResult = robustJsonParse(response.text ?? '', 'array') as PredictedEvent[];
+                const parsedResult = robustJsonParse(getResponseText(response), 'array') as PredictedEvent[];
                 const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
                 if (chunks && Array.isArray(chunks)) {
                     const sources = chunks.map((c: any) => ({ uri: c.web?.uri || '', title: c.web?.title || 'Source' })).filter((s: any) => s.uri);

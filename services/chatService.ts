@@ -1,4 +1,4 @@
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { ChatMessage, ChatMessagePart, GroundingSource } from "../types";
 import { apiClient } from "./apiClient";
 import { detectEnvironment } from '../hooks/useEnvironment';
@@ -12,6 +12,19 @@ if (environment === 'aistudio') {
         console.error("API Key not found for AI Studio environment. Direct API calls will fail.");
     }
 }
+
+const getResponseText = (response: GenerateContentResponse): string => {
+    if (response?.candidates?.[0]?.content?.parts) {
+        const textParts = response.candidates[0].content.parts
+            .filter((part: any) => typeof part.text === 'string')
+            .map((part: any) => part.text);
+        
+        if (textParts.length > 0) {
+            return textParts.join('');
+        }
+    }
+    return response?.text ?? '';
+};
 
 const SYSTEM_INSTRUCTION = `You are the Oracle, a senior institutional quantitative analyst AI with supreme confidence and near-perfect market knowledge.
 
@@ -81,7 +94,7 @@ export const sendMessage = async (history: ChatMessage[], newMessage: ChatMessag
         const modelResponse: ChatMessage = {
             id: Date.now().toString(),
             role: 'model',
-            parts: [{ text: response.text }],
+            parts: [{ text: getResponseText(response) }],
         };
 
         if (response.candidates?.[0]?.groundingMetadata?.groundingChunks) {
