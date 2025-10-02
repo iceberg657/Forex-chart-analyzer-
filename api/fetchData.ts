@@ -140,7 +140,6 @@ export default async function handler(req: any, res: any) {
         return res.status(405).json({ error: "Method Not Allowed" });
     }
 
-    // Add a guard clause for the request body to prevent crashes.
     if (!req.body || typeof req.body !== 'object') {
         return res.status(400).json({ error: "Invalid request body. Expected a JSON object." });
     }
@@ -166,7 +165,11 @@ export default async function handler(req: any, res: any) {
                     }
                 }
                 const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: { parts }, config: { tools: [{googleSearch: {}}] } });
-                const parsedResult = robustJsonParse(getResponseText(response)) as AnalysisResult;
+                const responseText = getResponseText(response);
+                if (!responseText.trim()) {
+                    throw new Error("The AI model returned an empty response. This may be due to content safety filters or an issue with the provided chart images.");
+                }
+                const parsedResult = robustJsonParse(responseText) as AnalysisResult;
                 if (response.candidates?.[0]?.groundingMetadata?.groundingChunks) {
                     parsedResult.sources = response.candidates[0].groundingMetadata.groundingChunks.map((c: any) => ({ uri: c.web?.uri || '', title: c.web?.title || 'Source' })).filter((s: any) => s.uri);
                 }
@@ -191,7 +194,11 @@ export default async function handler(req: any, res: any) {
                 const { asset } = body;
                 const prompt = getMarketSentimentPrompt(asset);
                 const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt, config: { tools: [{googleSearch: {}}] } });
-                const parsedResult = robustJsonParse(getResponseText(response)) as MarketSentimentResult;
+                const responseText = getResponseText(response);
+                if (!responseText.trim()) {
+                    throw new Error("The AI model returned an empty response. This could be due to content safety filters or a lack of recent news for the specified asset.");
+                }
+                const parsedResult = robustJsonParse(responseText) as MarketSentimentResult;
                 if (response.candidates?.[0]?.groundingMetadata?.groundingChunks) {
                     parsedResult.sources = response.candidates[0].groundingMetadata.groundingChunks.map((c: any) => ({ uri: c.web?.uri || '', title: c.web?.title || 'Source' })).filter((s: any) => s.uri);
                 }
@@ -202,7 +209,11 @@ export default async function handler(req: any, res: any) {
                 const { trades } = body;
                 const prompt = getJournalFeedbackPrompt(trades);
                 const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt, config: { responseMimeType: 'application/json' } });
-                const parsedResult = robustJsonParse(getResponseText(response)) as JournalFeedback;
+                const responseText = getResponseText(response);
+                if (!responseText.trim()) {
+                    throw new Error("The AI model returned an empty response. This can occur due to content safety filters or an internal model error.");
+                }
+                const parsedResult = robustJsonParse(responseText) as JournalFeedback;
                 return res.status(200).json(parsedResult);
             }
             
@@ -227,6 +238,10 @@ export default async function handler(req: any, res: any) {
             case 'getPredictions': {
                 const prompt = getPredictorPrompt();
                 const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt, config: { tools: [{googleSearch: {}}] } });
+                const responseText = getResponseText(response);
+                if (!responseText.trim()) {
+                    throw new Error("The AI model returned an empty response. This can happen due to content safety filters or if no relevant news events were found.");
+                }
                 const parsedResult = robustJsonParse(getResponseText(response), 'array') as PredictedEvent[];
                 const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
                 if (chunks && Array.isArray(chunks)) {
@@ -241,6 +256,26 @@ export default async function handler(req: any, res: any) {
         }
     } catch (error: any) {
         console.error(`[API] Error processing action "${action}":`, error);
-        res.status(500).json({ error: "An internal API request failed", details: error.message || String(error) });
+    
+        let details = error.message || String(error);
+        let suggestion = "Check the server logs for more details.";
+
+        if (details.includes("API key not valid")) {
+            details = "The configured API key is not valid.";
+            suggestion = "Please ensure the API_KEY environment variable is set correctly in your deployment settings.";
+        } else if (details.includes("quota")) {
+            details = "You have exceeded your API quota.";
+            suggestion = "Please check your Google AI project for quota limits and billing status.";
+        } else if (error instanceof TypeError) {
+            details = `A type error occurred: ${details}`;
+            suggestion = "This might be due to an unexpected data format. Check the input data sent to the API.";
+        }
+
+        const fullError = `Error in API action '${action}': ${details}\n\nPossible Fix: ${suggestion}`;
+        
+        res.status(500).json({ 
+            error: "An internal server error occurred.", 
+            details: fullError
+        });
     }
 }
