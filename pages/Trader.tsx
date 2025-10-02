@@ -1,6 +1,6 @@
 import React, { useState, useCallback, DragEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { analyzeChart } from '../services/geminiService';
+import { analyzeChart } from '../services/apiClient';
 import { TRADING_STYLES } from '../constants';
 import CandleStickLoader from '../components/CandleStickLoader';
 
