@@ -1,7 +1,6 @@
 
 import { GoogleGenAI } from "@google/genai";
 import { PredictedEvent, GroundingSource } from '../types';
-import { apiClient } from './apiClient';
 
 const robustJsonParse = (jsonString: string) => {
     let cleanJsonString = jsonString.trim();
@@ -43,21 +42,17 @@ const getPredictorPrompt = () => `You are 'Oracle', an apex-level trading AI wit
 }]`;
 
 export const getPredictions = async (): Promise<PredictedEvent[]> => {
-    if (process.env.API_KEY) {
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-        const prompt = getPredictorPrompt();
-        const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt, config: { tools: [{googleSearch: {}}] } });
-        const parsedResult = robustJsonParse(response.text) as PredictedEvent[];
-        
-        const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
-        if (chunks && Array.isArray(chunks)) {
-             const sources = chunks.map((c: any) => ({ uri: c.web?.uri || '', title: c.web?.title || 'Source' })).filter((s: any) => s.uri);
-             // Since we can't easily map sources to events, attach all sources to each event
-             parsedResult.forEach(event => event.sources = sources);
-        }
-       
-        return parsedResult;
-    } else {
-        return apiClient.post<PredictedEvent[]>('getPredictions', {});
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const prompt = getPredictorPrompt();
+    const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt, config: { tools: [{googleSearch: {}}] } });
+    const parsedResult = robustJsonParse(response.text) as PredictedEvent[];
+    
+    const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
+    if (chunks && Array.isArray(chunks)) {
+         const sources = chunks.map((c: any) => ({ uri: c.web?.uri || '', title: c.web?.title || 'Source' })).filter((s: any) => s.uri);
+         // Since we can't easily map sources to events, attach all sources to each event
+         parsedResult.forEach(event => event.sources = sources);
     }
+   
+    return parsedResult;
 };

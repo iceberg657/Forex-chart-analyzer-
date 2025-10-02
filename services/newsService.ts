@@ -1,7 +1,6 @@
 
 import { GoogleGenAI } from "@google/genai";
 import { MarketSentimentResult, GroundingSource } from '../types';
-import { apiClient } from './apiClient';
 
 const robustJsonParse = (jsonString: string) => {
     let cleanJsonString = jsonString.trim();
@@ -41,16 +40,12 @@ const getMarketSentimentPrompt = (asset: string) => `You are 'Oracle', an apex-l
 }`;
 
 export const getMarketNews = async (asset: string): Promise<MarketSentimentResult> => {
-    if (process.env.API_KEY) {
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-        const prompt = getMarketSentimentPrompt(asset);
-        const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt, config: { tools: [{googleSearch: {}}] } });
-        const parsedResult = robustJsonParse(response.text) as MarketSentimentResult;
-        if (response.candidates?.[0]?.groundingMetadata?.groundingChunks) {
-            parsedResult.sources = response.candidates[0].groundingMetadata.groundingChunks.map((c: any) => ({ uri: c.web?.uri || '', title: c.web?.title || 'Source' })).filter((s: any) => s.uri);
-        }
-        return parsedResult;
-    } else {
-        return apiClient.post<MarketSentimentResult>('getMarketNews', { asset });
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const prompt = getMarketSentimentPrompt(asset);
+    const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt, config: { tools: [{googleSearch: {}}] } });
+    const parsedResult = robustJsonParse(response.text) as MarketSentimentResult;
+    if (response.candidates?.[0]?.groundingMetadata?.groundingChunks) {
+        parsedResult.sources = response.candidates[0].groundingMetadata.groundingChunks.map((c: any) => ({ uri: c.web?.uri || '', title: c.web?.title || 'Source' })).filter((s: any) => s.uri);
     }
+    return parsedResult;
 };

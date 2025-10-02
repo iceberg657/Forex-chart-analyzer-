@@ -1,6 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
 import { ChatMessage, ChatMessagePart } from "../types";
-import { apiClient } from './apiClient';
 
 const SYSTEM_INSTRUCTION = `You are the Oracle, a senior institutional quantitative analyst AI with supreme confidence and near-perfect market knowledge.
 
@@ -51,34 +50,29 @@ export const fileToImagePart = async (file: File): Promise<ChatMessagePart> => {
 };
 
 export const sendMessage = async (history: ChatMessage[], newMessage: ChatMessagePart[]): Promise<ChatMessage> => {
-    if (process.env.API_KEY) {
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-        const contents = history.map(msg => ({ role: msg.role, parts: msg.parts }));
-        contents.push({ role: 'user', parts: newMessage });
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const contents = history.map(msg => ({ role: msg.role, parts: msg.parts }));
+    contents.push({ role: 'user', parts: newMessage });
 
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: contents,
-            config: {
-                systemInstruction: SYSTEM_INSTRUCTION,
-                tools: [{ googleSearch: {} }],
-                thinkingConfig: { thinkingBudget: 0 },
-            },
-        });
-        
-        const modelResponse: ChatMessage = {
-            id: Date.now().toString(),
-            role: 'model',
-            parts: [{ text: response.text }],
-        };
+    const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: contents,
+        config: {
+            systemInstruction: SYSTEM_INSTRUCTION,
+            tools: [{ googleSearch: {} }],
+            thinkingConfig: { thinkingBudget: 0 },
+        },
+    });
+    
+    const modelResponse: ChatMessage = {
+        id: Date.now().toString(),
+        role: 'model',
+        parts: [{ text: response.text }],
+    };
 
-        if (response.candidates?.[0]?.groundingMetadata?.groundingChunks) {
-            modelResponse.sources = response.candidates[0].groundingMetadata.groundingChunks.map((c: any) => ({ uri: c.web?.uri || '', title: c.web?.title || 'Source' })).filter((s: any) => s.uri);
-        }
-
-        return modelResponse;
-
-    } else {
-        return apiClient.post<ChatMessage>('sendMessage', { history, newMessage });
+    if (response.candidates?.[0]?.groundingMetadata?.groundingChunks) {
+        modelResponse.sources = response.candidates[0].groundingMetadata.groundingChunks.map((c: any) => ({ uri: c.web?.uri || '', title: c.web?.title || 'Source' })).filter((s: any) => s.uri);
     }
+
+    return modelResponse;
 };

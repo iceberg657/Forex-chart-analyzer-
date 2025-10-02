@@ -1,6 +1,5 @@
 import { GoogleGenAI, Part } from "@google/genai";
 import { AnalysisResult, BotLanguage, IndicatorLanguage, GroundingSource } from '../types';
-import { apiClient } from './apiClient';
 
 // --- UTILITIES ---
 
@@ -196,67 +195,54 @@ export const analyzeChart = async (
     
     const isSingleChart = !!chartFiles.primary && !chartFiles.higher && !chartFiles.entry;
 
-    if (process.env.API_KEY) { // Direct call
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-        const parts: Part[] = [{ text: getAnalysisPrompt(tradingStyle, riskReward, isSingleChart) }];
-        
-        const fileTypeMap: { [key: string]: string } = {
-            higher: 'Higher Timeframe Chart:',
-            primary: 'Primary Timeframe Chart:',
-            entry: 'Entry Timeframe Chart:',
-        };
-        
-        for (const key of ['higher', 'primary', 'entry']) {
-            if (imageParts[key]) {
-                parts.push({ text: fileTypeMap[key] });
-                parts.push({ inlineData: imageParts[key]! });
-            }
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const parts: Part[] = [{ text: getAnalysisPrompt(tradingStyle, riskReward, isSingleChart) }];
+    
+    const fileTypeMap: { [key: string]: string } = {
+        higher: 'Higher Timeframe Chart:',
+        primary: 'Primary Timeframe Chart:',
+        entry: 'Entry Timeframe Chart:',
+    };
+    
+    for (const key of ['higher', 'primary', 'entry']) {
+        if (imageParts[key]) {
+            parts.push({ text: fileTypeMap[key] });
+            parts.push({ inlineData: imageParts[key]! });
         }
-        
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: { parts },
-            config: { 
-                tools: [{googleSearch: {}}],
-                thinkingConfig: { thinkingBudget: 0 }
-            }
-        });
-
-        const parsedResult = robustJsonParse(response.text) as AnalysisResult;
-
-        if (response.candidates?.[0]?.groundingMetadata?.groundingChunks) {
-            parsedResult.sources = response.candidates[0].groundingMetadata.groundingChunks
-            .map((chunk: any) => ({
-                uri: chunk.web?.uri || '',
-                title: chunk.web?.title || 'Source',
-            }))
-            .filter((source: GroundingSource) => source.uri);
-        }
-        return parsedResult;
-
-    } else { // API endpoint call
-        return apiClient.post<AnalysisResult>('analyzeChart', { imageParts, riskReward, tradingStyle });
     }
+    
+    const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: { parts },
+        config: { 
+            tools: [{googleSearch: {}}],
+            thinkingConfig: { thinkingBudget: 0 }
+        }
+    });
+
+    const parsedResult = robustJsonParse(response.text) as AnalysisResult;
+
+    if (response.candidates?.[0]?.groundingMetadata?.groundingChunks) {
+        parsedResult.sources = response.candidates[0].groundingMetadata.groundingChunks
+        .map((chunk: any) => ({
+            uri: chunk.web?.uri || '',
+            title: chunk.web?.title || 'Source',
+        }))
+        .filter((source: GroundingSource) => source.uri);
+    }
+    return parsedResult;
 };
 
 export const createBot = async ({ description, language }: { description: string; language: BotLanguage; }): Promise<string> => {
-    if (process.env.API_KEY) {
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-        const prompt = getBotPrompt(description, language);
-        const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
-        return response.text;
-    } else {
-        return apiClient.post<string>('createBot', { description, language });
-    }
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const prompt = getBotPrompt(description, language);
+    const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
+    return response.text;
 };
 
 export const createIndicator = async ({ description, language }: { description: string; language: IndicatorLanguage; }): Promise<string> => {
-    if (process.env.API_KEY) {
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-        const prompt = getIndicatorPrompt(description, language);
-        const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
-        return response.text;
-    } else {
-        return apiClient.post<string>('createIndicator', { description, language });
-    }
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const prompt = getIndicatorPrompt(description, language);
+    const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
+    return response.text;
 };

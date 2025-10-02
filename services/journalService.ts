@@ -1,7 +1,6 @@
 
 import { GoogleGenAI } from "@google/genai";
 import { TradeEntry, JournalFeedback } from '../types';
-import { apiClient } from './apiClient';
 
 const robustJsonParse = (jsonString: string) => {
     let cleanJsonString = jsonString.trim();
@@ -48,12 +47,8 @@ You MUST respond ONLY with a single, valid JSON object matching the schema below
 }`;
 
 export const getTradingJournalFeedback = async (trades: TradeEntry[]): Promise<JournalFeedback> => {
-     if (process.env.API_KEY) {
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-        const prompt = getJournalFeedbackPrompt(trades);
-        const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt, config: { responseMimeType: 'application/json' } });
-        return robustJsonParse(response.text) as JournalFeedback;
-    } else {
-        return apiClient.post<JournalFeedback>('getTradingJournalFeedback', { trades });
-    }
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const prompt = getJournalFeedbackPrompt(trades);
+    const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt, config: { responseMimeType: 'application/json' } });
+    return robustJsonParse(response.text) as JournalFeedback;
 };

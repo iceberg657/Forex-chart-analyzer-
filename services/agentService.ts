@@ -1,6 +1,5 @@
 
 import { GoogleGenAI, Type, Tool } from "@google/genai";
-import { apiClient } from './apiClient';
 
 const agentTools: Tool[] = [
     {
@@ -56,14 +55,10 @@ const agentTools: Tool[] = [
 ];
 
 export const processCommandWithAgent = async (command: string): Promise<any> => {
-    if (process.env.API_KEY) {
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-        const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: command, config: { tools: agentTools } });
-        return {
-            text: response.text,
-            functionCalls: response.functionCalls || null,
-        };
-    } else {
-        return apiClient.post<any>('processCommandWithAgent', { command });
-    }
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: command, config: { tools: agentTools } });
+    return {
+        text: response.text,
+        functionCalls: response.functionCalls || null,
+    };
 };
