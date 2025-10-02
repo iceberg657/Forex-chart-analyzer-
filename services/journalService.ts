@@ -1,17 +1,11 @@
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { TradeEntry, JournalFeedback } from '../types';
-import { apiClient } from './apiClient';
-import { detectEnvironment } from '../hooks/useEnvironment';
 
-const environment = detectEnvironment();
-let ai: GoogleGenAI | null = null;
-if (environment === 'aistudio') {
-    if (process.env.API_KEY) {
-        ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    } else {
-        console.error("API Key not found for AI Studio environment. Direct API calls will fail.");
-    }
+if (!process.env.API_KEY) {
+    throw new Error("Google AI API Key not found. Please set the API_KEY environment variable in the AI Studio secrets.");
 }
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
 
 const getResponseText = (response: GenerateContentResponse): string => {
     // Use the official .text accessor for robustness, with nullish coalescing for safety.
@@ -75,20 +69,14 @@ You MUST respond ONLY with a single, valid JSON object matching the schema below
 }`;
 
 export const getTradingJournalFeedback = async (trades: TradeEntry[]): Promise<JournalFeedback> => {
-    if (environment === 'website' || environment === 'pwa') {
-        return apiClient.post<JournalFeedback>('getTradingJournalFeedback', { trades });
-    } else {
-        if (!ai) throw new Error("Gemini AI not initialized for AI Studio. An API_KEY environment variable is required.");
-
-        const prompt = getJournalFeedbackPrompt(trades);
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-            config: {
-                responseMimeType: 'application/json'
-            }
-        });
-        
-        return robustJsonParse(getResponseText(response)) as JournalFeedback;
-    }
+    const prompt = getJournalFeedbackPrompt(trades);
+    const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+        config: {
+            responseMimeType: 'application/json'
+        }
+    });
+    
+    return robustJsonParse(getResponseText(response)) as JournalFeedback;
 };

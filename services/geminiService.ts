@@ -1,17 +1,11 @@
 import { GoogleGenAI, Part, GenerateContentResponse } from "@google/genai";
 import { AnalysisResult, BotLanguage, IndicatorLanguage, GroundingSource } from '../types';
-import { apiClient } from './apiClient';
-import { detectEnvironment } from '../hooks/useEnvironment';
 
-const environment = detectEnvironment();
-let ai: GoogleGenAI | null = null;
-if (environment === 'aistudio') {
-    if (process.env.API_KEY) {
-        ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    } else {
-        console.error("API Key not found for AI Studio environment. Direct API calls will fail.");
-    }
+if (!process.env.API_KEY) {
+    throw new Error("Google AI API Key not found. Please set the API_KEY environment variable in the AI Studio secrets.");
 }
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
 
 // --- UTILITIES ---
 
@@ -209,71 +203,51 @@ export const analyzeChart = async (
         }
     }
     
-    if (environment === 'website' || environment === 'pwa') {
-        return apiClient.post<AnalysisResult>('analyzeChart', {
-            imageParts,
-            riskReward,
-            tradingStyle,
-        });
-    } else {
-        if (!ai) throw new Error("Gemini AI not initialized for AI Studio. An API_KEY environment variable is required.");
-        
-        const isSingleChart = !!imageParts.primary && !imageParts.higher && !imageParts.entry;
+    const isSingleChart = !!imageParts.primary && !imageParts.higher && !imageParts.entry;
 
-        const parts: Part[] = [
-            { text: getAnalysisPrompt(tradingStyle, riskReward, isSingleChart) },
-        ];
-        
-        for (const key of ['higher', 'primary', 'entry']) {
-            if (imageParts[key]) {
-                parts.push({ text: `${key.charAt(0).toUpperCase() + key.slice(1)} Timeframe Chart:` });
-                parts.push({
-                    inlineData: imageParts[key]!,
-                });
-            }
+    const parts: Part[] = [
+        { text: getAnalysisPrompt(tradingStyle, riskReward, isSingleChart) },
+    ];
+    
+    for (const key of ['higher', 'primary', 'entry']) {
+        if (imageParts[key]) {
+            parts.push({ text: `${key.charAt(0).toUpperCase() + key.slice(1)} Timeframe Chart:` });
+            parts.push({
+                inlineData: imageParts[key]!,
+            });
         }
-
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: { parts },
-            config: {
-                tools: [{googleSearch: {}}],
-            }
-        });
-
-        const parsedResult = robustJsonParse(getResponseText(response)) as AnalysisResult;
-
-        if (response.candidates?.[0]?.groundingMetadata?.groundingChunks) {
-            parsedResult.sources = response.candidates[0].groundingMetadata.groundingChunks
-            .map((chunk: any) => ({
-                uri: chunk.web?.uri || '',
-                title: chunk.web?.title || 'Source',
-            }))
-            .filter((source: GroundingSource) => source.uri);
-        }
-
-        return parsedResult;
     }
+
+    const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: { parts },
+        config: {
+            tools: [{googleSearch: {}}],
+        }
+    });
+
+    const parsedResult = robustJsonParse(getResponseText(response)) as AnalysisResult;
+
+    if (response.candidates?.[0]?.groundingMetadata?.groundingChunks) {
+        parsedResult.sources = response.candidates[0].groundingMetadata.groundingChunks
+        .map((chunk: any) => ({
+            uri: chunk.web?.uri || '',
+            title: chunk.web?.title || 'Source',
+        }))
+        .filter((source: GroundingSource) => source.uri);
+    }
+
+    return parsedResult;
 };
 
 export const createBot = async ({ description, language }: { description: string; language: BotLanguage; }): Promise<string> => {
-    if (environment === 'website' || environment === 'pwa') {
-        return apiClient.post<string>('createBot', { description, language });
-    } else {
-        if (!ai) throw new Error("Gemini AI not initialized for AI Studio. An API_KEY environment variable is required.");
-        const prompt = getBotPrompt(description, language);
-        const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
-        return getResponseText(response);
-    }
+    const prompt = getBotPrompt(description, language);
+    const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
+    return getResponseText(response);
 };
 
 export const createIndicator = async ({ description, language }: { description: string; language: IndicatorLanguage; }): Promise<string> => {
-    if (environment === 'website' || environment === 'pwa') {
-        return apiClient.post<string>('createIndicator', { description, language });
-    } else {
-         if (!ai) throw new Error("Gemini AI not initialized for AI Studio. An API_KEY environment variable is required.");
-        const prompt = getIndicatorPrompt(description, language);
-        const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
-        return getResponseText(response);
-    }
+    const prompt = getIndicatorPrompt(description, language);
+    const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
+    return getResponseText(response);
 };

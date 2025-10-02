@@ -22,20 +22,17 @@ import { EdgeLightingProvider } from './hooks/useEdgeLighting';
 import ResponsiveFix from './components/ResponsiveFix';
 import { AppContextProvider } from './hooks/useAppContext';
 import AIAgent from './components/AIAgent';
-import { EnvironmentProvider } from './hooks/useEnvironment';
 
 const App: React.FC = () => {
   return (
     <AuthProvider>
       <ThemeProvider>
         <EdgeLightingProvider>
-          <EnvironmentProvider>
-            <HashRouter>
-              <AppContextProvider>
-                <AppContent />
-              </AppContextProvider>
-            </HashRouter>
-          </EnvironmentProvider>
+          <HashRouter>
+            <AppContextProvider>
+              <AppContent />
+            </AppContextProvider>
+          </HashRouter>
         </EdgeLightingProvider>
       </ThemeProvider>
     </AuthProvider>

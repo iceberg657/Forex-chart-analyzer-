@@ -1,17 +1,11 @@
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { ChatMessage, ChatMessagePart, GroundingSource } from "../types";
-import { apiClient } from "./apiClient";
-import { detectEnvironment } from '../hooks/useEnvironment';
 
-const environment = detectEnvironment();
-let ai: GoogleGenAI | null = null;
-if (environment === 'aistudio') {
-    if (process.env.API_KEY) {
-        ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    } else {
-        console.error("API Key not found for AI Studio environment. Direct API calls will fail.");
-    }
+if (!process.env.API_KEY) {
+    throw new Error("Google AI API Key not found. Please set the API_KEY environment variable in the AI Studio secrets.");
 }
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
 
 const getResponseText = (response: GenerateContentResponse): string => {
     // Use the official .text accessor for robustness, with nullish coalescing for safety.
@@ -66,38 +60,32 @@ export const fileToImagePart = async (file: File): Promise<ChatMessagePart> => {
 };
 
 export const sendMessage = async (history: ChatMessage[], newMessage: ChatMessagePart[]): Promise<ChatMessage> => {
-    if (environment === 'website' || environment === 'pwa') {
-        return apiClient.post<ChatMessage>('sendMessage', { history, newMessage });
-    } else {
-        if (!ai) throw new Error("Gemini AI not initialized for AI Studio. An API_KEY environment variable is required.");
-        
-        const contents = history.map(msg => ({ role: msg.role, parts: msg.parts }));
-        contents.push({ role: 'user', parts: newMessage });
+    const contents = history.map(msg => ({ role: msg.role, parts: msg.parts }));
+    contents.push({ role: 'user', parts: newMessage });
 
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: contents,
-            config: {
-                systemInstruction: SYSTEM_INSTRUCTION,
-                tools: [{ googleSearch: {} }],
-            },
-        });
-        
-        const modelResponse: ChatMessage = {
-            id: Date.now().toString(),
-            role: 'model',
-            parts: [{ text: getResponseText(response) }],
-        };
+    const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: contents,
+        config: {
+            systemInstruction: SYSTEM_INSTRUCTION,
+            tools: [{ googleSearch: {} }],
+        },
+    });
+    
+    const modelResponse: ChatMessage = {
+        id: Date.now().toString(),
+        role: 'model',
+        parts: [{ text: getResponseText(response) }],
+    };
 
-        if (response.candidates?.[0]?.groundingMetadata?.groundingChunks) {
-            modelResponse.sources = response.candidates[0].groundingMetadata.groundingChunks
-                .map((c: any) => ({ 
-                    uri: c.web?.uri || '', 
-                    title: c.web?.title || 'Source' 
-                }))
-                .filter((s: GroundingSource) => s.uri);
-        }
-
-        return modelResponse;
+    if (response.candidates?.[0]?.groundingMetadata?.groundingChunks) {
+        modelResponse.sources = response.candidates[0].groundingMetadata.groundingChunks
+            .map((c: any) => ({ 
+                uri: c.web?.uri || '', 
+                title: c.web?.title || 'Source' 
+            }))
+            .filter((s: GroundingSource) => s.uri);
     }
+
+    return modelResponse;
 };

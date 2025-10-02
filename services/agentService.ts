@@ -1,16 +1,10 @@
 import { GoogleGenAI, Type, Tool } from "@google/genai";
-import { apiClient } from './apiClient';
-import { detectEnvironment } from '../hooks/useEnvironment';
 
-const environment = detectEnvironment();
-let ai: GoogleGenAI | null = null;
-if (environment === 'aistudio') {
-    if (process.env.API_KEY) {
-        ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    } else {
-        console.error("API Key not found for AI Studio environment. Direct API calls will fail.");
-    }
+if (!process.env.API_KEY) {
+    throw new Error("Google AI API Key not found. Please set the API_KEY environment variable in the AI Studio secrets.");
 }
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
 
 const agentTools: Tool[] = [
     {
@@ -67,22 +61,16 @@ const agentTools: Tool[] = [
 
 
 export const processCommandWithAgent = async (command: string): Promise<any> => {
-    if (environment === 'website' || environment === 'pwa') {
-        return apiClient.post('processCommandWithAgent', { command });
-    } else {
-        if (!ai) throw new Error("Gemini AI not initialized for AI Studio. An API_KEY environment variable is required.");
+    const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: command,
+        config: {
+            tools: agentTools
+        }
+    });
 
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: command,
-            config: {
-                tools: agentTools
-            }
-        });
-
-        return {
-            text: response.text,
-            functionCalls: response.functionCalls || null,
-        };
-    }
+    return {
+        text: response.text,
+        functionCalls: response.functionCalls || null,
+    };
 };

@@ -1,17 +1,11 @@
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { MarketSentimentResult, GroundingSource } from '../types';
-import { apiClient } from './apiClient';
-import { detectEnvironment } from '../hooks/useEnvironment';
 
-const environment = detectEnvironment();
-let ai: GoogleGenAI | null = null;
-if (environment === 'aistudio') {
-    if (process.env.API_KEY) {
-        ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    } else {
-        console.error("API Key not found for AI Studio environment. Direct API calls will fail.");
-    }
+if (!process.env.API_KEY) {
+    throw new Error("Google AI API Key not found. Please set the API_KEY environment variable in the AI Studio secrets.");
 }
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
 
 const getResponseText = (response: GenerateContentResponse): string => {
     // Use the official .text accessor for robustness, with nullish coalescing for safety.
@@ -66,31 +60,25 @@ You MUST respond ONLY with a single, valid JSON object matching the schema below
 }`;
 
 export const getMarketNews = async (asset: string): Promise<MarketSentimentResult> => {
-    if (environment === 'website' || environment === 'pwa') {
-        return apiClient.post<MarketSentimentResult>('getMarketNews', { asset });
-    } else {
-        if (!ai) throw new Error("Gemini AI not initialized for AI Studio. An API_KEY environment variable is required.");
-        
-        const prompt = getMarketSentimentPrompt(asset);
-        const response = await ai.models.generateContent({ 
-            model: 'gemini-2.5-flash', 
-            contents: prompt, 
-            config: { 
-                tools: [{googleSearch: {}}] 
-            } 
-        });
+    const prompt = getMarketSentimentPrompt(asset);
+    const response = await ai.models.generateContent({ 
+        model: 'gemini-2.5-flash', 
+        contents: prompt, 
+        config: { 
+            tools: [{googleSearch: {}}] 
+        } 
+    });
 
-        const parsedResult = robustJsonParse(getResponseText(response)) as MarketSentimentResult;
+    const parsedResult = robustJsonParse(getResponseText(response)) as MarketSentimentResult;
 
-        if (response.candidates?.[0]?.groundingMetadata?.groundingChunks) {
-            parsedResult.sources = response.candidates[0].groundingMetadata.groundingChunks
-                .map((c: any) => ({ 
-                    uri: c.web?.uri || '', 
-                    title: c.web?.title || 'Source' 
-                }))
-                .filter((s: GroundingSource) => s.uri);
-        }
-
-        return parsedResult;
+    if (response.candidates?.[0]?.groundingMetadata?.groundingChunks) {
+        parsedResult.sources = response.candidates[0].groundingMetadata.groundingChunks
+            .map((c: any) => ({ 
+                uri: c.web?.uri || '', 
+                title: c.web?.title || 'Source' 
+            }))
+            .filter((s: GroundingSource) => s.uri);
     }
+
+    return parsedResult;
 };

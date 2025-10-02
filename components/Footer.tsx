@@ -1,35 +1,4 @@
 import React from 'react';
-import { useEnvironment } from '../hooks/useEnvironment';
-
-const EnvironmentBadge: React.FC = () => {
-    const env = useEnvironment();
-    let text: string;
-    let icon: string;
-
-    switch(env) {
-        case 'pwa':
-            text = 'PWA Mode';
-            icon = 'fas fa-download';
-            break;
-        case 'aistudio':
-            text = 'AI Studio';
-            icon = 'fas fa-cogs';
-            break;
-        case 'website':
-        default:
-            text = 'Web Mode';
-            icon = 'fas fa-globe';
-            break;
-    }
-
-    return (
-        <div className="absolute bottom-2 right-2 text-xs bg-black/10 dark:bg-white/10 text-gray-500 dark:text-gray-400 px-2 py-1 rounded-full flex items-center gap-1.5" title={`Running in ${text}`}>
-            <i className={icon}></i>
-            <span className="hidden sm:inline">{text}</span>
-        </div>
-    );
-};
-
 
 const Footer: React.FC = () => {
   return (
@@ -46,7 +15,6 @@ const Footer: React.FC = () => {
           </a>
         </div>
       </div>
-      <EnvironmentBadge />
     </footer>
   );
 };
