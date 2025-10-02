@@ -31,19 +31,32 @@ const AIAgent: React.FC = () => {
         for (const call of result.functionCalls) {
             switch (call.name) {
                 case 'navigate':
-                    // FIX: Cast argument to the expected type 'string'.
-                    app.navigate(call.args.page as string);
-                    message = `Navigating to ${call.args.page}...`;
+                    const page = call.args.page;
+                    if (typeof page === 'string') {
+                        app.navigate(page);
+                        message = `Navigating to ${page}...`;
+                    } else {
+                        message = "I'm sorry, I don't know which page to navigate to.";
+                    }
                     break;
                 case 'changeTheme':
-                    // FIX: Cast argument to the expected type '"light" | "dark"'.
-                    app.changeTheme(call.args.theme as 'light' | 'dark');
-                    message = `Switched to ${call.args.theme} mode.`;
+                    const theme = call.args.theme;
+                    if (theme === 'light' || theme === 'dark') {
+                        app.changeTheme(theme);
+                        message = `Switched to ${theme} mode.`;
+                    } else {
+                        message = "I can only switch the theme to 'light' or 'dark'.";
+                    }
                     break;
                 case 'setEdgeLighting':
-                    // FIX: Cast argument to the expected type 'EdgeLightColor'.
-                    app.setEdgeLight(call.args.color as EdgeLightColor);
-                    message = `Edge lighting set to ${call.args.color}.`;
+                    const color = call.args.color;
+                    const validColors: EdgeLightColor[] = ['default', 'green', 'red', 'orange', 'yellow', 'blue', 'purple', 'white'];
+                    if (typeof color === 'string' && validColors.includes(color as EdgeLightColor)) {
+                        app.setEdgeLight(color as EdgeLightColor);
+                        message = `Edge lighting set to ${color}.`;
+                    } else {
+                        message = `I can't set the edge lighting to that color. Try one of: ${validColors.join(', ')}.`;
+                    }
                     break;
                 case 'logout':
                     app.logout();
