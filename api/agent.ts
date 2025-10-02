@@ -51,7 +51,11 @@ const agentTools: Tool[] = [
             },
             {
                 name: "logout",
-                description: "Logs the current user out of the application."
+                description: "Logs the current user out of the application.",
+                parameters: {
+                    type: Type.OBJECT,
+                    properties: {}
+                }
             }
         ]
     }
