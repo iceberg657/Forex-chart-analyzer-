@@ -1,4 +1,5 @@
 
+
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 
@@ -24,7 +25,7 @@ interface GroundingSource {
 }
 
 const getResponseText = (response: GenerateContentResponse): string => {
-    return response.text ?? '';
+    return response.text;
 };
 
 const SYSTEM_INSTRUCTION = `You are the Oracle, a senior institutional quantitative analyst AI with supreme confidence and near-perfect market knowledge.

@@ -1,4 +1,5 @@
 
+
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 
@@ -9,7 +10,7 @@ enum BotLanguage {
 }
 
 const getResponseText = (response: GenerateContentResponse): string => {
-    return response.text ?? '';
+    return response.text;
 };
 
 const getBotPrompt = (description: string, language: BotLanguage) => `You are an expert MQL developer. Your task is to generate the code for a trading bot (Expert Advisor) based on the user's description.

@@ -1,3 +1,4 @@
+
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI, Part, GenerateContentResponse } from "@google/genai";
 
@@ -25,7 +26,7 @@ interface AnalysisResult {
 // --- UTILITIES ---
 
 const getResponseText = (response: GenerateContentResponse): string => {
-    return response.text ?? '';
+    return response.text;
 };
 
 const robustJsonParse = (jsonString: string) => {

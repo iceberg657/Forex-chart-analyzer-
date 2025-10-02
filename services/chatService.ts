@@ -1,5 +1,7 @@
 
+
 import { ChatMessage, ChatMessagePart } from "../types";
+import { apiPost } from './api';
 
 export const fileToImagePart = async (file: File): Promise<ChatMessagePart> => {
     const base64Data = await new Promise<string>((resolve, reject) => {
@@ -18,27 +20,6 @@ export const fileToImagePart = async (file: File): Promise<ChatMessagePart> => {
 };
 
 export const sendMessage = async (history: ChatMessage[], newMessage: ChatMessagePart[]): Promise<ChatMessage> => {
-    const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ history, newMessage }),
-    });
-
-    if (!response.ok) {
-        const errorText = await response.text().catch(() => 'Server returned an unreadable error');
-        try {
-            const errorJson = JSON.parse(errorText);
-            throw new Error(errorJson.message || `Server error: ${response.status}`);
-        } catch (e) {
-            throw new Error(errorText || `Server error: ${response.status}`);
-        }
-    }
-
-    const result = await response.json();
-
-    if (!result.success) {
-        throw new Error(result.message || 'Failed to send message.');
-    }
-
+    const result = await apiPost('/api/chat', { history, newMessage });
     return result.data as ChatMessage;
 };

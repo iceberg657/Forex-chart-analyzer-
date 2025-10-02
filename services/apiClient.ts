@@ -1,5 +1,7 @@
 
+
 import { AnalysisResult } from '../types';
+import { apiPost } from './api';
 
 const fileToBase64 = (file: File): Promise<{ data: string; mimeType: string }> => {
   return new Promise((resolve, reject) => {
@@ -36,31 +38,11 @@ export const analyzeChart = async (
         }
     }
     
-    const response = await fetch('/api/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-            chartFiles: chartFilesBase64, 
-            riskReward, 
-            tradingStyle 
-        }),
+    const result = await apiPost('/api/analyze', { 
+        chartFiles: chartFilesBase64, 
+        riskReward, 
+        tradingStyle 
     });
-
-    if (!response.ok) {
-        const errorText = await response.text().catch(() => 'Server returned an unreadable error');
-        try {
-            const errorJson = JSON.parse(errorText);
-            throw new Error(errorJson.message || `Server error: ${response.status}`);
-        } catch (e) {
-            throw new Error(errorText || `Server error: ${response.status}`);
-        }
-    }
-
-    const result = await response.json();
-
-    if (!result.success) {
-        throw new Error(result.message || 'Failed to analyze chart.');
-    }
 
     return result.data as AnalysisResult;
 };
