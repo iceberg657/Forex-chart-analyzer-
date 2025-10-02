@@ -153,7 +153,7 @@ export default async function handler(req: any, res: any) {
                     }
                 }
                 const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: { parts }, config: { tools: [{googleSearch: {}}] } });
-                const parsedResult = robustJsonParse(response.text) as AnalysisResult;
+                const parsedResult = robustJsonParse(response.text ?? '') as AnalysisResult;
                 if (response.candidates?.[0]?.groundingMetadata?.groundingChunks) {
                     parsedResult.sources = response.candidates[0].groundingMetadata.groundingChunks.map((c: any) => ({ uri: c.web?.uri || '', title: c.web?.title || 'Source' })).filter((s: any) => s.uri);
                 }
@@ -164,21 +164,21 @@ export default async function handler(req: any, res: any) {
                 const { description, language } = body;
                 const prompt = getBotPrompt(description, language);
                 const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
-                return res.status(200).send(response.text);
+                return res.status(200).send(response.text ?? '');
             }
 
             case 'createIndicator': {
                 const { description, language } = body;
                 const prompt = getIndicatorPrompt(description, language);
                 const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
-                return res.status(200).send(response.text);
+                return res.status(200).send(response.text ?? '');
             }
 
             case 'getMarketNews': {
                 const { asset } = body;
                 const prompt = getMarketSentimentPrompt(asset);
                 const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt, config: { tools: [{googleSearch: {}}] } });
-                const parsedResult = robustJsonParse(response.text) as MarketSentimentResult;
+                const parsedResult = robustJsonParse(response.text ?? '') as MarketSentimentResult;
                 if (response.candidates?.[0]?.groundingMetadata?.groundingChunks) {
                     parsedResult.sources = response.candidates[0].groundingMetadata.groundingChunks.map((c: any) => ({ uri: c.web?.uri || '', title: c.web?.title || 'Source' })).filter((s: any) => s.uri);
                 }
@@ -189,14 +189,14 @@ export default async function handler(req: any, res: any) {
                 const { trades } = body;
                 const prompt = getJournalFeedbackPrompt(trades);
                 const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt, config: { responseMimeType: 'application/json' } });
-                const parsedResult = robustJsonParse(response.text) as JournalFeedback;
+                const parsedResult = robustJsonParse(response.text ?? '') as JournalFeedback;
                 return res.status(200).json(parsedResult);
             }
             
             case 'processCommandWithAgent': {
                 const { command } = body;
                 const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: command, config: { tools: agentTools } });
-                return res.status(200).json({ text: response.text, functionCalls: response.functionCalls || null });
+                return res.status(200).json({ text: response.text ?? '', functionCalls: response.functionCalls || null });
             }
 
             case 'sendMessage': {
@@ -204,7 +204,7 @@ export default async function handler(req: any, res: any) {
                 const contents = history.map(msg => ({ role: msg.role, parts: msg.parts }));
                 contents.push({ role: 'user', parts: newMessage });
                 const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents, config: { systemInstruction: CHAT_SYSTEM_INSTRUCTION, tools: [{ googleSearch: {} }] } });
-                const modelResponse: ChatMessage = { id: Date.now().toString(), role: 'model', parts: [{ text: response.text }] };
+                const modelResponse: ChatMessage = { id: Date.now().toString(), role: 'model', parts: [{ text: response.text ?? '' }] };
                 if (response.candidates?.[0]?.groundingMetadata?.groundingChunks) {
                     modelResponse.sources = response.candidates[0].groundingMetadata.groundingChunks.map((c: any) => ({ uri: c.web?.uri || '', title: c.web?.title || 'Source' })).filter((s: any) => s.uri);
                 }
@@ -214,7 +214,7 @@ export default async function handler(req: any, res: any) {
             case 'getPredictions': {
                 const prompt = getPredictorPrompt();
                 const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt, config: { tools: [{googleSearch: {}}] } });
-                const parsedResult = robustJsonParse(response.text, 'array') as PredictedEvent[];
+                const parsedResult = robustJsonParse(response.text ?? '', 'array') as PredictedEvent[];
                 const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
                 if (chunks && Array.isArray(chunks)) {
                     const sources = chunks.map((c: any) => ({ uri: c.web?.uri || '', title: c.web?.title || 'Source' })).filter((s: any) => s.uri);
@@ -228,6 +228,6 @@ export default async function handler(req: any, res: any) {
         }
     } catch (error: any) {
         console.error(`[API] Error processing action "${action}":`, error);
-        res.status(500).json({ error: "An internal API request failed", details: error.message });
+        res.status(500).json({ error: "An internal API request failed", details: error.message || String(error) });
     }
 }
