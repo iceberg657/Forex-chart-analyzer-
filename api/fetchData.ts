@@ -15,19 +15,9 @@ import {
 // --- UTILITIES ---
 
 const getResponseText = (response: GenerateContentResponse): string => {
-    // This is a robust way to get text, handling cases where the response might be blocked
-    // or doesn't contain text parts, which might cause the simple `response.text` getter to fail.
-    if (response?.candidates?.[0]?.content?.parts) {
-        const textParts = response.candidates[0].content.parts
-            .filter((part: any) => typeof part.text === 'string')
-            .map((part: any) => part.text);
-        
-        if (textParts.length > 0) {
-            return textParts.join('');
-        }
-    }
-    // Fallback to the official .text getter if the main method yields nothing, with nullish coalescing for safety.
-    return response?.text ?? '';
+    // Use the official .text accessor for robustness, with nullish coalescing for safety.
+    // This is the recommended approach and avoids errors from manually parsing response parts.
+    return response.text ?? '';
 };
 
 
@@ -117,7 +107,7 @@ const getMarketSentimentPrompt = (asset: string) => `You are 'Oracle', an apex-l
 
 const getJournalFeedbackPrompt = (trades: TradeEntry[]) => `You are 'Oracle', an apex-level trading AI and performance coach. Analyze the provided trader's journal and provide objective, actionable feedback. You MUST return a single, valid JSON object. Data: ${JSON.stringify(trades, null, 2)}. Schema: { "overallPnl": "number", "winRate": "number", "strengths": ["string"], "weaknesses": ["string"], "suggestions": ["string"] }`;
 
-const getPredictorPrompt = () => `You are 'Oracle', an apex-level trading AI predicting market impact of economic news. Identify the top 3-5 HIGHEST impact events for the next 7 days. You must DECLARE the initial price spike direction (BUY/SELL). You MUST return a single, valid JSON array of objects. Schema: [{ "eventName": "string", "time": "string (YYYY-DD-MM HH:MM UTC)", "currency": "string", "directionalBias": "'BUY'|'SELL'", "confidence": "number (0-100)", "rationale": "string", "sources": "populated by system" }]`;
+const getPredictorPrompt = () => `You are 'Oracle', an apex-level trading AI predicting market impact of economic news. Identify the top 3-5 HIGHEST impact events for the next 7 days. You must DECLARE the initial price spike direction (BUY/SELL). You MUST return a single, valid JSON array of objects. Schema: [{ "eventName": "string", "time": "string (YYYY-MM-DD HH:MM UTC)", "currency": "string", "directionalBias": "'BUY'|'SELL'", "confidence": "number (0-100)", "rationale": "string", "sources": "populated by system" }]`;
 
 const CHAT_SYSTEM_INSTRUCTION = `You are the Oracle, a senior institutional quantitative analyst AI with supreme confidence and near-perfect market knowledge.
 

@@ -14,16 +14,8 @@ if (environment === 'aistudio') {
 }
 
 const getResponseText = (response: GenerateContentResponse): string => {
-    if (response?.candidates?.[0]?.content?.parts) {
-        const textParts = response.candidates[0].content.parts
-            .filter((part: any) => typeof part.text === 'string')
-            .map((part: any) => part.text);
-        
-        if (textParts.length > 0) {
-            return textParts.join('');
-        }
-    }
-    return response?.text ?? '';
+    // Use the official .text accessor for robustness, with nullish coalescing for safety.
+    return response.text ?? '';
 };
 
 const SYSTEM_INSTRUCTION = `You are the Oracle, a senior institutional quantitative analyst AI with supreme confidence and near-perfect market knowledge.

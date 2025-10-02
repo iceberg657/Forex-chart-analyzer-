@@ -16,17 +16,8 @@ if (environment === 'aistudio') {
 // --- UTILITIES ---
 
 const getResponseText = (response: GenerateContentResponse): string => {
-    if (response?.candidates?.[0]?.content?.parts) {
-        const textParts = response.candidates[0].content.parts
-            .filter((part: any) => typeof part.text === 'string')
-            .map((part: any) => part.text);
-        
-        if (textParts.length > 0) {
-            return textParts.join('');
-        }
-    }
-    // Fallback to the simple text property if the main method yields nothing.
-    return response?.text ?? '';
+    // Use the official .text accessor for robustness, with nullish coalescing for safety.
+    return response.text ?? '';
 };
 
 const fileToBase64 = (file: File): Promise<{ data: string; mimeType: string }> => {
