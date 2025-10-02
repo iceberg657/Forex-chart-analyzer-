@@ -17,8 +17,6 @@ interface GroundingSource {
   title: string;
 }
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
-
 const getResponseText = (response: GenerateContentResponse): string => {
     return response.text ?? '';
 };
@@ -77,6 +75,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!process.env.API_KEY) {
         return res.status(500).json({ success: false, message: 'API key not configured' });
     }
+
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
     try {
         const { asset } = req.body;

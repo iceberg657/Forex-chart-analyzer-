@@ -2,8 +2,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI, Type, Tool } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
-
 const agentTools: Tool[] = [
     {
         functionDeclarations: [
@@ -65,6 +63,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!process.env.API_KEY) {
         return res.status(500).json({ success: false, message: 'API key not configured' });
     }
+
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
     try {
         const { command } = req.body;

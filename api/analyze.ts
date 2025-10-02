@@ -22,9 +22,6 @@ interface AnalysisResult {
   sources?: GroundingSource[];
 }
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
-
-
 // --- UTILITIES ---
 
 const getResponseText = (response: GenerateContentResponse): string => {
@@ -163,6 +160,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!process.env.API_KEY) {
         return res.status(500).json({ success: false, message: 'API key not configured' });
     }
+    
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
     try {
         const { chartFiles, riskReward, tradingStyle } = req.body;
