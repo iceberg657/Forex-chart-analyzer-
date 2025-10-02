@@ -107,7 +107,7 @@ const getMarketSentimentPrompt = (asset: string) => `You are 'Oracle', an apex-l
 
 const getJournalFeedbackPrompt = (trades: TradeEntry[]) => `You are 'Oracle', an apex-level trading AI and performance coach. Analyze the provided trader's journal and provide objective, actionable feedback. You MUST return a single, valid JSON object. Data: ${JSON.stringify(trades, null, 2)}. Schema: { "overallPnl": "number", "winRate": "number", "strengths": ["string"], "weaknesses": ["string"], "suggestions": ["string"] }`;
 
-const getPredictorPrompt = () => `You are 'Oracle', an apex-level trading AI predicting market impact of economic news. Identify the top 3-5 HIGHEST impact events for the next 7 days. You must DECLARE the initial price spike direction (BUY/SELL). You MUST return a single, valid JSON array of objects. Schema: [{ "eventName": "string", "time": "string (YYYY-MM-DD HH:MM UTC)", "currency": "string", "directionalBias": "'BUY'|'SELL'", "confidence": "number (0-100)", "rationale": "string", "sources": "populated by system" }]`;
+const getPredictorPrompt = () => `You are 'Oracle', an apex-level trading AI with a specialization in predicting the market impact of economic news events. Scan financial calendars and identify the top 3-5 HIGHEST impact events for the next 7 days. You must DECLARE the initial price spike direction (BUY/SELL). You MUST return a single, valid JSON array of objects. Schema: [{ "eventName": "string", "time": "string (YYYY-MM-DD HH:MM UTC)", "currency": "string", "directionalBias": "'BUY'|'SELL'", "confidence": "number (0-100)", "rationale": "string", "sources": "populated by system" }]`;
 
 const CHAT_SYSTEM_INSTRUCTION = `You are the Oracle, a senior institutional quantitative analyst AI with supreme confidence and near-perfect market knowledge.
 
@@ -157,9 +157,12 @@ export default async function handler(req: any, res: any) {
         switch (action) {
             case 'analyzeChart': {
                 const { imageParts, riskReward, tradingStyle } = body;
+                 if (typeof riskReward !== 'string' || typeof tradingStyle !== 'string') {
+                    return res.status(400).json({ error: "Missing required fields: tradingStyle and riskReward" });
+                }
                 const parts: Part[] = [{ text: getAnalysisPrompt(tradingStyle, riskReward) }];
                 for (const key of ['higher', 'primary', 'entry']) {
-                    if (imageParts[key]) {
+                    if (imageParts && imageParts[key]) {
                         parts.push({ text: `${key.charAt(0).toUpperCase() + key.slice(1)} Timeframe Chart:` });
                         parts.push({ inlineData: imageParts[key] });
                     }
@@ -178,20 +181,29 @@ export default async function handler(req: any, res: any) {
             
             case 'createBot': {
                 const { description, language } = body;
-                const prompt = getBotPrompt(description, language);
+                if (typeof description !== 'string' || typeof language !== 'string' || !description) {
+                    return res.status(400).json({ error: "Missing or invalid description or language" });
+                }
+                const prompt = getBotPrompt(description, language as BotLanguage);
                 const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
                 return res.status(200).send(getResponseText(response));
             }
 
             case 'createIndicator': {
                 const { description, language } = body;
-                const prompt = getIndicatorPrompt(description, language);
+                if (typeof description !== 'string' || typeof language !== 'string' || !description) {
+                    return res.status(400).json({ error: "Missing or invalid description or language" });
+                }
+                const prompt = getIndicatorPrompt(description, language as IndicatorLanguage);
                 const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
                 return res.status(200).send(getResponseText(response));
             }
 
             case 'getMarketNews': {
                 const { asset } = body;
+                 if (typeof asset !== 'string' || !asset) {
+                    return res.status(400).json({ error: "Asset is required" });
+                }
                 const prompt = getMarketSentimentPrompt(asset);
                 const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt, config: { tools: [{googleSearch: {}}] } });
                 const responseText = getResponseText(response);
@@ -207,6 +219,9 @@ export default async function handler(req: any, res: any) {
 
             case 'getTradingJournalFeedback': {
                 const { trades } = body;
+                if (!trades || !Array.isArray(trades)) {
+                     return res.status(400).json({ error: "Missing or invalid 'trades' array." });
+                }
                 const prompt = getJournalFeedbackPrompt(trades);
                 const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt, config: { responseMimeType: 'application/json' } });
                 const responseText = getResponseText(response);
@@ -219,13 +234,19 @@ export default async function handler(req: any, res: any) {
             
             case 'processCommandWithAgent': {
                 const { command } = body;
+                if (typeof command !== 'string') {
+                    return res.status(400).json({ error: "Missing or invalid 'command' string." });
+                }
                 const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: command, config: { tools: agentTools } });
                 return res.status(200).json({ text: getResponseText(response), functionCalls: response.functionCalls || null });
             }
 
             case 'sendMessage': {
                 const { history, newMessage } = body as { history: ChatMessage[], newMessage: ChatMessagePart[] };
-                const contents = history.map(msg => ({ role: msg.role, parts: msg.parts }));
+                if (!newMessage) {
+                    return res.status(400).json({ error: "newMessage is required" });
+                }
+                const contents = (history || []).map(msg => ({ role: msg.role, parts: msg.parts }));
                 contents.push({ role: 'user', parts: newMessage });
                 const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents, config: { systemInstruction: CHAT_SYSTEM_INSTRUCTION, tools: [{ googleSearch: {} }] } });
                 const modelResponse: ChatMessage = { id: Date.now().toString(), role: 'model', parts: [{ text: getResponseText(response) }] };
