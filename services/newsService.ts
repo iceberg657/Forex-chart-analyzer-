@@ -8,9 +8,19 @@ export const getMarketNews = async (asset: string): Promise<MarketSentimentResul
         body: JSON.stringify({ asset }),
     });
 
+    if (!response.ok) {
+        const errorText = await response.text().catch(() => 'Server returned an unreadable error');
+        try {
+            const errorJson = JSON.parse(errorText);
+            throw new Error(errorJson.message || `Server error: ${response.status}`);
+        } catch (e) {
+            throw new Error(errorText || `Server error: ${response.status}`);
+        }
+    }
+
     const result = await response.json();
 
-    if (!response.ok || !result.success) {
+    if (!result.success) {
         throw new Error(result.message || 'Failed to get market news.');
     }
 
