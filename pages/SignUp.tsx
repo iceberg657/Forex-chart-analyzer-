@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
 const SignUp: React.FC = () => {
@@ -17,7 +17,7 @@ const SignUp: React.FC = () => {
     }
     if(email && password) {
       signup(email);
-      navigate('/');
+      navigate('/dashboard');
     }
   };
 

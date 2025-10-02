@@ -11,14 +11,27 @@ const CheckIcon: React.FC = () => (
 );
 
 const PricingCard: React.FC<{ plan: PricingPlan }> = ({ plan }) => {
-  const navigate = useNavigate();
   const { user } = useAuth();
+  const navigate = useNavigate();
   
-  const handleGetStarted = () => {
-    navigate('/signup');
+  const PLAN_MAP: { [key in 'Free' | 'Pro' | 'Apex']: string } = {
+    'Free': 'Free Tier',
+    'Pro': 'Pro Trader',
+    'Apex': 'Apex Quant'
   };
+  const isCurrentPlan = PLAN_MAP[user.plan] === plan.name;
 
-  const isCurrentPlan = plan.name === 'Free Tier';
+  const handleCtaClick = (e: React.MouseEvent) => {
+    if (isCurrentPlan) {
+      e.preventDefault();
+      return;
+    }
+    if (user.isGuest) {
+      navigate('/signup');
+    }
+    // In a real app, this would link to a checkout page, e.g., Stripe
+    // For now, it will just be a placeholder link
+  };
 
   return (
     <div className={`rounded-2xl p-8 flex flex-col transition-all shadow-lg ${plan.isFeatured ? 'bg-red-500/5 dark:bg-red-900/10 backdrop-blur-xl border-red-500/50 scale-105 border' : 'bg-white/20 dark:bg-black/20 backdrop-blur-xl border-white/30 dark:border-white/10 border'}`}>
@@ -43,13 +56,22 @@ const PricingCard: React.FC<{ plan: PricingPlan }> = ({ plan }) => {
         ))}
       </ul>
       <div className="mt-auto pt-8">
-        <button 
-          onClick={isCurrentPlan ? undefined : handleGetStarted}
-          disabled={isCurrentPlan}
-          className={`w-full py-3 px-4 rounded-md font-medium transition-colors ${plan.isFeatured ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-white/30 dark:bg-white/10 hover:bg-white/40 dark:hover:bg-white/20 text-gray-800 dark:text-gray-200'} disabled:bg-gray-400 dark:disabled:bg-gray-500 disabled:cursor-not-allowed`}
+        <a 
+          href={user.isGuest ? undefined : "#"} // Placeholder for upgrade link
+          onClick={handleCtaClick}
+          aria-disabled={isCurrentPlan}
+          className={`w-full block text-center py-3 px-4 rounded-md font-medium transition-colors ${
+            plan.isFeatured 
+              ? 'bg-red-600 hover:bg-red-700 text-white' 
+              : 'bg-white/30 dark:bg-white/10 hover:bg-white/40 dark:hover:bg-white/20 text-gray-800 dark:text-gray-200'
+          } ${
+            isCurrentPlan 
+              ? 'bg-gray-400 dark:bg-gray-600 text-white dark:text-gray-300 cursor-not-allowed opacity-70' 
+              : ''
+          }`}
         >
-          {isCurrentPlan ? 'Your Current Plan' : 'Get Started'}
-        </button>
+          {isCurrentPlan ? 'Your Current Plan' : user.isGuest ? 'Get Started' : 'Upgrade Plan'}
+        </a>
       </div>
     </div>
   );

@@ -4,6 +4,8 @@ import { analyzeChart } from '../services/geminiService';
 import { TRADING_STYLES } from '../constants';
 import CandleStickLoader from '../components/CandleStickLoader';
 
+interface TraderProps {}
+
 const ChartUploadSlot: React.FC<{
   timeframe: 'higher' | 'primary' | 'entry';
   title: string;
@@ -86,7 +88,7 @@ const ChartUploadSlot: React.FC<{
   );
 };
 
-const Trader: React.FC = () => {
+const Trader: React.FC<TraderProps> = () => {
   const [chartFiles, setChartFiles] = useState<{ [key: string]: File | null }>({
     higher: null, primary: null, entry: null
   });
@@ -97,6 +99,7 @@ const Trader: React.FC = () => {
   const [tradingStyle, setTradingStyle] = useState<string>(TRADING_STYLES[1]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isSingleChartMode, setIsSingleChartMode] = useState(false);
   const navigate = useNavigate();
 
   const handleFileChange = (file: File, timeframe: string) => {
@@ -109,14 +112,26 @@ const Trader: React.FC = () => {
     setError(null);
   };
 
-  const handleFileRemove = (timeframe: string) => {
+  const handleFileRemove = useCallback((timeframe: string) => {
     setChartFiles(prev => ({ ...prev, [timeframe]: null }));
     setPreviewUrls(prev => ({ ...prev, [timeframe]: null }));
+  }, []);
+
+  const toggleMode = () => {
+    setIsSingleChartMode(prev => {
+        const newModeIsSingle = !prev;
+        if (newModeIsSingle) {
+            // When switching TO single mode, clear other charts
+            handleFileRemove('higher');
+            handleFileRemove('entry');
+        }
+        return newModeIsSingle;
+    });
   };
 
   const handleSubmit = useCallback(async () => {
     if (!chartFiles.primary) {
-      setError('Please upload at least the Primary Timeframe chart.');
+      setError('Please upload a chart for analysis.');
       return;
     }
 
@@ -151,37 +166,69 @@ const Trader: React.FC = () => {
       </div>
       <div className="mt-12">
         <div className="bg-white/20 dark:bg-black/20 backdrop-blur-xl border border-white/30 dark:border-white/10 rounded-2xl shadow-lg p-6 space-y-6">
-          <div>
-            <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-1">1. Upload Charts for Top-Down Analysis</h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Provide charts from different timeframes for the most accurate analysis.</p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <ChartUploadSlot
-                timeframe="higher"
-                title="Higher Timeframe"
-                description="Optional (e.g., 4H, 1D)"
-                previewUrl={previewUrls.higher}
-                onFileChange={handleFileChange}
-                onFileRemove={handleFileRemove}
-              />
-              <ChartUploadSlot
-                timeframe="primary"
-                title="Primary Timeframe"
-                description="Required (e.g., 1H, 15m)"
-                previewUrl={previewUrls.primary}
-                onFileChange={handleFileChange}
-                onFileRemove={handleFileRemove}
-                isPrimary
-              />
-              <ChartUploadSlot
-                timeframe="entry"
-                title="Entry Timeframe"
-                description="Optional (e.g., 15m, 5m)"
-                previewUrl={previewUrls.entry}
-                onFileChange={handleFileChange}
-                onFileRemove={handleFileRemove}
-              />
-            </div>
+          <div className="flex items-center justify-center space-x-3">
+              <span className={`text-sm font-medium ${!isSingleChartMode ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`}>Multi-Timeframe</span>
+              <button
+                  onClick={toggleMode}
+                  type="button"
+                  className={`relative inline-flex flex-shrink-0 h-6 w-11 border-2 border-transparent rounded-full cursor-pointer transition-colors ease-in-out duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 ${isSingleChartMode ? 'bg-red-600' : 'bg-gray-300 dark:bg-gray-600'}`}
+                  role="switch"
+                  aria-checked={isSingleChartMode}
+              >
+                  <span aria-hidden="true" className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transform ring-0 transition ease-in-out duration-200 ${isSingleChartMode ? 'translate-x-5' : 'translate-x-0'}`} />
+              </button>
+              <span className={`text-sm font-medium ${isSingleChartMode ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`}>Single Chart</span>
           </div>
+
+          {isSingleChartMode ? (
+            <div>
+              <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-1 text-center">1. Upload Your Chart</h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 text-center">Provide a single chart for a focused analysis.</p>
+              <div className="mt-4 max-w-md mx-auto">
+                <ChartUploadSlot
+                  timeframe="primary"
+                  title="Trading Chart"
+                  description="Required for analysis"
+                  previewUrl={previewUrls.primary}
+                  onFileChange={handleFileChange}
+                  onFileRemove={handleFileRemove}
+                  isPrimary
+                />
+              </div>
+            </div>
+          ) : (
+            <div>
+              <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-1">1. Upload Charts for Top-Down Analysis</h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Provide charts from different timeframes for the most accurate analysis.</p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <ChartUploadSlot
+                  timeframe="higher"
+                  title="Higher Timeframe"
+                  description="Optional (e.g., 4H, 1D)"
+                  previewUrl={previewUrls.higher}
+                  onFileChange={handleFileChange}
+                  onFileRemove={handleFileRemove}
+                />
+                <ChartUploadSlot
+                  timeframe="primary"
+                  title="Primary Timeframe"
+                  description="Required (e.g., 1H, 15m)"
+                  previewUrl={previewUrls.primary}
+                  onFileChange={handleFileChange}
+                  onFileRemove={handleFileRemove}
+                  isPrimary
+                />
+                <ChartUploadSlot
+                  timeframe="entry"
+                  title="Entry Timeframe"
+                  description="Optional (e.g., 15m, 5m)"
+                  previewUrl={previewUrls.entry}
+                  onFileChange={handleFileChange}
+                  onFileRemove={handleFileRemove}
+                />
+              </div>
+            </div>
+          )}
           
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>

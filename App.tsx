@@ -1,21 +1,21 @@
-
 import React, { useEffect } from 'react';
-import { HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import Header from './components/Header';
 import Footer from './components/Footer';
+import Login from './pages/Login';
+import SignUp from './pages/SignUp';
+import Landing from './pages/Landing';
 import Trader from './pages/Trader';
+import Analysis from './pages/Analysis';
+import MarketNews from './pages/MarketNews';
+import Journal from './pages/Journal';
+import ApexAI from './pages/ApexAI';
 import Introduction from './pages/Introduction';
 import BotMaker from './pages/BotMaker';
 import IndicatorMaker from './pages/IndicatorMaker';
 import Pricing from './pages/Pricing';
-import Login from './pages/Login';
-import SignUp from './pages/SignUp';
-import Analysis from './pages/Analysis';
-import MarketNews from './pages/MarketNews';
-import Journal from './pages/Journal';
-import Landing from './pages/Landing'; // Import Landing page
-import ApexAI from './pages/ApexAI'; // Import Apex AI page
-import Predictor from './pages/Predictor'; // Import Predictor page
+import Predictor from './pages/Predictor';
+import TabbedNav from './components/TabbedNav';
 import { AuthProvider, useAuth } from './hooks/useAuth';
 import { ThemeProvider } from './hooks/useTheme';
 import { EdgeLightingProvider } from './hooks/useEdgeLighting';
@@ -23,7 +23,6 @@ import ResponsiveFix from './components/ResponsiveFix';
 import { AppContextProvider } from './hooks/useAppContext';
 import AIAgent from './components/AIAgent';
 import { EnvironmentProvider } from './hooks/useEnvironment';
-
 
 const App: React.FC = () => {
   return (
@@ -44,64 +43,78 @@ const App: React.FC = () => {
 };
 
 const AppContent: React.FC = () => {
-  const location = useLocation();
-  const isApexAiPage = location.pathname === '/apex-ai';
-  
   useEffect(() => {
     const splashScreen = document.getElementById('splash-screen');
     if (splashScreen) {
       splashScreen.style.opacity = '0';
-      splashScreen.addEventListener('transitionend', () => {
-        splashScreen.remove();
-      });
+      splashScreen.addEventListener('transitionend', () => splashScreen.remove());
     }
   }, []);
 
   return (
     <ResponsiveFix>
       <div className="relative isolate flex flex-col flex-1 text-gray-800 dark:text-gray-200 font-sans overflow-x-hidden">
-        <div className="floating-element"></div>
-        <div className="floating-element"></div>
-        <Header />
-        <main className={`flex-grow w-full flex flex-col ${isApexAiPage ? '' : 'py-8'}`}>
-          <AppRoutes />
-        </main>
-        <Footer />
+        <Routes>
+          <Route element={<GuestLayout />}>
+            <Route path="/" element={<Landing />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<SignUp />} />
+          </Route>
+          
+          <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
+            <Route path="/dashboard" element={<Trader />} />
+            <Route path="/analysis" element={<Analysis />} />
+            <Route path="/market-news" element={<MarketNews />} />
+            <Route path="/predictor" element={<Predictor />} />
+            <Route path="/journal" element={<Journal />} />
+            <Route path="/apex-ai" element={<ApexAI />} />
+            <Route path="/coders" element={<CodersPage />} />
+            <Route path="/pricing" element={<Pricing />} />
+          </Route>
+          
+          <Route path="*" element={<Navigate to="/" />} />
+        </Routes>
         <AIAgent />
       </div>
     </ResponsiveFix>
   );
 };
 
-const AppRoutes: React.FC = () => {
+const GuestLayout: React.FC = () => {
   const { user } = useAuth();
+  if (!user.isGuest) {
+    return <Navigate to="/dashboard" />;
+  }
   return (
-      <Routes>
-        <Route path="/login" element={user.isGuest ? <Login /> : <Navigate to="/dashboard" />} />
-        <Route path="/signup" element={user.isGuest ? <SignUp /> : <Navigate to="/dashboard" />} />
-        
-        {user.isGuest ? (
-          <Route path="/" element={<Landing />} />
-        ) : (
-          <>
-            <Route path="/" element={<Navigate to="/dashboard" />} />
-            <Route path="/dashboard" element={<Trader />} />
-          </>
-        )}
-        
-        <Route path="/analysis" element={<Analysis />} />
-        <Route path="/introduction" element={<Introduction />} />
-        <Route path="/bot-maker" element={<BotMaker />} />
-        <Route path="/indicator-maker" element={<IndicatorMaker />} />
-        <Route path="/market-news" element={<MarketNews />} />
-        <Route path="/predictor" element={<Predictor />} />
-        <Route path="/journal" element={<Journal />} />
-        <Route path="/pricing" element={<Pricing />} />
-        <Route path="/apex-ai" element={<ApexAI />} />
-        
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+    <>
+      <Header />
+      <main className="flex-grow w-full flex flex-col py-8"><Outlet /></main>
+      <Footer />
+    </>
   );
 };
+
+const AppLayout: React.FC = () => (
+  <>
+    <Header />
+    <TabbedNav />
+    <main className="flex-grow w-full flex flex-col py-8"><Outlet /></main>
+    <Footer />
+  </>
+);
+
+const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
+  const { user } = useAuth();
+  return user.isGuest ? <Navigate to="/login" /> : children;
+};
+
+const CodersPage: React.FC = () => (
+    <div className="space-y-16">
+        <section id="coders"><Introduction /></section>
+        <section id="bot-maker"><BotMaker /></section>
+        <section id="indicator-maker"><IndicatorMaker /></section>
+    </div>
+);
+
 
 export default App;

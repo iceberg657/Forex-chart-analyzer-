@@ -1,8 +1,7 @@
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { PRICING_PLANS } from '../constants';
 import { PricingPlan } from '../types';
-import { useAuth } from '../hooks/useAuth';
 
 const FeatureCard: React.FC<{ icon: string; title: string; children: React.ReactNode; }> = ({ icon, title, children }) => (
     <div className="bg-white/5 dark:bg-black/10 backdrop-blur-xl border border-white/20 dark:border-white/10 rounded-2xl p-6 text-center transform hover:-translate-y-2 transition-transform duration-300">
@@ -50,13 +49,8 @@ const PricingCard: React.FC<{ plan: PricingPlan; onGetStarted: () => void; }> = 
 
 
 const Landing: React.FC = () => {
-    const { login } = useAuth();
     const navigate = useNavigate();
-
-    const handleGetStarted = () => {
-        login('trader@apex.com');
-        navigate('/dashboard');
-    };
+    const handleGetStarted = () => navigate('/signup');
 
     return (
         <div className="space-y-24 md:space-y-32">

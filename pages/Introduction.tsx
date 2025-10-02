@@ -1,5 +1,4 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
 
 const Introduction: React.FC = () => {
   return (
@@ -15,9 +14,9 @@ const Introduction: React.FC = () => {
           <p className="text-gray-500 dark:text-gray-400 mb-6">
             Describe your trading strategy, select your parameters, and let our AI generate a complete Expert Advisor in MQL4 or MQL5. Automate your trading without writing a single line of code.
           </p>
-          <Link to="/bot-maker" className="inline-block bg-red-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-red-700 transition-colors">
+          <a href="#bot-maker" className="inline-block bg-red-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-red-700 transition-colors">
             Create a Bot
-          </Link>
+          </a>
         </div>
 
         <div className="bg-white/20 dark:bg-black/20 backdrop-blur-xl border border-white/30 dark:border-white/10 rounded-2xl shadow-lg p-8 hover:border-green-500/80 transition-all transform hover:-translate-y-1">
@@ -25,9 +24,9 @@ const Introduction: React.FC = () => {
           <p className="text-gray-500 dark:text-gray-400 mb-6">
             Need a custom indicator for MetaTrader or TradingView? Just tell the AI what you want to measure or visualize, and it will generate the necessary code in MQL4, MQL5, or Pine Script.
           </p>
-          <Link to="/indicator-maker" className="inline-block bg-green-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-green-700 transition-colors">
+          <a href="#indicator-maker" className="inline-block bg-green-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-green-700 transition-colors">
             Create an Indicator
-          </Link>
+          </a>
         </div>
       </div>
 

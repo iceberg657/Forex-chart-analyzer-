@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
 const Logo: React.FC = () => {
@@ -7,7 +7,7 @@ const Logo: React.FC = () => {
   const homePath = user.isGuest ? "/" : "/dashboard";
 
   return (
-    <NavLink to={homePath} className="flex items-center space-x-2" end>
+    <Link to={homePath} className="flex items-center space-x-2">
       <svg
         width="36"
         height="36"
@@ -35,7 +35,7 @@ const Logo: React.FC = () => {
         {' '}
         <span className="text-gray-900 dark:text-white">Trader</span>
       </span>
-    </NavLink>
+    </Link>
   );
 };
 

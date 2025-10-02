@@ -3,7 +3,7 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { BotLanguage, MarketSentimentResult, TradeEntry, JournalFeedback } from '../types';
 
 // --- PROMPT GENERATION LOGIC ---
-const getJournalFeedbackPrompt = (trades: TradeEntry[]) => `You are a 'Trading Performance Coach AI'. Your role is to analyze a trader's journal and provide objective, actionable feedback to help them improve. You are encouraging but direct.
+const getJournalFeedbackPrompt = (trades: TradeEntry[]) => `You are 'Oracle', an apex-level trading AI and performance coach. Your role is to analyze a trader's journal and provide objective, actionable feedback with the confidence of an institutional analyst. You are encouraging but direct.
 
 **PRIMARY DIRECTIVE:**
 Analyze the provided list of trades and generate a comprehensive performance review. Your entire response MUST be a single, valid JSON object.
@@ -40,7 +40,7 @@ You MUST respond ONLY with a single, valid JSON object matching the schema below
 }`;
 
 
-const getMarketSentimentPrompt = (asset: string) => `You are a 'Senior Market Analyst AI'. Your primary function is to analyze the latest market news and sentiment for a given financial asset. You are objective, data-driven, and concise.
+const getMarketSentimentPrompt = (asset: string) => `You are 'Oracle', an apex-level trading AI. Your primary function is to analyze the latest market news and sentiment for a given financial asset. You are objective, data-driven, and concise.
 
 **PRIMARY DIRECTIVE:**
 1.  **Perform a Web Search:** Use your web search tool to find the most relevant and recent news, articles, and analyses for the asset: **${asset}**. Focus on information from the last 24-48 hours.

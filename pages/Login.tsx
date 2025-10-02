@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
 const Login: React.FC = () => {
@@ -10,10 +10,9 @@ const Login: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // This is a mock login. In a real app, you'd validate credentials.
     if(email && password) {
       login(email);
-      navigate('/');
+      navigate('/dashboard');
     }
   };
 

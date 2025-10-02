@@ -1,21 +1,13 @@
-
 import React, { useState, useRef, useEffect } from 'react';
-import { ChatMessage, GroundingSource, ChatMessagePart } from '../types';
+import { ChatMessage, ChatMessagePart } from '../types';
 import { sendMessage, fileToImagePart } from '../services/chatService';
 import ErrorDisplay from '../components/ErrorDisplay';
 import ChatBubble from '../components/ChatBubble';
 import TypingIndicator from '../components/TypingIndicator';
-
-const initialMessage: ChatMessage = {
-    id: 'initial-message-0',
-    role: 'model',
-    parts: [{ 
-        text: "Greetings. You stand before the Apex AI. State your objective; I am prepared to deliver the definitive market insights and strategies you require to secure alpha. My capabilities within the Grey Algo Apex Trader application, including the Chart Analyzer, AI Coders, Market News sentiment analysis, and the Journal's AI feedback, are all at your disposal. What market inefficiency are we exploiting today?" 
-    }],
-};
+import ChatHeader from '../components/ChatHeader';
 
 const ApexAI: React.FC = () => {
-    const [messages, setMessages] = useState<ChatMessage[]>([initialMessage]);
+    const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [input, setInput] = useState('');
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -48,6 +40,18 @@ const ApexAI: React.FC = () => {
         }
     };
 
+    const handleRating = (messageId: string, newRating: 'up' | 'down') => {
+        setMessages(prevMessages =>
+            prevMessages.map(msg => {
+                if (msg.id === messageId) {
+                    // If the same rating is clicked again, it gets deselected. Otherwise, it's set.
+                    return { ...msg, rating: msg.rating === newRating ? null : newRating };
+                }
+                return msg;
+            })
+        );
+    };
+
     const handleSubmit = async () => {
         if (!input.trim() && !imageFile) return;
 
@@ -78,7 +82,6 @@ const ApexAI: React.FC = () => {
         const currentHistory = [...messages, userMessage];
         setMessages(currentHistory);
         
-        // Reset inputs
         setInput('');
         removeImage();
 
@@ -102,7 +105,7 @@ const ApexAI: React.FC = () => {
         e.preventDefault();
         handleSubmit();
     };
-
+    
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
@@ -111,46 +114,72 @@ const ApexAI: React.FC = () => {
     };
 
     return (
-        <div className="flex flex-col flex-1 bg-white/10 dark:bg-black/10 backdrop-blur-lg border border-white/20 dark:border-white/10 rounded-2xl shadow-lg overflow-hidden m-2 md:m-4 min-h-0">
-            <div className="p-4 border-b border-white/10 dark:border-black/20 text-center flex-shrink-0">
-                <h1 className="text-xl font-bold text-gray-900 dark:text-white">Apex AI - The Oracle</h1>
-            </div>
-            <div className="flex-1 overflow-y-auto p-4 flex flex-col">
-                <div className="my-auto w-full">
-                    <div className="space-y-4">
-                        {messages.map(msg => <ChatBubble key={msg.id} message={msg} />)}
-                        {isLoading && <TypingIndicator />}
-                        <div ref={messagesEndRef} />
+        <div className="flex flex-col flex-1 h-full bg-[#121212] text-white rounded-xl overflow-hidden">
+            <ChatHeader />
+            {messages.length === 0 ? (
+                <div className="flex-1 flex flex-col items-center justify-center text-center p-4">
+                    <div className="w-16 h-16 mb-4">
+                         <svg
+                            width="100%"
+                            height="100%"
+                            viewBox="0 0 100 100"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <defs>
+                              <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                 <stop offset="0%" stopColor="#34d399" />
+                                <stop offset="33%" stopColor="#38bdf8" />
+                                <stop offset="66%" stopColor="#8b5cf6" />
+                                <stop offset="100%" stopColor="#8b5cf6" />
+                              </linearGradient>
+                            </defs>
+                            <path d="M50 2.5 L95.5 26.25 V 73.75 L50 97.5 L4.5 73.75 V 26.25 Z" stroke="url(#logoGradient)" strokeWidth="5" />
+                            <text x="50" y="68" fontFamily="Arial, sans-serif" fontSize="50" fontWeight="bold" fill="url(#logoGradient)" textAnchor="middle" >GA</text>
+                            <path d="M25 70 L40 60 L55 75 L75 55" stroke="url(#logoGradient)" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
                     </div>
-                    <div className="p-4 mt-4 border-t border-white/10 dark:border-black/20 rounded-lg bg-white/5 dark:bg-black/10">
-                        {error && <ErrorDisplay error={error} />}
-                        {imagePreview && (
-                            <div className="relative w-24 h-24 mb-2">
-                                <img src={imagePreview} alt="upload preview" className="w-full h-full object-cover rounded-md" />
-                                <button onClick={removeImage} className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">&times;</button>
-                            </div>
-                        )}
-                        <form onSubmit={handleFormSubmit} className="flex items-center gap-2">
-                            <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" id="file-upload" />
-                            <button type="button" onClick={() => fileInputRef.current?.click()} className="p-3 rounded-full hover:bg-black/10 dark:hover:bg-white/10 transition-colors" aria-label="Upload Image">
-                                <i className="fas fa-paperclip"></i>
-                            </button>
-                            <textarea
-                                value={input}
-                                onChange={e => setInput(e.target.value)}
-                                onKeyDown={handleKeyDown}
-                                placeholder="Ask the Oracle a question..."
-                                rows={1}
-                                className="flex-1 w-full p-3 text-base bg-gray-500/10 dark:bg-gray-900/40 border-gray-400/30 dark:border-gray-500/50 focus:ring-red-500/50 focus:border-red-500 sm:text-sm rounded-full text-gray-900 dark:text-white disabled:opacity-50 resize-none"
-                                disabled={isLoading}
-                            />
-                            <button type="submit" disabled={isLoading || (!input.trim() && !imageFile)} className="p-3 rounded-full bg-red-600 text-white hover:bg-red-700 disabled:bg-gray-500 transition-colors" aria-label="Send Message">
-                                <i className="fas fa-arrow-up"></i>
-                            </button>
-                        </form>
-                    </div>
+                    <h1 className="text-3xl font-bold">Hi, I'm Apex AI</h1>
+                    <p className="text-gray-400 mt-2">How can I help you today?</p>
                 </div>
-            </div>
+            ) : (
+                <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                    {messages.map(msg => <ChatBubble key={msg.id} message={msg} onRate={handleRating} />)}
+                    {isLoading && <TypingIndicator />}
+                    <div ref={messagesEndRef} />
+                </div>
+            )}
+            
+            <footer className="p-4 flex-shrink-0">
+                 {error && <div className="mb-2"><ErrorDisplay error={error} /></div>}
+                <form onSubmit={handleFormSubmit} className="bg-[#1e1e1e] rounded-2xl p-2 flex items-end gap-2">
+                     {imagePreview && (
+                        <div className="relative w-16 h-16 m-2 flex-shrink-0">
+                            <img src={imagePreview} alt="upload preview" className="w-full h-full object-cover rounded-md" />
+                            <button onClick={removeImage} className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">&times;</button>
+                        </div>
+                    )}
+                    <textarea
+                        value={input}
+                        onChange={e => setInput(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        placeholder="Message Apex AI..."
+                        rows={1}
+                        style={{ maxHeight: '150px' }}
+                        className="flex-1 w-full p-3 bg-transparent border-none focus:ring-0 placeholder-gray-500 resize-none"
+                        disabled={isLoading}
+                    />
+                    <div className="flex items-center gap-1">
+                         <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" id="file-upload-chat" />
+                        <button type="button" onClick={() => fileInputRef.current?.click()} className="p-3 rounded-full hover:bg-white/10" aria-label="Attach file">
+                            <i className="fas fa-plus text-lg text-gray-400"></i>
+                        </button>
+                        <button type="submit" disabled={isLoading || (!input.trim() && !imageFile)} className="w-10 h-10 flex items-center justify-center rounded-full bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-500">
+                            <i className="fas fa-arrow-up text-lg"></i>
+                        </button>
+                    </div>
+                </form>
+            </footer>
         </div>
     );
 };

@@ -85,6 +85,7 @@ export interface ChatMessage {
   role: 'user' | 'model';
   parts: ChatMessagePart[];
   sources?: GroundingSource[];
+  rating?: 'up' | 'down' | null;
 }
 
 export interface PredictedEvent {

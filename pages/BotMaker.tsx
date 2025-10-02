@@ -1,5 +1,3 @@
-
-
 import React, { useState } from 'react';
 import { BOT_LANGUAGES } from '../constants';
 import { BotLanguage } from '../types';
@@ -7,7 +5,6 @@ import { createBot } from '../services/geminiService';
 import Spinner from '../components/Spinner';
 import CodeBlock from '../components/CodeBlock';
 import { useAuth } from '../hooks/useAuth';
-import { Link } from 'react-router-dom';
 import ErrorDisplay from '../components/ErrorDisplay';
 
 const BotMaker: React.FC = () => {
@@ -58,7 +55,7 @@ const BotMaker: React.FC = () => {
       <form onSubmit={handleSubmit} className="bg-white/20 dark:bg-black/20 backdrop-blur-xl border border-white/30 dark:border-white/10 rounded-2xl shadow-lg p-8 space-y-6">
         {limitReached && (
             <div className="bg-red-500/10 border border-red-500/50 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg text-center">
-                You have used your 1 free bot generation. <Link to="/pricing" className="font-bold underline hover:text-red-100 dark:hover:text-white">Upgrade your plan</Link> to create more.
+                You have used your 1 free bot generation. <a href="#pricing" className="font-bold underline hover:text-red-100 dark:hover:text-white">Upgrade your plan</a> to create more.
             </div>
         )}
         <div>

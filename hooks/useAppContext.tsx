@@ -14,28 +14,30 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppContextProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const navigateHook = useNavigate();
-  const { logout, user } = useAuth();
+  const { logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { setEdgeLight } = useEdgeLighting();
+  const reactRouterNavigate = useNavigate();
 
   const navigate = (page: string) => {
     const pageMap: { [key: string]: string } = {
-        home: user.isGuest ? '/' : '/dashboard',
+        home: '/',
+        landing: '/',
         dashboard: '/dashboard',
         analysis: '/analysis',
         'market-news': '/market-news',
         journal: '/journal',
-        coders: '/introduction',
-        'bot-maker': '/bot-maker',
-        'indicator-maker': '/indicator-maker',
+        coders: '/coders',
+        'bot-maker': '/coders#bot-maker', // Scrolls to section
+        'indicator-maker': '/coders#indicator-maker', // Scrolls to section
         pricing: '/pricing',
-        login: '/login',
+        predictor: '/predictor',
+        'apex-ai': '/apex-ai',
+        login: '/login', 
         signup: '/signup',
-        predictor: '/predictor'
     };
     const path = pageMap[page.toLowerCase()] || '/';
-    navigateHook(path);
+    reactRouterNavigate(path);
   };
 
   const changeTheme = (newTheme: 'light' | 'dark') => {

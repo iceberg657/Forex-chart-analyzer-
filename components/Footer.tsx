@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useEnvironment } from '../hooks/useEnvironment';
 
@@ -34,10 +33,10 @@ const EnvironmentBadge: React.FC = () => {
 
 const Footer: React.FC = () => {
   return (
-    <footer className="relative bg-white/30 dark:bg-gray-900/40 backdrop-blur-lg mt-12 border-t border-white/20 dark:border-white/10">
-      <div className="py-6 text-center text-gray-500 dark:text-gray-400">
+    <footer className="relative bg-white/30 dark:bg-gray-900/40 backdrop-blur-lg border-t border-white/20 dark:border-white/10">
+      <div className="py-4 text-center text-gray-500 dark:text-gray-400">
         <p>&copy; {new Date().getFullYear()} Grey Algo Apex Trader. All rights reserved.</p>
-        <p className="mt-4 text-sm font-bold uppercase tracking-wider text-gray-600 dark:text-gray-400">Our Platforms</p>
+        <p className="text-sm font-bold uppercase tracking-wider text-gray-600 dark:text-gray-400">Our Platforms</p>
         <div className="flex justify-center space-x-6 mt-2">
           <a href="https://greyalgo-trading.netlify.app" target="_blank" rel="noopener noreferrer" className="hover:text-red-500 transition-colors">
             Grey Algo Trading

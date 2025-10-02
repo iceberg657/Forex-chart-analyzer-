@@ -1,11 +1,13 @@
-
-
 import React, { useEffect } from 'react';
-import { useLocation, Link } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { AnalysisResult, GroundingSource } from '../types';
 import ErrorDisplay from '../components/ErrorDisplay';
 import { useEdgeLighting } from '../hooks/useEdgeLighting';
 
+interface AnalysisLocationState {
+    result?: AnalysisResult;
+    error?: string;
+}
 
 const SourcesCard: React.FC<{ sources: GroundingSource[] }> = ({ sources }) => {
   if (!sources || sources.length === 0) return null;
@@ -72,7 +74,6 @@ const SignalCard: React.FC<{ signal: 'BUY' | 'SELL' | 'NEUTRAL'; confidence: num
 }
 
 const SetupQualityCard: React.FC<{ quality: string }> = ({ quality }) => {
-    // FIX: Replaced JSX.Element with React.ReactNode to fix "Cannot find namespace 'JSX'" error.
     const qualityInfo: { [key: string]: { text: string; bgColor: string; textColor: string; borderColor: string; icon: React.ReactNode } } = {
         'A+ Setup': {
             text: 'A+ Setup',
@@ -122,27 +123,21 @@ const SetupQualityCard: React.FC<{ quality: string }> = ({ quality }) => {
 
 const Analysis: React.FC = () => {
     const location = useLocation();
-    const result: AnalysisResult | null = location.state?.result;
-    const error: string | null = location.state?.error;
+    const navigate = useNavigate();
+    const { result, error } = (location.state as AnalysisLocationState) || {};
     const { setEdgeLight } = useEdgeLighting();
+    
+    const onBack = () => navigate('/dashboard');
 
     useEffect(() => {
         if (result) {
-            if (result.signal === 'BUY') {
-                setEdgeLight('green');
-            } else if (result.signal === 'SELL') {
-                setEdgeLight('red');
-            } else {
-                setEdgeLight('default');
-            }
+            if (result.signal === 'BUY') setEdgeLight('green');
+            else if (result.signal === 'SELL') setEdgeLight('red');
+            else setEdgeLight('default');
         } else {
             setEdgeLight('default');
         }
-
-        // Cleanup function to reset on unmount
-        return () => {
-            setEdgeLight('default');
-        };
+        return () => setEdgeLight('default');
     }, [result, setEdgeLight]);
 
     if (error) {
@@ -150,9 +145,9 @@ const Analysis: React.FC = () => {
             <div className="text-center py-10">
                 <h1 className="text-3xl font-bold text-red-600 dark:text-red-500 mb-4">Analysis Failed</h1>
                 <ErrorDisplay error={error} />
-                <Link to="/" className="inline-block bg-red-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-red-700 transition-colors">
+                <button onClick={onBack} className="inline-block bg-red-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-red-700 transition-colors">
                     Try Again
-                </Link>
+                </button>
             </div>
         );
     }
@@ -162,11 +157,11 @@ const Analysis: React.FC = () => {
           <div className="text-center py-10">
             <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-4">No Analysis Data</h1>
             <p className="text-gray-600 dark:text-gray-400 mb-8">
-                It looks like you've landed here directly. Please go back to the trader page to upload a chart and generate an analysis.
+                Please go back to the dashboard and analyze a chart.
             </p>
-            <Link to="/" className="inline-block bg-red-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-red-700 transition-colors">
-                Analyze a Chart
-            </Link>
+            <button onClick={onBack} className="inline-block bg-red-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-red-700 transition-colors">
+                Go to Dashboard
+            </button>
           </div>
         );
     }
@@ -240,9 +235,9 @@ const Analysis: React.FC = () => {
                     </div>
                     <SourcesCard sources={result.sources || []} />
                      <div className="text-center mt-10">
-                        <Link to="/" className="inline-block bg-red-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-red-700 transition-colors">
+                        <button onClick={onBack} className="inline-block bg-red-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-red-700 transition-colors">
                             Analyze Another Chart
-                        </Link>
+                        </button>
                     </div>
                   </div>
             </div>
