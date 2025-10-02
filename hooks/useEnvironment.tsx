@@ -4,24 +4,25 @@ import React, { createContext, useContext, ReactNode } from 'react';
 export type AppEnvironment = 'website' | 'pwa' | 'aistudio';
 
 export const detectEnvironment = (): AppEnvironment => {
-    if (typeof window === 'undefined') return 'website';
-
-    // Check for PWA running in standalone mode
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-        return 'pwa';
-    }
-    
-    // Check for running inside an iframe (like AI Studio)
-    try {
-        if (window.self !== window.top) {
-            return 'aistudio';
-        }
-    } catch (e) {
-        // A SecurityError is thrown in cross-origin iframes, which is a strong indicator.
+    // The most reliable signal for the AI Studio environment is the presence of an
+    // API_KEY injected via environment variables. This avoids false positives
+    // from other iframe-based environments like development servers.
+    // We check for `process` to avoid ReferenceErrors in browser environments without a polyfill.
+    if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
         return 'aistudio';
     }
 
-    // Default to a standard website environment
+    if (typeof window === 'undefined') {
+        // Server-side rendering or non-browser environment
+        return 'website';
+    }
+
+    // Check for PWA running in standalone mode on the client-side
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+        return 'pwa';
+    }
+
+    // Default to a standard website environment if no other conditions are met
     return 'website';
 };
 
