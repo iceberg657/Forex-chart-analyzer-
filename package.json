@@ -2,6 +2,7 @@
   "name": "grey-algo-apex-trader",
   "private": true,
   "version": "1.0.0",
+  "type": "module",
   "description": "An AI-powered trading assistant that analyzes charts to provide trade setups, and generates custom trading bots and indicators using the Gemini API.",
   "scripts": {
     "start": "vite",
