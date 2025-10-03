@@ -1,13 +1,13 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
-import { ChatMessage, ChatMessagePart, GroundingSource } from '../../types';
+import { ChatMessage, ChatMessagePart, GroundingSource } from '../types';
 
 const getAi = () => {
     if (!process.env.API_KEY) throw new Error("API key not configured.");
     return new GoogleGenAI({ apiKey: process.env.API_KEY });
 };
 
-const getResponseText = (response: GenerateContentResponse): string => response.text;
+const getResponseText = (response: GenerateContentResponse): string => response.text ?? '';
 
 const SYSTEM_INSTRUCTION = `You are the Oracle, a senior institutional quantitative analyst AI...`; // Full prompt omitted for brevity
 

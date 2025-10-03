@@ -1,12 +1,13 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { GoogleGenAI, GenerateContentResponse, GroundingSource } from "@google/genai";
+import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
+import { GroundingSource } from '../types';
 
 const getAi = () => {
     if (!process.env.API_KEY) throw new Error("API key not configured.");
     return new GoogleGenAI({ apiKey: process.env.API_KEY });
 };
 
-const getResponseText = (response: GenerateContentResponse): string => response.text;
+const getResponseText = (response: GenerateContentResponse): string => response.text ?? '';
 
 // FIX: Replaced stub function with a robust JSON parsing implementation.
 const robustJsonParse = (jsonString: string) => {

@@ -1,13 +1,13 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
-import { TradeEntry } from '../../types';
+import { TradeEntry } from '../types';
 
 // FIX: Replaced stub function with a proper `GoogleGenAI` client initialization.
 const getAi = () => {
     if (!process.env.API_KEY) throw new Error("API key not configured.");
     return new GoogleGenAI({ apiKey: process.env.API_KEY });
 };
-const getResponseText = (response: GenerateContentResponse): string => response.text;
+const getResponseText = (response: GenerateContentResponse): string => response.text ?? '';
 // FIX: Replaced stub function with a robust JSON parsing implementation.
 const robustJsonParse = (jsonString: string) => {
     let cleanJsonString = jsonString.trim();

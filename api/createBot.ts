@@ -6,7 +6,7 @@ const getAi = () => {
     return new GoogleGenAI({ apiKey: process.env.API_KEY });
 };
 
-const getResponseText = (response: GenerateContentResponse): string => response.text;
+const getResponseText = (response: GenerateContentResponse): string => response.text ?? '';
 
 const getBotPrompt = (description: string, language: string) => `You are an expert MQL developer...`; // Full prompt omitted for brevity
 
