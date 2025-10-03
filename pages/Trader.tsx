@@ -1,8 +1,11 @@
+
 import React, { useState, useCallback, DragEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { analyzeChart } from '../services/apiClient';
 import { TRADING_STYLES } from '../constants';
 import CandleStickLoader from '../components/CandleStickLoader';
+import { usePageData } from '../hooks/usePageData';
+import { AnalysisResult } from '../types';
 
 interface TraderProps {}
 
@@ -101,6 +104,7 @@ const Trader: React.FC<TraderProps> = () => {
   const [error, setError] = useState<string | null>(null);
   const [isSingleChartMode, setIsSingleChartMode] = useState(false);
   const navigate = useNavigate();
+  const { addAnalysisToHistory } = usePageData();
 
   const handleFileChange = (file: File, timeframe: string) => {
     setChartFiles(prev => ({ ...prev, [timeframe]: file }));
@@ -140,7 +144,13 @@ const Trader: React.FC<TraderProps> = () => {
 
     try {
       const analysisResult = await analyzeChart(chartFiles, riskReward, tradingStyle);
-      navigate('/analysis', { state: { result: analysisResult } });
+      const resultWithMeta: AnalysisResult = {
+        ...analysisResult,
+        id: new Date().toISOString(),
+        date: new Date().toLocaleString(),
+      };
+      addAnalysisToHistory(resultWithMeta);
+      navigate('/analysis', { state: { result: resultWithMeta } });
     } catch (err) {
       console.error("Analysis submission failed:", err);
       const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.';
@@ -148,7 +158,7 @@ const Trader: React.FC<TraderProps> = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [chartFiles, riskReward, tradingStyle, navigate]);
+  }, [chartFiles, riskReward, tradingStyle, navigate, addAnalysisToHistory]);
   
   const riskRewardOptions = ['1:1', '1:2', '1:3', '1:4', '1:5'];
   const isAnalyzeDisabled = isLoading || !chartFiles.primary;

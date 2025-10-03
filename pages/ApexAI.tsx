@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { ChatMessage, ChatMessagePart } from '../types';
 import { sendMessage, fileToImagePart } from '../services/chatService';
@@ -5,9 +6,12 @@ import ErrorDisplay from '../components/ErrorDisplay';
 import ChatBubble from '../components/ChatBubble';
 import TypingIndicator from '../components/TypingIndicator';
 import ChatHeader from '../components/ChatHeader';
+import { usePageData } from '../hooks/usePageData';
 
 const ApexAI: React.FC = () => {
-    const [messages, setMessages] = useState<ChatMessage[]>([]);
+    const { pageData, setApexAIMessages, clearApexChat } = usePageData();
+    const { messages } = pageData.apexAI;
+
     const [input, setInput] = useState('');
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -41,15 +45,13 @@ const ApexAI: React.FC = () => {
     };
 
     const handleRating = (messageId: string, newRating: 'up' | 'down') => {
-        setMessages(prevMessages =>
-            prevMessages.map(msg => {
-                if (msg.id === messageId) {
-                    // If the same rating is clicked again, it gets deselected. Otherwise, it's set.
-                    return { ...msg, rating: msg.rating === newRating ? null : newRating };
-                }
-                return msg;
-            })
-        );
+        const newMessages = messages.map(msg => {
+            if (msg.id === messageId) {
+                return { ...msg, rating: msg.rating === newRating ? null : newRating };
+            }
+            return msg;
+        });
+        setApexAIMessages(newMessages);
     };
 
     const handleSubmit = async () => {
@@ -80,22 +82,23 @@ const ApexAI: React.FC = () => {
         };
 
         const currentHistory = [...messages, userMessage];
-        setMessages(currentHistory);
+        setApexAIMessages(currentHistory);
         
         setInput('');
         removeImage();
 
         try {
             const modelResponse = await sendMessage(messages, userParts);
-            setMessages([...currentHistory, modelResponse]);
+            setApexAIMessages([...currentHistory, modelResponse]);
 
         } catch (err) {
             setError(err instanceof Error ? err.message : 'An unknown error occurred with the AI assistant.');
-            setMessages(prev => [...prev, {
+            const errorResponse: ChatMessage = {
                 id: (Date.now() + 1).toString(),
                 role: 'model',
                 parts: [{ text: 'Sorry, I encountered an error. Please try again.' }],
-            }]);
+            };
+            setApexAIMessages([...currentHistory, errorResponse]);
         } finally {
             setIsLoading(false);
         }
@@ -114,7 +117,7 @@ const ApexAI: React.FC = () => {
     };
 
     return (
-        <div className="flex flex-col flex-1 h-full bg-gray-100 dark:bg-[#121212] text-gray-900 dark:text-white rounded-xl overflow-hidden">
+        <div className="relative flex flex-col flex-1 h-full bg-gray-100 dark:bg-[#121212] text-gray-900 dark:text-white rounded-xl overflow-hidden">
             <ChatHeader />
             {messages.length === 0 ? (
                 <div className="flex-1 flex flex-col items-center justify-center text-center p-4">
@@ -180,6 +183,17 @@ const ApexAI: React.FC = () => {
                     </div>
                 </form>
             </footer>
+
+            {messages.length > 0 && (
+                 <button
+                    onClick={clearApexChat}
+                    className="absolute bottom-24 right-6 bg-red-600 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center hover:bg-red-700 transition-transform transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 z-10"
+                    aria-label="Start new chat"
+                    title="Start new chat"
+                >
+                    <i className="fas fa-plus text-xl"></i>
+                </button>
+            )}
         </div>
     );
 };

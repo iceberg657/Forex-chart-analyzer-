@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 
@@ -10,8 +11,9 @@ interface NavItem {
 const navItems: NavItem[] = [
     { to: '/dashboard', label: 'Dashboard', icon: 'fas fa-chart-pie' },
     { to: '/apex-ai', label: 'Apex AI', icon: 'fas fa-robot' },
-    { to: '/coders', label: 'AI Coders', icon: 'fas fa-code' },
     { to: '/journal', label: 'Journal', icon: 'fas fa-book' },
+    { to: '/history', label: 'History', icon: 'fas fa-history' },
+    { to: '/coders', label: 'AI Coders', icon: 'fas fa-code' },
     { to: '/market-news', label: 'Market News', icon: 'fas fa-newspaper' },
     { to: '/predictor', label: 'Predictor', icon: 'fas fa-bolt' },
 ];

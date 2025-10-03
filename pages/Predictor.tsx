@@ -1,9 +1,11 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { getPredictions } from '../services/predictorService';
 import { PredictedEvent, GroundingSource } from '../types';
 import Spinner from '../components/Spinner';
 import ErrorDisplay from '../components/ErrorDisplay';
+import { usePageData } from '../hooks/usePageData';
 
 const Sources: React.FC<{ sources?: GroundingSource[] }> = ({ sources }) => {
     if (!sources || sources.length === 0) return null;
@@ -41,25 +43,27 @@ const EventCard: React.FC<{ event: PredictedEvent }> = ({ event }) => {
 };
 
 const Predictor: React.FC = () => {
-    const [events, setEvents] = useState<PredictedEvent[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const { pageData, setPredictorData } = usePageData();
+    const { events, error } = pageData.predictor;
+    const [isLoading, setIsLoading] = useState(!events);
 
     const fetchPredictions = async () => {
         setIsLoading(true);
-        setError(null);
         try {
             const predictions = await getPredictions();
-            setEvents(predictions);
+            setPredictorData({ events: predictions, error: null });
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'An unknown error occurred.');
+            const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.';
+            setPredictorData({ events, error: errorMessage });
         } finally {
             setIsLoading(false);
         }
     };
     
     useEffect(() => {
-        fetchPredictions();
+        if (!events) {
+            fetchPredictions();
+        }
     }, []);
 
     return (
@@ -78,11 +82,11 @@ const Predictor: React.FC = () => {
                 </div>
 
                 {isLoading && <div className="py-10"><Spinner /></div>}
-                {error && <ErrorDisplay error={error} />}
+                {error && !isLoading && <ErrorDisplay error={error} />}
 
                 {!isLoading && !error && (
                     <div className="space-y-4">
-                        {events.length > 0 ? (
+                        {events && events.length > 0 ? (
                             events.map((event, index) => <EventCard key={index} event={event} />)
                         ) : (
                             <p className="text-center text-gray-500 dark:text-gray-400 py-8">No high-impact events found for the upcoming week, or the Oracle is contemplating the markets.</p>

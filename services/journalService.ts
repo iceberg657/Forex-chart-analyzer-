@@ -1,9 +1,5 @@
 
-
 import { TradeEntry, JournalFeedback } from '../types';
-import { apiPost } from './api';
+import { getTradingJournalFeedback as unifiedGetTradingJournalFeedback } from './unifiedApiService';
 
-export const getTradingJournalFeedback = async (trades: TradeEntry[]): Promise<JournalFeedback> => {
-    const result = await apiPost('/api/journalFeedback', { trades });
-    return result.data as JournalFeedback;
-};
+export const getTradingJournalFeedback = unifiedGetTradingJournalFeedback;

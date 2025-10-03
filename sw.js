@@ -17,14 +17,16 @@ self.addEventListener('install', event => {
 });
 
 self.addEventListener('fetch', event => {
-  // For API requests, always go to the network and bypass the cache.
-  // This ensures that analysis results are always fresh.
-  if (event.request.url.includes('/api/')) {
+  const requestUrl = new URL(event.request.url);
+
+  // For API requests to Google, always go to the network and bypass the cache.
+  // This ensures that analysis results and AI responses are always fresh.
+  if (requestUrl.hostname === 'generativelanguage.googleapis.com') {
     event.respondWith(fetch(event.request));
     return;
   }
 
-  // For all other requests (static assets), use a cache-first strategy.
+  // For all other requests (local assets), use a cache-first strategy.
   event.respondWith(
     caches.match(event.request)
       .then(response => {
@@ -35,8 +37,9 @@ self.addEventListener('fetch', event => {
         // Not in cache, fetch from network
         return fetch(event.request).then(
           response => {
-            // Check if we received a valid response
-            if (!response || response.status !== 200 || response.type !== 'basic') {
+            // Check if we received a valid response to cache
+            // We only cache GET requests with 2xx status codes
+            if (!response || response.status !== 200 || event.request.method !== 'GET') {
               return response;
             }
 

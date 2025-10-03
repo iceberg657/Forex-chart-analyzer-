@@ -1,9 +1,5 @@
 
-
 import { PredictedEvent } from '../types';
-import { apiPost } from './api';
+import { getPredictions as unifiedGetPredictions } from './unifiedApiService';
 
-export const getPredictions = async (): Promise<PredictedEvent[]> => {
-    const result = await apiPost('/api/predictions', {});
-    return result.data as PredictedEvent[];
-};
+export const getPredictions = unifiedGetPredictions;

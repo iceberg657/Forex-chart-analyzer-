@@ -1,8 +1,10 @@
+
 import React, { useState } from 'react';
 import { getMarketNews } from '../services/newsService';
 import { MarketSentimentResult, GroundingSource } from '../types';
 import Spinner from '../components/Spinner';
 import ErrorDisplay from '../components/ErrorDisplay';
+import { usePageData } from '../hooks/usePageData';
 
 const SourcesCard: React.FC<{ sources: GroundingSource[] }> = ({ sources }) => {
   if (!sources || sources.length === 0) return null;
@@ -27,7 +29,7 @@ const SourcesCard: React.FC<{ sources: GroundingSource[] }> = ({ sources }) => {
 };
 
 
-const SentimentResultDisplay: React.FC<{ result: MarketSentimentResult }> = ({ result }) => {
+const SentimentResultDisplay: React.FC<{ result: MarketSentimentResult, onRefresh: () => void, isLoading: boolean }> = ({ result, onRefresh, isLoading }) => {
     const sentimentInfo = {
         Bullish: {
             icon: <i className="fas fa-arrow-trend-up"></i>,
@@ -53,6 +55,12 @@ const SentimentResultDisplay: React.FC<{ result: MarketSentimentResult }> = ({ r
 
     return (
         <div className="bg-white/20 dark:bg-black/20 backdrop-blur-xl border border-white/30 dark:border-white/10 rounded-2xl shadow-lg p-6 mt-8 w-full">
+            <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Analysis for {result.asset}</h2>
+                <button onClick={onRefresh} disabled={isLoading} className="text-sm text-red-500 hover:text-red-700 disabled:opacity-50">
+                    <i className={`fas fa-sync ${isLoading ? 'animate-spin' : ''}`}></i> Refresh
+                </button>
+            </div>
             <div className={`flex items-center justify-between p-4 rounded-lg mb-6 ${info.bgColor} border ${info.borderColor}`}>
                 <div className="flex items-center space-x-4">
                     <div className={`text-3xl ${info.textColor}`}>{info.icon}</div>
@@ -91,30 +99,32 @@ const SentimentResultDisplay: React.FC<{ result: MarketSentimentResult }> = ({ r
 
 
 const MarketNews: React.FC = () => {
-    const [asset, setAsset] = useState('');
+    const { pageData, setMarketNewsData } = usePageData();
+    const { result, asset: savedAsset, error } = pageData.marketNews;
+
+    const [inputAsset, setInputAsset] = useState(savedAsset || '');
     const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [result, setResult] = useState<MarketSentimentResult | null>(null);
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!asset.trim()) {
-            setError('Please enter a financial asset.');
-            return;
-        }
-
+    const performAnalysis = async (assetToAnalyze: string) => {
         setIsLoading(true);
-        setError(null);
-        setResult(null);
-
         try {
-            const sentimentResult = await getMarketNews(asset);
-            setResult(sentimentResult);
+            const sentimentResult = await getMarketNews(assetToAnalyze);
+            setMarketNewsData({ result: sentimentResult, asset: assetToAnalyze, error: null });
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'An unknown error occurred.');
+            const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.';
+            setMarketNewsData({ result, asset: savedAsset, error: errorMessage });
         } finally {
             setIsLoading(false);
         }
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!inputAsset.trim()) {
+            setMarketNewsData({ ...pageData.marketNews, error: 'Please enter a financial asset.' });
+            return;
+        }
+        performAnalysis(inputAsset);
     };
 
     return (
@@ -128,8 +138,8 @@ const MarketNews: React.FC = () => {
                 <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-4">
                     <input
                         type="text"
-                        value={asset}
-                        onChange={(e) => setAsset(e.target.value)}
+                        value={inputAsset}
+                        onChange={(e) => setInputAsset(e.target.value)}
                         placeholder="Enter an asset (e.g., Bitcoin, XAU/USD, TSLA)"
                         className="flex-grow block w-full pl-4 pr-4 py-3 text-base bg-gray-500/10 dark:bg-gray-900/40 border-gray-400/30 dark:border-gray-500/50 focus:ring-red-500/50 focus:border-red-500 sm:text-sm rounded-md text-gray-900 dark:text-white disabled:opacity-50"
                         disabled={isLoading}
@@ -147,8 +157,8 @@ const MarketNews: React.FC = () => {
 
             <div className="mt-8 flex justify-center">
                 {isLoading && <Spinner />}
-                {error && <ErrorDisplay error={error} />}
-                {result && <SentimentResultDisplay result={result} />}
+                {error && !isLoading && <ErrorDisplay error={error} />}
+                {result && !isLoading && <SentimentResultDisplay result={result} onRefresh={() => performAnalysis(savedAsset)} isLoading={isLoading} />}
             </div>
         </div>
     );

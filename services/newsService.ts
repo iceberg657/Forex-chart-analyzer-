@@ -1,9 +1,5 @@
 
-
 import { MarketSentimentResult } from '../types';
-import { apiPost } from './api';
+import { getMarketNews as unifiedGetMarketNews } from './unifiedApiService';
 
-export const getMarketNews = async (asset: string): Promise<MarketSentimentResult> => {
-    const result = await apiPost('/api/marketNews', { asset });
-    return result.data as MarketSentimentResult;
-};
+export const getMarketNews = unifiedGetMarketNews;

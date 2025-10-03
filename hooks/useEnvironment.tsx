@@ -1,20 +1,18 @@
 
+
 import React, { createContext, useContext, ReactNode } from 'react';
 
 export type AppEnvironment = 'website' | 'pwa' | 'aistudio';
 
 export const detectEnvironment = (): AppEnvironment => {
-    // The most reliable signal for the AI Studio environment is the presence of an
-    // API_KEY injected via environment variables. This avoids false positives
-    // from other iframe-based environments like development servers.
-    // We check for `process` to avoid ReferenceErrors in browser environments without a polyfill.
-    if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
-        return 'aistudio';
-    }
-
     if (typeof window === 'undefined') {
         // Server-side rendering or non-browser environment
         return 'website';
+    }
+
+    // AI Studio provides a global `service` object on the window. This is the most reliable check.
+    if (window.service && typeof window.service.gemini?.generateContent === 'function') {
+        return 'aistudio';
     }
 
     // Check for PWA running in standalone mode on the client-side

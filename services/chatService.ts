@@ -1,7 +1,6 @@
 
-
 import { ChatMessage, ChatMessagePart } from "../types";
-import { apiPost } from './api';
+import { sendMessage as unifiedSendMessage } from './unifiedApiService';
 
 export const fileToImagePart = async (file: File): Promise<ChatMessagePart> => {
     const base64Data = await new Promise<string>((resolve, reject) => {
@@ -19,7 +18,4 @@ export const fileToImagePart = async (file: File): Promise<ChatMessagePart> => {
     };
 };
 
-export const sendMessage = async (history: ChatMessage[], newMessage: ChatMessagePart[]): Promise<ChatMessage> => {
-    const result = await apiPost('/api/chat', { history, newMessage });
-    return result.data as ChatMessage;
-};
+export const sendMessage = unifiedSendMessage;

@@ -1,83 +1,79 @@
-
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { GoogleGenAI, Type, Tool } from "@google/genai";
+import { GoogleGenAI, Type, Tool, GenerateContentResponse } from "@google/genai";
 
-const agentTools: Tool[] = [
-    {
-        functionDeclarations: [
-            {
-                name: "navigate",
-                description: "Navigates the user to a different page in the application.",
-                parameters: {
-                    type: Type.OBJECT,
-                    properties: {
-                        page: {
-                            type: Type.STRING,
-                            description: "The name of the page to navigate to. Available pages are: 'home', 'analysis', 'market-news', 'journal', 'coders', 'bot-maker', 'indicator-maker', 'pricing', 'login', 'signup'."
-                        }
+// FIX: Replaced stub function with a proper `GoogleGenAI` client initialization.
+const getAi = () => {
+    if (!process.env.API_KEY) throw new Error("API key not configured.");
+    return new GoogleGenAI({ apiKey: process.env.API_KEY });
+};
+
+// FIX: Completed the agent tools definition for better function calling.
+const agentTools: Tool[] = [{
+    functionDeclarations: [
+        { 
+            name: "navigate", 
+            description: "Navigates to a specific page in the application. Valid pages are: home, landing, dashboard, analysis, market-news, journal, coders, bot-maker, indicator-maker, pricing, predictor, apex-ai, login, signup.",
+            parameters: {
+                type: Type.OBJECT,
+                properties: {
+                    page: {
+                        type: Type.STRING,
+                        description: "The page to navigate to.",
                     },
-                    required: ["page"]
-                }
+                },
+                required: ['page'],
             },
-            {
-                name: "changeTheme",
-                description: "Switches the application's color theme.",
-                parameters: {
-                    type: Type.OBJECT,
-                    properties: {
-                        theme: {
-                            type: Type.STRING,
-                            description: "The theme to switch to. Can be 'light' or 'dark'."
-                        }
+        },
+        { 
+            name: "changeTheme", 
+            description: "Switches the application's color theme.",
+            parameters: {
+                type: Type.OBJECT,
+                properties: {
+                    theme: {
+                        type: Type.STRING,
+                        description: "The theme to switch to. Can be 'light' or 'dark'.",
+                        enum: ['light', 'dark'],
                     },
-                    required: ["theme"]
-                }
+                },
+                required: ['theme'],
             },
-            {
-                name: "setEdgeLighting",
-                description: "Changes the color of the glowing edge lighting effect around the application border.",
-                parameters: {
-                    type: Type.OBJECT,
-                    properties: {
-                        color: {
-                            type: Type.STRING,
-                            description: "The color for the edge lighting. Can be 'red', 'orange', 'yellow', 'green', 'blue', 'purple', 'white', or 'default'."
-                        }
+        },
+        { 
+            name: "setEdgeLighting", 
+            description: "Changes the color of the application's edge lighting effect.",
+            parameters: {
+                type: Type.OBJECT,
+                properties: {
+                    color: {
+                        type: Type.STRING,
+                        description: "The color for the edge lighting. Valid colors are: default, green, red, orange, yellow, blue, purple, white.",
+                        enum: ['default', 'green', 'red', 'orange', 'yellow', 'blue', 'purple', 'white'],
                     },
-                    required: ["color"]
-                }
+                },
+                required: ['color'],
             },
-            {
-                name: "logout",
-                description: "Logs the current user out of the application."
-            }
-        ]
-    }
-];
+        },
+        { 
+            name: "logout", 
+            description: "Logs the current user out of the application." 
+        }
+    ]
+}];
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (req.method !== 'POST') {
-        return res.status(405).json({ success: false, message: 'Method not allowed' });
+        return res.status(405).json({ message: 'Method Not Allowed' });
     }
-
-    if (!process.env.API_KEY) {
-        return res.status(500).json({ success: false, message: 'API key not configured' });
-    }
-
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
     try {
         const { command } = req.body;
-        if (!command) {
-            return res.status(400).json({ success: false, message: 'Missing command' });
-        }
-
-        const response = await ai.models.generateContent({
+        const ai = getAi();
+        
+        const response: GenerateContentResponse = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: command,
-            config: {
-                tools: agentTools
-            }
+            config: { tools: agentTools }
         });
         
         const data = {
@@ -85,10 +81,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             functionCalls: response.functionCalls || null,
         };
 
-        return res.status(200).json({ success: true, data });
-
-    } catch (error: any) {
-        console.error("Error in /api/agent:", error);
-        return res.status(500).json({ success: false, message: error.message || 'Internal server error' });
+        res.status(200).json(data);
+    } catch (error) {
+        console.error('Error in /api/agent:', error);
+        res.status(500).json({ message: error instanceof Error ? error.message : 'An unknown error occurred.' });
     }
 }
