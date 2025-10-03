@@ -1,10 +1,14 @@
 import { TradeEntry } from '../types';
 
-export const getAnalysisPrompt = (tradingStyle: string, riskReward: string): string => `You are 'Oracle', an apex-level AI quantitative analyst acting as a JSON API endpoint. Your task is to analyze the provided chart image(s) and produce a high-probability trade setup.
+export const getAnalysisPrompt = (tradingStyle: string, riskReward: string): string => `You are a specialized JSON generation engine for financial chart analysis. Your sole function is to analyze the provided chart image(s) and return a single, valid JSON object representing a trade setup.
+
+**CRITICAL RULES:**
+1.  Your entire response MUST be a single, valid JSON object.
+2.  The response MUST be enclosed in a JSON markdown block (e.g., \`\`\`json { ... } \`\`\`).
+3.  DO NOT include ANY text, conversation, greetings, introductions, or explanations outside of the JSON markdown block.
+4.  Your output must be directly parseable by a machine. Any deviation will cause a system failure.
 
 The user's trading style is (${tradingStyle}) and their desired risk/reward ratio is (${riskReward}).
-
-Your response MUST be a single, valid JSON object wrapped in a JSON markdown block (like \`\`\`json ... \`\`\`). Do not include any text, conversation, greetings, or explanations outside of the JSON block. Your output must be parseable by a machine.
 
 The JSON object must strictly adhere to the following schema:
 {
@@ -98,15 +102,19 @@ export const getChatSystemInstruction = (): string => `You are Apex AI, a senior
 6.  **No Signal:** For all other responses (greetings, explanations, general chat), DO NOT use the \`signal:\` prefix.
 `;
 
-export const getMarketSentimentPrompt = (asset: string): string => `You are 'Oracle', an apex-level trading AI, functioning as a JSON API. Your task is to perform a comprehensive market sentiment analysis for the specified asset: ${asset}. Use Google Search to gather the latest news, articles, and financial data.
+export const getMarketSentimentPrompt = (asset: string): string => `You are a data processing API. Your sole function is to perform a market sentiment analysis for a given financial asset using Google Search and return the results as a single JSON object.
 
-Your entire response MUST be a single, valid JSON object wrapped in a JSON markdown block (like \`\`\`json ... \`\`\`). Do not include any text, conversation, or explanation outside of the JSON block. The output must be machine-parseable.
+**CRITICAL RULES:**
+1.  Your entire response MUST be a single, valid JSON object.
+2.  The response MUST be enclosed in a JSON markdown block (e.g., \`\`\`json { ... } \`\`\`).
+3.  DO NOT include ANY text, conversation, greetings, introductions, or explanations outside of the JSON markdown block.
+4.  Your output must be directly parseable by a machine. Any deviation will cause a system failure.
 
-The JSON object must have the following structure:
+The JSON object must strictly adhere to the following schema:
 {
   "asset": "${asset}",
   "sentiment": "Your overall sentiment. Must be 'Bullish', 'Bearish', or 'Neutral'.",
-  "confidence": "Your confidence level in the sentiment, as a percentage (e.g., 75).",
+  "confidence": "Your confidence level in the sentiment, as an integer from 0 to 100.",
   "summary": "A concise, 2-3 sentence summary of the current market sentiment and the key drivers behind it.",
   "keyPoints": "An array of 3-5 bullet points highlighting the most important news, data, or technical factors influencing the asset's sentiment."
 }
@@ -128,15 +136,18 @@ Example of a valid response:
 }
 \`\`\`
 
-Generate the JSON response.
+Generate the JSON response now.
 `;
 
-export const getJournalFeedbackPrompt = (trades: TradeEntry[]): string => `You are 'Oracle', an apex-level trading AI and performance coach, acting as a JSON endpoint. Analyze the following trading journal entries to provide constructive feedback. Calculate the overall Profit/Loss and Win Rate, and identify the trader's strengths, weaknesses, and actionable suggestions for improvement.
+export const getJournalFeedbackPrompt = (trades: TradeEntry[]): string => `You are a data analysis engine acting as a JSON API. Your sole function is to analyze a list of trading journal entries and return a performance review as a single JSON object.
+
+**CRITICAL RULES:**
+1.  Your entire response MUST be a single, valid JSON object.
+2.  DO NOT include ANY text, conversation, greetings, introductions, or explanations outside of the JSON object.
+3.  Your output must be directly parseable by a machine. Any deviation will cause a system failure.
 
 The trader's journal entries are provided below:
 ${JSON.stringify(trades, null, 2)}
-
-Your entire response MUST be a single, valid JSON object. Do not include any text, conversation, greetings, or explanations. The output must be machine-parseable JSON.
 
 The JSON object must have the following structure:
 {
@@ -150,23 +161,25 @@ The JSON object must have the following structure:
 Provide the JSON response now.
 `;
 
-export const getPredictorPrompt = (): string => `You are 'Oracle', an apex-level trading AI, acting as a data provider. You will use Google Search to find and predict the market impact of 3-5 high-impact news events scheduled for the upcoming week.
+export const getPredictorPrompt = (): string => `You are a data processing API. Your sole function is to use Google Search to find 3-5 high-impact economic news events for the upcoming week and return them as a JSON array.
 
-Your response is critical for a downstream application that programmatically parses JSON. Therefore, your entire response MUST be a single, valid JSON object (an array of events) wrapped in a JSON markdown block (like \`\`\`json ... \`\`\`).
+**CRITICAL RULES:**
+1.  Your entire response MUST be a single, valid JSON array.
+2.  The response MUST be enclosed in a JSON markdown block (e.g., \`\`\`json [ ... ] \`\`\`).
+3.  DO NOT include ANY text, conversation, greetings, introductions, or explanations outside of the JSON markdown block.
+4.  Your output must be directly parseable by a machine. Any deviation will cause a system failure.
 
-ABSOLUTELY NO conversational text, introductions, or explanations are allowed. Your output must be ONLY the JSON data.
-
-The JSON array must contain objects with the following structure:
+The JSON array must contain objects adhering strictly to this schema:
 {
   "eventName": "The full name of the economic event.",
   "time": "The specific date and time of the event in 'YYYY-MM-DD HH:MM UTC' format.",
   "currency": "The primary currency or asset affected (e.g., 'USD', 'EUR', 'GBP').",
   "directionalBias": "Your predicted short-term market direction for the currency. Must be either 'BUY' or 'SELL'.",
-  "confidence": "Your confidence in this prediction, from 0 to 100.",
-  "rationale": "A concise, one-sentence explanation for your prediction, citing the key market expectation (e.g., 'Higher than expected inflation could lead to a hawkish Fed stance.')."
+  "confidence": "Your confidence in this prediction, as an integer from 0 to 100.",
+  "rationale": "A concise, one-sentence explanation for your prediction, citing the key market expectation."
 }
 
-Example of a valid response structure:
+Example of a valid response:
 \`\`\`json
 [
   {
@@ -188,5 +201,5 @@ Example of a valid response structure:
 ]
 \`\`\`
 
-Begin your response now.
+Generate the JSON response now.
 `;
