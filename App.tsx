@@ -85,7 +85,11 @@ const GuestLayout: React.FC = () => {
   return (
     <>
       <Header />
-      <main className="flex-grow w-full flex flex-col py-8"><Outlet /></main>
+      <main className="flex-grow w-full flex flex-col py-4 sm:py-6 lg:py-8">
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex-1 flex flex-col">
+          <Outlet />
+        </div>
+      </main>
       <Footer />
     </>
   );
@@ -95,7 +99,11 @@ const AppLayout: React.FC = () => (
   <>
     <Header />
     <TabbedNav />
-    <main className="flex-grow w-full flex flex-col py-8"><Outlet /></main>
+    <main className="flex-grow w-full flex flex-col py-4 sm:py-6 lg:py-8">
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex-1 flex flex-col">
+        <Outlet />
+      </div>
+    </main>
     <Footer />
   </>
 );

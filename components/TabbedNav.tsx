@@ -22,19 +22,21 @@ const TabbedNav: React.FC = () => {
 
     return (
         <nav className="bg-white/30 dark:bg-gray-900/40 backdrop-blur-lg sticky top-16 z-40 border-b border-white/20 dark:border-white/10 shadow-sm">
-            <div className="flex items-center justify-center space-x-2 sm:space-x-4 p-2 overflow-x-auto">
-                {navItems.map(item => (
-                    <NavLink
-                        key={item.to}
-                        to={item.to}
-                        className={({ isActive }) => 
-                            `flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all border ${isActive ? activeClassName : inactiveClassName}`
-                        }
-                    >
-                        <i className={item.icon}></i>
-                        <span className="hidden sm:inline">{item.label}</span>
-                    </NavLink>
-                ))}
+            <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="flex items-center justify-center space-x-2 sm:space-x-4 p-2 overflow-x-auto">
+                    {navItems.map(item => (
+                        <NavLink
+                            key={item.to}
+                            to={item.to}
+                            className={({ isActive }) => 
+                                `flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all border ${isActive ? activeClassName : inactiveClassName}`
+                            }
+                        >
+                            <i className={item.icon}></i>
+                            <span className="hidden sm:inline">{item.label}</span>
+                        </NavLink>
+                    ))}
+                </div>
             </div>
         </nav>
     );

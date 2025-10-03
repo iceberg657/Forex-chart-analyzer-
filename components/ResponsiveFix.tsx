@@ -5,11 +5,9 @@ interface ResponsiveFixProps {
 }
 
 const ResponsiveFix: React.FC<ResponsiveFixProps> = ({ children }) => {
-  return (
-    <div className="app-container">
-      {children}
-    </div>
-  );
+  // This component now acts as a pass-through.
+  // Responsiveness is handled by container classes in Header, Footer, and Layouts.
+  return <>{children}</>;
 };
 
 export default ResponsiveFix;
