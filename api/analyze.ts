@@ -10,20 +10,35 @@ const getResponseText = (response: GenerateContentResponse): string => response.
 
 const robustJsonParse = (jsonString: string) => {
     let cleanJsonString = jsonString.trim();
+    // Attempt to find JSON within markdown code blocks
     const markdownMatch = cleanJsonString.match(/```(json)?\s*([\s\S]*?)\s*```/);
     if (markdownMatch && markdownMatch[2]) {
         cleanJsonString = markdownMatch[2];
     } else {
+        // If no markdown, find the first '{' or '[' and last '}' or ']'
         const firstBracket = cleanJsonString.indexOf('{');
-        const lastBracket = cleanJsonString.lastIndexOf('}');
-        if (firstBracket !== -1 && lastBracket > firstBracket) {
-            cleanJsonString = cleanJsonString.substring(firstBracket, lastBracket + 1);
+        const firstSquare = cleanJsonString.indexOf('[');
+        
+        let start = -1;
+        if (firstBracket === -1) start = firstSquare;
+        else if (firstSquare === -1) start = firstBracket;
+        else start = Math.min(firstBracket, firstSquare);
+
+        if (start !== -1) {
+            const lastBracket = cleanJsonString.lastIndexOf('}');
+            const lastSquare = cleanJsonString.lastIndexOf(']');
+            const end = Math.max(lastBracket, lastSquare);
+            if (end > start) {
+                cleanJsonString = cleanJsonString.substring(start, end + 1);
+            }
         }
     }
+    
     try {
         return JSON.parse(cleanJsonString);
-    } catch (e) {
-        throw new Error("The AI returned a response in an unexpected format.");
+    } catch (parseError) {
+        console.error("Failed to parse JSON from API response:", { original: jsonString, cleaned: cleanJsonString });
+        throw new Error("The AI returned a response in an unexpected format. Please try again.");
     }
 };
 
@@ -36,7 +51,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     try {
         const { imagePayloads, riskReward, tradingStyle } = req.body;
-        const isSingleChart = !!imagePayloads.primary && !imagePayloads.higher && !imagePayloads.entry;
         const ai = getAi();
 
         const parts: Part[] = [{ text: getAnalysisPrompt(tradingStyle, riskReward) }];
