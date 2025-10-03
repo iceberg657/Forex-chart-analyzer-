@@ -114,7 +114,7 @@ const ApexAI: React.FC = () => {
     };
 
     return (
-        <div className="flex flex-col flex-1 h-full bg-[#121212] text-white rounded-xl overflow-hidden">
+        <div className="flex flex-col flex-1 h-full bg-gray-100 dark:bg-[#121212] text-gray-900 dark:text-white rounded-xl overflow-hidden">
             <ChatHeader />
             {messages.length === 0 ? (
                 <div className="flex-1 flex flex-col items-center justify-center text-center p-4">
@@ -140,7 +140,7 @@ const ApexAI: React.FC = () => {
                           </svg>
                     </div>
                     <h1 className="text-3xl font-bold">Hi, I'm Apex AI</h1>
-                    <p className="text-gray-400 mt-2">How can I help you today?</p>
+                    <p className="text-gray-500 dark:text-gray-400 mt-2">How can I help you today?</p>
                 </div>
             ) : (
                 <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -152,7 +152,7 @@ const ApexAI: React.FC = () => {
             
             <footer className="p-4 flex-shrink-0">
                  {error && <div className="mb-2"><ErrorDisplay error={error} /></div>}
-                <form onSubmit={handleFormSubmit} className="bg-[#1e1e1e] rounded-2xl p-2 flex items-end gap-2">
+                <form onSubmit={handleFormSubmit} className="bg-white dark:bg-[#1e1e1e] border border-black/10 dark:border-transparent shadow-sm rounded-2xl p-2 flex items-end gap-2">
                      {imagePreview && (
                         <div className="relative w-16 h-16 m-2 flex-shrink-0">
                             <img src={imagePreview} alt="upload preview" className="w-full h-full object-cover rounded-md" />
@@ -171,8 +171,8 @@ const ApexAI: React.FC = () => {
                     />
                     <div className="flex items-center gap-1">
                          <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" id="file-upload-chat" />
-                        <button type="button" onClick={() => fileInputRef.current?.click()} className="p-3 rounded-full hover:bg-white/10" aria-label="Attach file">
-                            <i className="fas fa-plus text-lg text-gray-400"></i>
+                        <button type="button" onClick={() => fileInputRef.current?.click()} className="p-3 rounded-full hover:bg-black/5 dark:hover:bg-white/10" aria-label="Attach file">
+                            <i className="fas fa-plus text-lg text-gray-500 dark:text-gray-400"></i>
                         </button>
                         <button type="submit" disabled={isLoading || (!input.trim() && !imageFile)} className="w-10 h-10 flex items-center justify-center rounded-full bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-500">
                             <i className="fas fa-arrow-up text-lg"></i>
