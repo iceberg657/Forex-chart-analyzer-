@@ -1,4 +1,3 @@
-import { GoogleGenAI } from '@google/genai';
 import * as Prompts from './prompts';
 import {
   AnalysisResult,
@@ -123,8 +122,8 @@ const fileToImagePart = async (file: File): Promise<ChatMessagePart> => {
 /**
  * A universal function to generate content from the Gemini API.
  * It automatically detects if the app is running in AI Studio and uses the
- * provided `window.service` or falls back to the `@google/genai` SDK for
- * standalone operation.
+ * provided `window.service` or falls back to a secure backend proxy for
+ * standalone operation on platforms like Vercel.
  */
 const generateContent = async (params: any): Promise<any> => {
   // AI Studio environment provides a global `service` object.
@@ -137,21 +136,29 @@ const generateContent = async (params: any): Promise<any> => {
     }
   }
 
-  // Fallback to @google/genai for standalone environments (website/PWA).
-  // The API_KEY is expected to be available as an environment variable.
-  if (!process.env.API_KEY) {
-    console.error("API_KEY environment variable is not set for standalone mode.");
-    throw new Error("This application is not configured for standalone use. API_KEY is missing.");
-  }
-
+  // Fallback to a secure backend proxy for standalone environments (website/PWA/Vercel).
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    // The parameters for the SDK are identical to the AI Studio service.
-    return await ai.models.generateContent(params);
+    const response = await fetch('/api/gemini-proxy', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(params),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      // Use the error message from the backend if available
+      const errorMessage = data?.error?.message || `API request failed with status ${response.status}`;
+      throw new Error(errorMessage);
+    }
+
+    return data;
   } catch (e) {
-    console.error("Google GenAI SDK call failed:", e);
-    // Provide a more user-friendly error message.
-    throw new Error(`The AI service is currently unavailable. Please check your connection or API key. Details: ${e instanceof Error ? e.message : String(e)}`);
+    console.error("Backend proxy call failed:", e);
+    // Re-throw the error to be caught by the calling function
+    throw e;
   }
 };
 
