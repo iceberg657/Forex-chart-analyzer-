@@ -22,7 +22,8 @@ const HistoryCard: React.FC<{ result: AnalysisResult; onView: () => void; }> = (
             borderColor: 'border-gray-500/50',
         }
     };
-    const info = signalInfo[result.signal];
+    const validatedSignal = ['BUY', 'SELL', 'NEUTRAL'].includes(result.signal) ? result.signal : 'NEUTRAL';
+    const info = signalInfo[validatedSignal];
 
     return (
         <div className={`bg-black/5 dark:bg-white/5 p-4 rounded-lg flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-l-4 ${info.borderColor}`}>
