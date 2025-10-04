@@ -2,42 +2,61 @@
 
 import React, { useState, useEffect } from 'react';
 import { getPredictions } from '../services/predictorService';
-import { PredictedEvent, GroundingSource } from '../types';
+import { PredictedEvent } from '../types';
 import Spinner from '../components/Spinner';
 import ErrorDisplay from '../components/ErrorDisplay';
 import { usePageData } from '../hooks/usePageData';
 
-const Sources: React.FC<{ sources?: GroundingSource[] }> = ({ sources }) => {
-    if (!sources || sources.length === 0) return null;
-    return (
-        <div className="mt-2 text-xs">
-            {sources.slice(0, 2).map((s, i) => (
-                <a key={i} href={s.uri} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline mr-2 truncate" title={s.title}>{s.title}</a>
-            ))}
-        </div>
-    );
-};
+const SignalCard: React.FC<{ signal: PredictedEvent }> = ({ signal }) => {
+    const { asset, action, price, timestamp, confidence, target_price, stop_loss, strategy_id } = signal;
 
-const EventCard: React.FC<{ event: PredictedEvent }> = ({ event }) => {
-    const biasInfo = event.directionalBias === 'BUY'
-        ? { color: 'green', icon: 'fa-arrow-up' }
-        : { color: 'red', icon: 'fa-arrow-down' };
+    const actionInfo = {
+        BUY: { color: 'green', icon: 'fa-arrow-trend-up', text: 'BUY' },
+        SELL: { color: 'red', icon: 'fa-arrow-trend-down', text: 'SELL' },
+        HOLD: { color: 'gray', icon: 'fa-circle-pause', text: 'HOLD' }
+    };
+    const { color, icon, text } = actionInfo[action];
+    
+    const confidencePercentage = (confidence * 100).toFixed(0);
 
     return (
-        <div className={`bg-black/10 dark:bg-white/5 border-l-4 border-${biasInfo.color}-500 p-4 rounded-lg shadow-md`}>
+        <div className={`bg-black/10 dark:bg-white/5 border-l-4 border-${color}-500 p-4 rounded-lg shadow-md flex flex-col gap-3`}>
             <div className="flex justify-between items-start">
                 <div>
-                    <p className="font-bold text-lg text-gray-900 dark:text-white">{event.eventName} ({event.currency})</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{new Date(event.time).toLocaleString()}</p>
+                    <p className="font-bold text-xl text-gray-900 dark:text-white">{asset}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 font-mono">{strategy_id}</p>
                 </div>
-                <div className={`text-center text-${biasInfo.color}-500`}>
-                    <i className={`fas ${biasInfo.icon} text-2xl`}></i>
-                    <p className="font-bold text-sm">{event.directionalBias}</p>
-                    <p className="text-xs">{event.confidence}%</p>
+                <div className={`text-center text-${color}-500 flex items-center gap-2 px-3 py-1 rounded-full bg-${color}-500/10`}>
+                    <i className={`fas ${icon} text-lg`}></i>
+                    <span className="font-bold text-lg">{text}</span>
                 </div>
             </div>
-            <p className="text-sm text-gray-600 dark:text-gray-300 mt-2 italic">"{event.rationale}"</p>
-            <Sources sources={event.sources} />
+            
+             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+                <div className="bg-black/5 dark:bg-white/5 p-2 rounded-md">
+                    <div className="text-gray-500 dark:text-gray-400 text-xs">Signal Price</div>
+                    <div className="font-bold text-gray-800 dark:text-gray-200">{price.toFixed(4)}</div>
+                </div>
+                 <div className="bg-black/5 dark:bg-white/5 p-2 rounded-md">
+                    <div className="text-gray-500 dark:text-gray-400 text-xs">Target Price</div>
+                    <div className="font-bold text-green-600 dark:text-green-400">{target_price?.toFixed(4) ?? 'N/A'}</div>
+                </div>
+                 <div className="bg-black/5 dark:bg-white/5 p-2 rounded-md">
+                    <div className="text-gray-500 dark:text-gray-400 text-xs">Stop Loss</div>
+                    <div className="font-bold text-red-600 dark:text-red-400">{stop_loss?.toFixed(4) ?? 'N/A'}</div>
+                </div>
+                <div className="bg-black/5 dark:bg-white/5 p-2 rounded-md">
+                    <div className="text-gray-500 dark:text-gray-400 text-xs">Confidence</div>
+                     <div className="w-full bg-gray-300 dark:bg-gray-700 rounded-full h-2.5 mt-1">
+                        <div className={`bg-${color}-500 h-2.5 rounded-full`} style={{ width: `${confidencePercentage}%` }}></div>
+                    </div>
+                    <div className={`font-bold text-${color}-500 text-right text-xs`}>{confidencePercentage}%</div>
+                </div>
+            </div>
+
+            <p className="text-xs text-gray-500 dark:text-gray-400 text-right mt-1">
+                {new Date(timestamp).toLocaleString()}
+            </p>
         </div>
     );
 };
@@ -51,7 +70,9 @@ const Predictor: React.FC = () => {
         setIsLoading(true);
         try {
             const predictions = await getPredictions();
-            setPredictorData({ events: predictions, error: null });
+            // Sort by timestamp, newest first
+            const sortedPredictions = predictions.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+            setPredictorData({ events: sortedPredictions, error: null });
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.';
             setPredictorData({ events, error: errorMessage });
@@ -69,13 +90,13 @@ const Predictor: React.FC = () => {
     return (
         <div>
             <div className="text-center mb-8">
-                <h1 className="text-4xl font-bold text-gray-900 dark:text-white">AI Catalyst Predictor</h1>
-                <p className="text-gray-600 dark:text-gray-400 mt-2">Oracle's analysis of high-impact news events for the week ahead.</p>
+                <h1 className="text-4xl font-bold text-gray-900 dark:text-white">AI Trading Signal Feed</h1>
+                <p className="text-gray-600 dark:text-gray-400 mt-2">Live trading signals generated by our Apex AI Oracle.</p>
             </div>
 
             <div className="bg-white/20 dark:bg-black/20 backdrop-blur-xl border border-white/30 dark:border-white/10 rounded-2xl shadow-lg p-6">
                 <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-xl font-semibold">Upcoming Market Movers</h2>
+                    <h2 className="text-xl font-semibold">Live Signals</h2>
                     <button onClick={fetchPredictions} disabled={isLoading} className="text-sm text-red-500 hover:text-red-700 disabled:opacity-50">
                         <i className={`fas fa-sync ${isLoading ? 'animate-spin' : ''}`}></i> Refresh
                     </button>
@@ -87,9 +108,9 @@ const Predictor: React.FC = () => {
                 {!isLoading && !error && (
                     <div className="space-y-4">
                         {events && events.length > 0 ? (
-                            events.map((event, index) => <EventCard key={index} event={event} />)
+                            events.map((event, index) => <SignalCard key={index} signal={event} />)
                         ) : (
-                            <p className="text-center text-gray-500 dark:text-gray-400 py-8">No high-impact events found for the upcoming week, or the Oracle is contemplating the markets.</p>
+                            <p className="text-center text-gray-500 dark:text-gray-400 py-8">No active signals at the moment. The Oracle is contemplating the markets.</p>
                         )}
                     </div>
                 )}

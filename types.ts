@@ -102,11 +102,13 @@ export interface ChatMessage {
 }
 
 export interface PredictedEvent {
-    eventName: string;
-    time: string; // e.g., "YYYY-MM-DD HH:MM UTC"
-    currency: string;
-    directionalBias: 'BUY' | 'SELL';
-    confidence: number; // 0-100
-    rationale: string;
-    sources: GroundingSource[];
+  asset: string;
+  action: 'BUY' | 'SELL' | 'HOLD';
+  price: number;
+  timestamp: string;
+  confidence: number; // 0-1.0
+  target_price: number | null;
+  stop_loss: number | null;
+  strategy_id: string;
+  sources?: GroundingSource[];
 }

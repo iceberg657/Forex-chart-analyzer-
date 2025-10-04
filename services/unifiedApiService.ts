@@ -1,4 +1,5 @@
 
+
 import { detectEnvironment } from '../hooks/useEnvironment';
 import { postToApi } from './api';
 import * as Prompts from './prompts';
@@ -61,12 +62,14 @@ const isJournalFeedback = (data: any): data is JournalFeedback => {
 const isPredictedEvent = (data: any): data is PredictedEvent => {
     return (
         data &&
-        typeof data.eventName === 'string' &&
-        typeof data.time === 'string' &&
-        typeof data.currency === 'string' &&
-        ['BUY', 'SELL'].includes(data.directionalBias) &&
+        typeof data.asset === 'string' &&
+        ['BUY', 'SELL', 'HOLD'].includes(data.action) &&
+        typeof data.price === 'number' &&
+        typeof data.timestamp === 'string' &&
         typeof data.confidence === 'number' &&
-        typeof data.rationale === 'string'
+        (typeof data.target_price === 'number' || data.target_price === null) &&
+        (typeof data.stop_loss === 'number' || data.stop_loss === null) &&
+        typeof data.strategy_id === 'string'
     );
 };
 
@@ -302,13 +305,7 @@ export const getPredictions = async (): Promise<PredictedEvent[]> => {
             console.error("AI response for predictions failed schema validation.", { response: parsedResult });
             throw new Error("The AI's predictions were incomplete or malformed. Please try again.");
         }
-        const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
-        if (chunks && Array.isArray(chunks) && Array.isArray(parsedResult)) {
-            const sources = chunks
-                .map((c: any) => ({ uri: c.web?.uri || '', title: c.web?.title || 'Source' }))
-                .filter((s: GroundingSource) => s.uri);
-            parsedResult.forEach((event: any) => event.sources = sources);
-        }
+        
         return parsedResult;
     } else {
         return postToApi<PredictedEvent[]>('/api/predictions', {});

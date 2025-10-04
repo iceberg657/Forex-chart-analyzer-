@@ -1,31 +1,31 @@
 
 import React, { useEffect } from 'react';
 import { HashRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
-import Header from './components/Header';
-import Footer from './components/Footer';
-import Login from './pages/Login';
-import SignUp from './pages/SignUp';
-import Landing from './pages/Landing';
-import Trader from './pages/Trader';
-import Analysis from './pages/Analysis';
-import MarketNews from './pages/MarketNews';
-import Journal from './pages/Journal';
-import History from './pages/History';
-import ApexAI from './pages/ApexAI';
-import Introduction from './pages/Introduction';
-import BotMaker from './pages/BotMaker';
-import IndicatorMaker from './pages/IndicatorMaker';
-import Pricing from './pages/Pricing';
-import Predictor from './pages/Predictor';
-import TabbedNav from './components/TabbedNav';
-import { AuthProvider, useAuth } from './hooks/useAuth';
-import { ThemeProvider } from './hooks/useTheme';
-import { EdgeLightingProvider } from './hooks/useEdgeLighting';
-import ResponsiveFix from './components/ResponsiveFix';
-import { AppContextProvider } from './hooks/useAppContext';
-import AIAgent from './components/AIAgent';
-import { PageDataProvider } from './hooks/usePageData';
-import { EnvironmentProvider } from './hooks/useEnvironment';
+import Header from '../components/Header';
+import Footer from '../components/Footer';
+import Login from '../pages/Login';
+import SignUp from '../pages/SignUp';
+import Landing from '../pages/Landing';
+import Trader from '../pages/Trader';
+import Analysis from '../pages/Analysis';
+import MarketNews from '../pages/MarketNews';
+import Journal from '../pages/Journal';
+import History from '../pages/History';
+import ApexAI from '../pages/ApexAI';
+import Introduction from '../pages/Introduction';
+import BotMaker from '../pages/BotMaker';
+import IndicatorMaker from '../pages/IndicatorMaker';
+import Pricing from '../pages/Pricing';
+import Predictor from '../pages/Predictor';
+import TabbedNav from '../components/TabbedNav';
+import { AuthProvider, useAuth } from '../hooks/useAuth';
+import { ThemeProvider } from '../hooks/useTheme';
+import { EdgeLightingProvider } from '../hooks/useEdgeLighting';
+import ResponsiveFix from '../components/ResponsiveFix';
+import { AppContextProvider } from '../hooks/useAppContext';
+import AIAgent from '../components/AIAgent';
+import { PageDataProvider } from '../hooks/usePageData';
+import { EnvironmentProvider } from '../hooks/useEnvironment';
 
 const App: React.FC = () => {
   return (
