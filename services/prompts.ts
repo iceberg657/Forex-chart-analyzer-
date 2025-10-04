@@ -104,3 +104,24 @@ JSON Schema for each object in the array:
   "potential_effect": "string (briefly describe the likely market reaction)"
 }
 `;
+
+export const getAutoFixPrompt = (errorLog: string): string => `
+You are an expert senior frontend engineer specializing in React, TypeScript, and the Gemini API.
+Your task is to analyze the following error log from the AI Studio development environment and provide a fix.
+
+The user's application has the following structure:
+- A single HTML file ('index.html')
+- A main TSX file ('index.tsx') which bootstraps a React app.
+- The main app component is in 'api/App.tsx'.
+- Components are in the 'components/' directory.
+- Pages are in the 'pages/' directory.
+- Hooks are in the 'hooks/' directory.
+- Services that call the Gemini API are in the 'services/' directory.
+
+Here is the error log:
+--- ERROR LOG ---
+${errorLog}
+--- END ERROR LOG ---
+
+Based on the errors, provide a concise explanation of the likely problem and suggest a code fix. Be specific about which file and function needs to be changed. If you provide a code snippet, keep it short and focused on the change. Do not provide full file contents. Your response should be plain text, not JSON or markdown.
+`;

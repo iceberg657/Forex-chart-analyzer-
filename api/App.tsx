@@ -1,4 +1,5 @@
 
+
 import React, { useEffect } from 'react';
 import { HashRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import Header from '../components/Header';
@@ -25,7 +26,8 @@ import ResponsiveFix from '../components/ResponsiveFix';
 import { AppContextProvider } from '../hooks/useAppContext';
 import AIAgent from '../components/AIAgent';
 import { PageDataProvider } from '../hooks/usePageData';
-import { EnvironmentProvider } from '../hooks/useEnvironment';
+import { EnvironmentProvider, useEnvironment } from '../hooks/useEnvironment';
+import ErrorLog from '../components/ErrorLog';
 
 const App: React.FC = () => {
   return (
@@ -48,6 +50,8 @@ const App: React.FC = () => {
 };
 
 const AppContent: React.FC = () => {
+  const environment = useEnvironment();
+  
   useEffect(() => {
     const splashScreen = document.getElementById('splash-screen');
     if (splashScreen) {
@@ -81,6 +85,7 @@ const AppContent: React.FC = () => {
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
         <AIAgent />
+        {environment === 'aistudio' && <ErrorLog />}
       </div>
     </ResponsiveFix>
   );
