@@ -1,6 +1,7 @@
+
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
-import { GroundingSource } from '../types';
+import { GroundingSource, MarketSentimentResult } from '../types';
 
 const getAi = () => {
     if (!process.env.API_KEY) throw new Error("API key not configured.");
@@ -9,7 +10,18 @@ const getAi = () => {
 
 const getResponseText = (response: GenerateContentResponse): string => response.text ?? '';
 
-// FIX: Replaced stub function with a robust JSON parsing implementation.
+const isMarketSentimentResult = (data: any): data is MarketSentimentResult => {
+    return (
+        data &&
+        typeof data.asset === 'string' &&
+        ['Bullish', 'Bearish', 'Neutral'].includes(data.sentiment) &&
+        typeof data.confidence === 'number' &&
+        typeof data.summary === 'string' &&
+        Array.isArray(data.keyPoints) &&
+        data.keyPoints.every((p: any) => typeof p === 'string')
+    );
+};
+
 const robustJsonParse = (jsonString: string) => {
     let cleanJsonString = jsonString.trim();
     // Attempt to find JSON within markdown code blocks
@@ -40,7 +52,7 @@ const robustJsonParse = (jsonString: string) => {
         return JSON.parse(cleanJsonString);
     } catch (parseError) {
         console.error("Failed to parse JSON from API response:", { original: jsonString, cleaned: cleanJsonString });
-        throw new Error("The API returned a response in an unexpected format. Please try again.");
+        throw new Error("The AI's response was unclear or in an unexpected format. Please try again.");
     }
 };
 
@@ -62,7 +74,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             config: { tools: [{ googleSearch: {} }] } 
         });
 
-        const parsedResult = robustJsonParse(getResponseText(response));
+        const rawText = getResponseText(response);
+        const parsedResult = robustJsonParse(rawText);
+
+        if (!isMarketSentimentResult(parsedResult)) {
+            console.error("AI response for market news failed schema validation.", { response: parsedResult, rawText });
+            throw new Error("The AI's market sentiment analysis was incomplete or malformed. Please try again.");
+        }
+
         if (response.candidates?.[0]?.groundingMetadata?.groundingChunks) {
             parsedResult.sources = response.candidates[0].groundingMetadata.groundingChunks
                 .map((c: any) => ({ uri: c.web?.uri || '', title: c.web?.title || 'Source' }))

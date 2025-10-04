@@ -1,6 +1,7 @@
+
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI, Part, GenerateContentResponse } from "@google/genai";
-import { GroundingSource } from '../types';
+import { GroundingSource, AnalysisResult } from '../types';
 
 const getAi = () => {
     if (!process.env.API_KEY) throw new Error("API key not configured.");
@@ -8,6 +9,23 @@ const getAi = () => {
 };
 
 const getResponseText = (response: GenerateContentResponse): string => response.text ?? '';
+
+const isAnalysisResult = (data: any): data is AnalysisResult => {
+    return (
+        data &&
+        typeof data.asset === 'string' &&
+        typeof data.timeframe === 'string' &&
+        ['BUY', 'SELL', 'NEUTRAL'].includes(data.signal) &&
+        typeof data.confidence === 'number' &&
+        typeof data.entry === 'string' &&
+        typeof data.stopLoss === 'string' &&
+        Array.isArray(data.takeProfits) &&
+        data.takeProfits.every((tp: any) => typeof tp === 'string') &&
+        typeof data.reasoning === 'string' &&
+        Array.isArray(data.tenReasons) &&
+        data.tenReasons.every((r: any) => typeof r === 'string')
+    );
+};
 
 const robustJsonParse = (jsonString: string) => {
     let cleanJsonString = jsonString.trim();
@@ -39,7 +57,7 @@ const robustJsonParse = (jsonString: string) => {
         return JSON.parse(cleanJsonString);
     } catch (parseError) {
         console.error("Failed to parse JSON from API response:", { original: jsonString, cleaned: cleanJsonString });
-        throw new Error("The AI returned a response in an unexpected format. Please try again.");
+        throw new Error("The AI's response was unclear or in an unexpected format. Please try again.");
     }
 };
 
@@ -68,7 +86,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             config: { tools: [{ googleSearch: {} }] }
         });
 
-        const parsedResult = robustJsonParse(getResponseText(response));
+        const rawText = getResponseText(response);
+        const parsedResult = robustJsonParse(rawText);
+
+        if (!isAnalysisResult(parsedResult)) {
+            console.error("AI response for chart analysis failed schema validation.", { response: parsedResult, rawText });
+            throw new Error("The AI's analysis was incomplete or malformed. Please try again.");
+        }
+
         if (response.candidates?.[0]?.groundingMetadata?.groundingChunks) {
             parsedResult.sources = response.candidates[0].groundingMetadata.groundingChunks
                 .map((c: any) => ({ uri: c.web?.uri || '', title: c.web?.title || 'Source' }))

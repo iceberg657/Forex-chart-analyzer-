@@ -16,6 +16,65 @@ import {
 } from '../types';
 import { Type } from '@google/genai';
 
+// --- Type Guards ---
+
+const isAnalysisResult = (data: any): data is AnalysisResult => {
+    return (
+        data &&
+        typeof data.asset === 'string' &&
+        typeof data.timeframe === 'string' &&
+        ['BUY', 'SELL', 'NEUTRAL'].includes(data.signal) &&
+        typeof data.confidence === 'number' &&
+        typeof data.entry === 'string' &&
+        typeof data.stopLoss === 'string' &&
+        Array.isArray(data.takeProfits) &&
+        data.takeProfits.every((tp: any) => typeof tp === 'string') &&
+        typeof data.reasoning === 'string' &&
+        Array.isArray(data.tenReasons) &&
+        data.tenReasons.every((r: any) => typeof r === 'string')
+    );
+};
+
+const isMarketSentimentResult = (data: any): data is MarketSentimentResult => {
+    return (
+        data &&
+        typeof data.asset === 'string' &&
+        ['Bullish', 'Bearish', 'Neutral'].includes(data.sentiment) &&
+        typeof data.confidence === 'number' &&
+        typeof data.summary === 'string' &&
+        Array.isArray(data.keyPoints) &&
+        data.keyPoints.every((p: any) => typeof p === 'string')
+    );
+};
+
+const isJournalFeedback = (data: any): data is JournalFeedback => {
+    return (
+        data &&
+        typeof data.overallPnl === 'number' &&
+        typeof data.winRate === 'number' &&
+        Array.isArray(data.strengths) && data.strengths.every((s: any) => typeof s === 'string') &&
+        Array.isArray(data.weaknesses) && data.weaknesses.every((w: any) => typeof w === 'string') &&
+        Array.isArray(data.suggestions) && data.suggestions.every((s: any) => typeof s === 'string')
+    );
+};
+
+const isPredictedEvent = (data: any): data is PredictedEvent => {
+    return (
+        data &&
+        typeof data.eventName === 'string' &&
+        typeof data.time === 'string' &&
+        typeof data.currency === 'string' &&
+        ['BUY', 'SELL'].includes(data.directionalBias) &&
+        typeof data.confidence === 'number' &&
+        typeof data.rationale === 'string'
+    );
+};
+
+const isPredictedEventArray = (data: any): data is PredictedEvent[] => {
+    return Array.isArray(data) && data.every(isPredictedEvent);
+};
+
+
 // --- Utility Functions ---
 
 const robustJsonParse = (jsonString: string) => {
@@ -43,7 +102,8 @@ const robustJsonParse = (jsonString: string) => {
     try {
         return JSON.parse(cleanJsonString);
     } catch (e) {
-        throw new Error("The AI returned a response in an unexpected format.");
+        console.error("Failed to parse JSON from AI response.", { original: jsonString, cleaned: cleanJsonString });
+        throw new Error("The AI's response was unclear or in an unexpected format. Please try again.");
     }
 };
 
@@ -105,6 +165,11 @@ export const analyzeChart = async (
         });
 
         const parsedResult = robustJsonParse(response.text);
+        if (!isAnalysisResult(parsedResult)) {
+            console.error("AI response for chart analysis failed schema validation.", { response: parsedResult });
+            throw new Error("The AI's analysis was incomplete or malformed. Please try again.");
+        }
+
         if (response.candidates?.[0]?.groundingMetadata?.groundingChunks) {
             parsedResult.sources = response.candidates[0].groundingMetadata.groundingChunks
                 .map((c: any) => ({ uri: c.web?.uri || '', title: c.web?.title || 'Source' }))
@@ -188,6 +253,10 @@ export const getMarketNews = async (asset: string): Promise<MarketSentimentResul
             config: { tools: [{ googleSearch: {} }] } 
         });
         const parsedResult = robustJsonParse(response.text);
+        if (!isMarketSentimentResult(parsedResult)) {
+            console.error("AI response for market news failed schema validation.", { response: parsedResult });
+            throw new Error("The AI's market sentiment analysis was incomplete or malformed. Please try again.");
+        }
         if (response.candidates?.[0]?.groundingMetadata?.groundingChunks) {
             parsedResult.sources = response.candidates[0].groundingMetadata.groundingChunks
                 .map((c: any) => ({ uri: c.web?.uri || '', title: c.web?.title || 'Source' }))
@@ -208,7 +277,12 @@ export const getTradingJournalFeedback = async (trades: TradeEntry[]): Promise<J
             contents: prompt,
             config: { responseMimeType: 'application/json' }
         });
-        return robustJsonParse(response.text);
+        const parsedResult = robustJsonParse(response.text);
+        if (!isJournalFeedback(parsedResult)) {
+            console.error("AI response for journal feedback failed schema validation.", { response: parsedResult });
+            throw new Error("The AI's journal feedback was incomplete or malformed. Please try again.");
+        }
+        return parsedResult;
     } else {
         return postToApi<JournalFeedback>('/api/journalFeedback', { trades });
     }
@@ -224,6 +298,10 @@ export const getPredictions = async (): Promise<PredictedEvent[]> => {
             config: { tools: [{ googleSearch: {} }] }
         });
         const parsedResult = robustJsonParse(response.text);
+        if (!isPredictedEventArray(parsedResult)) {
+            console.error("AI response for predictions failed schema validation.", { response: parsedResult });
+            throw new Error("The AI's predictions were incomplete or malformed. Please try again.");
+        }
         const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
         if (chunks && Array.isArray(chunks) && Array.isArray(parsedResult)) {
             const sources = chunks

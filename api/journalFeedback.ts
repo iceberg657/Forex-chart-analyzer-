@@ -1,14 +1,25 @@
+
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
-import { TradeEntry } from '../types';
+import { TradeEntry, JournalFeedback } from '../types';
 
-// FIX: Replaced stub function with a proper `GoogleGenAI` client initialization.
 const getAi = () => {
     if (!process.env.API_KEY) throw new Error("API key not configured.");
     return new GoogleGenAI({ apiKey: process.env.API_KEY });
 };
 const getResponseText = (response: GenerateContentResponse): string => response.text ?? '';
-// FIX: Replaced stub function with a robust JSON parsing implementation.
+
+const isJournalFeedback = (data: any): data is JournalFeedback => {
+    return (
+        data &&
+        typeof data.overallPnl === 'number' &&
+        typeof data.winRate === 'number' &&
+        Array.isArray(data.strengths) && data.strengths.every((s: any) => typeof s === 'string') &&
+        Array.isArray(data.weaknesses) && data.weaknesses.every((w: any) => typeof w === 'string') &&
+        Array.isArray(data.suggestions) && data.suggestions.every((s: any) => typeof s === 'string')
+    );
+};
+
 const robustJsonParse = (jsonString: string) => {
     let cleanJsonString = jsonString.trim();
     // Attempt to find JSON within markdown code blocks
@@ -39,7 +50,7 @@ const robustJsonParse = (jsonString: string) => {
         return JSON.parse(cleanJsonString);
     } catch (parseError) {
         console.error("Failed to parse JSON from API response:", { original: jsonString, cleaned: cleanJsonString });
-        throw new Error("The API returned a response in an unexpected format. Please try again.");
+        throw new Error("The AI's response was unclear or in an unexpected format. Please try again.");
     }
 };
 
@@ -61,7 +72,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             config: { responseMimeType: 'application/json' }
         });
         
-        const feedback = robustJsonParse(getResponseText(response));
+        const rawText = getResponseText(response);
+        const feedback = robustJsonParse(rawText);
+
+        if (!isJournalFeedback(feedback)) {
+            console.error("AI response for journal feedback failed schema validation.", { response: feedback, rawText });
+            throw new Error("The AI's journal feedback was incomplete or malformed. Please try again.");
+        }
+
         res.status(200).json(feedback);
     } catch (error) {
         console.error('Error in /api/journalFeedback:', error);

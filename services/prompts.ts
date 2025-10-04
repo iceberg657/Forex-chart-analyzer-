@@ -1,69 +1,49 @@
 import { TradeEntry } from '../types';
 
 export const getAnalysisPrompt = (tradingStyle: string, riskReward: string): string => `
-**TASK:** Analyze financial chart image(s) and generate a single, valid JSON object representing a trade setup.
+You are a JSON generator. Your response MUST be a single valid JSON object. Do not include any other text, markdown, or explanations. The JSON must adhere to the following schema based on the provided chart(s).
 
-**CRITICAL INSTRUCTIONS:**
-1.  **JSON ONLY:** Your entire response MUST be a single, valid JSON object.
-2.  **NO EXTRA TEXT:** Do not include ANY text, conversation, or explanations outside the JSON object. The response should start with \`{\` and end with \`}\`.
-3.  **USER CONTEXT:**
-    - Trading Style: ${tradingStyle}
-    - Desired Risk/Reward: ${riskReward}
+User Context:
+- Trading Style: ${tradingStyle}
+- Desired Risk/Reward: ${riskReward}
 
-**JSON SCHEMA:**
+JSON Schema:
 {
-  "asset": "string // Identify the asset from the chart (e.g., 'EUR/USD', 'BTC/USD').",
-  "timeframe": "string // Identify the primary timeframe from the chart (e.g., '4H', '15m').",
-  "signal": "'BUY' | 'SELL' | 'NEUTRAL' // Your primary trading signal.",
-  "confidence": "number // Your confidence level in the signal, as a percentage (e.g., 85).",
-  "entry": "string // The specific entry price for the trade. If neutral, provide a key level to watch.",
-  "stopLoss": "string // The specific stop-loss price. If neutral, provide a key level.",
-  "takeProfits": "string[] // An array of 1 to 3 take-profit price levels.",
-  "setupQuality": "'A+ Setup' | 'A Setup' | 'B Setup' | 'C Setup' | 'N/A' // Grade the setup quality.",
-  "reasoning": "string // A detailed, professional paragraph explaining the entire trade thesis.",
-  "tenReasons": "string[] // An array of 10 distinct, concise reasons supporting your thesis. Start each reason with an appropriate emoji (e.g., '✅', '📈', '📉').",
-  "alternativeScenario": "string // A brief explanation of what price action would invalidate your thesis."
+  "asset": "string",
+  "timeframe": "string",
+  "signal": "'BUY' | 'SELL' | 'NEUTRAL'",
+  "confidence": "number",
+  "entry": "string",
+  "stopLoss": "string",
+  "takeProfits": "string[]",
+  "setupQuality": "'A+ Setup' | 'A Setup' | 'B Setup' | 'C Setup' | 'N/A'",
+  "reasoning": "string",
+  "tenReasons": "string[]",
+  "alternativeScenario": "string"
 }
-
-**BEGIN JSON RESPONSE:**
 `;
 
 export const getBotPrompt = (description: string, language: string): string => `
-**TASK:** Generate a complete, single-file MQL source code for a trading bot (Expert Advisor).
+You are a code generator. Your response MUST be only the raw source code for the requested trading bot. Do not include any other text, markdown, explanations, or greetings.
 
-**LANGUAGE:** ${language}
+Language: ${language}
 
-**STRICT REQUIREMENTS:**
-1.  **CODE ONLY:** The entire response must be ONLY the raw source code.
-2.  **NO EXTRA TEXT:** DO NOT include explanations, greetings, titles, or markdown formatting like \`\`\`mql5 ... \`\`\`.
-3.  **COMPLETE & COMPILABLE:** The code must be fully functional and ready to compile. This includes all '#property' definitions, input parameters, event handlers ('OnInit', 'OnDeinit', 'OnTick'), and the core trading logic.
-4.  **CUSTOMIZABLE INPUTS:** Expose all key strategic variables (e.g., Moving Average periods, RSI levels, lot size, stop loss, take profit) as 'input' parameters so the user can easily customize the bot.
-5.  **CLEAR COMMENTS:** Add concise comments to explain the main sections of the code: inputs, global variables, initialization, entry conditions, exit conditions, and trade management logic.
-6.  **BASIC ERROR HANDLING:** Implement basic checks for trade execution results (e.g., from 'OrderSend').
-
-**USER'S BOT DESCRIPTION:**
+User's Bot Description:
 "${description}"
 
-**BEGIN ${language} CODE:**
+The generated code must be complete, compilable, and include customizable 'input' parameters for all key strategic variables (e.g., MA periods, RSI levels, lot size, SL/TP). Add concise comments explaining the main sections of the code.
 `;
 
 export const getIndicatorPrompt = (description: string, language: string): string => {
     return `
-**TASK:** Generate a complete, single-file source code for a trading indicator.
+You are a code generator. Your response MUST be only the raw source code for the requested trading indicator. Do not include any other text, markdown, explanations, or greetings.
 
-**LANGUAGE:** ${language}
+Language: ${language}
 
-**STRICT REQUIREMENTS:**
-1.  **CODE ONLY:** The entire response must be ONLY the raw source code.
-2.  **NO EXTRA TEXT:** DO NOT include any explanations, greetings, titles, or markdown formatting like \`\`\` ... \`\`\`.
-3.  **COMPLETE & COMPILABLE:** The code must be fully functional and ready to compile in its target platform (MetaEditor for MQL, TradingView for Pine Script).
-4.  **CUSTOMIZABLE INPUTS:** Expose all key variables (e.g., indicator periods, levels, colors) as 'input' parameters so the user can easily customize the indicator.
-5.  **CLEAR COMMENTS:** Add concise comments to explain the core calculation logic and plotting instructions.
-
-**USER'S INDICATOR DESCRIPTION:**
+User's Indicator Description:
 "${description}"
 
-**BEGIN ${language} CODE:**
+The generated code must be complete, compilable, and include customizable 'input' parameters for all key variables (e.g., indicator periods, levels, colors). Add concise comments to explain the core logic.
 `;
 };
 
@@ -82,63 +62,46 @@ export const getChatSystemInstruction = (): string => `You are Apex AI, a senior
 `;
 
 export const getMarketSentimentPrompt = (asset: string): string => `
-**TASK:** Perform a market sentiment analysis for a given financial asset using Google Search and return the results as a single JSON object.
+You are a JSON generator. Your response MUST be a single valid JSON object. Do not include any other text, markdown, or explanations. The JSON must adhere to the following schema.
 
-**CRITICAL INSTRUCTIONS:**
-1.  **JSON ONLY:** Your entire response MUST be a single, valid JSON object.
-2.  **NO EXTRA TEXT:** Do not include ANY text, conversation, or explanations outside the JSON object. The response should start with \`{\` and end with \`}\`.
-3.  **ASSET:** ${asset}
+Asset to analyze: ${asset}
 
-**JSON SCHEMA:**
+JSON Schema:
 {
-  "asset": "string // The asset being analyzed, should match '${asset}'.",
-  "sentiment": "'Bullish' | 'Bearish' | 'Neutral' // Your overall sentiment.",
-  "confidence": "number // Your confidence level in the sentiment, as an integer from 0 to 100.",
-  "summary": "string // A concise, 2-3 sentence summary of the current market sentiment and its key drivers.",
-  "keyPoints": "string[] // An array of 3-5 bullet points highlighting the most important news or technical factors."
+  "asset": "string",
+  "sentiment": "'Bullish' | 'Bearish' | 'Neutral'",
+  "confidence": "number",
+  "summary": "string",
+  "keyPoints": "string[]"
 }
-
-**BEGIN JSON RESPONSE:**
 `;
 
 export const getJournalFeedbackPrompt = (trades: TradeEntry[]): string => `
-**TASK:** Analyze a list of trading journal entries and return a performance review as a single JSON object.
+You are a JSON generator. Your response MUST be a single valid JSON object. Do not include any other text, markdown, or explanations. The JSON must adhere to the following schema based on the provided trade data.
 
-**CRITICAL INSTRUCTIONS:**
-1.  **JSON ONLY:** Your entire response MUST be a single, valid JSON object.
-2.  **NO EXTRA TEXT:** Do not include any text, conversation, or explanations outside the JSON object.
-
-**INPUT DATA:**
+Trade Data:
 ${JSON.stringify(trades, null, 2)}
 
-**JSON SCHEMA:**
+JSON Schema:
 {
-  "overallPnl": "number // Calculate the total profit or loss from all trades.",
-  "winRate": "number // Calculate the percentage of winning trades.",
-  "strengths": "string[] // An array of 2-3 specific, positive trading habits observed.",
-  "weaknesses": "string[] // An array of 2-3 specific, negative trading habits observed.",
-  "suggestions": "string[] // An array of 2-3 actionable suggestions for improvement based on weaknesses."
+  "overallPnl": "number",
+  "winRate": "number",
+  "strengths": "string[]",
+  "weaknesses": "string[]",
+  "suggestions": "string[]"
 }
-
-**BEGIN JSON RESPONSE:**
 `;
 
 export const getPredictorPrompt = (): string => `
-**TASK:** Use Google Search to find 3-5 high-impact economic news events for the upcoming week and return them as a JSON array.
+You are a JSON generator. Your response MUST be a single valid JSON array of objects. Do not include any other text, markdown, or explanations. The JSON must adhere to the following schema.
 
-**CRITICAL INSTRUCTIONS:**
-1.  **JSON ARRAY ONLY:** Your entire response MUST be a single, valid JSON array.
-2.  **NO EXTRA TEXT:** Do not include ANY text, conversation, or explanations outside the JSON array. The response must start with \`[\` and end with \`]\`.
-
-**JSON SCHEMA FOR EACH OBJECT IN THE ARRAY:**
+JSON Schema for each object in the array:
 {
-  "eventName": "string // The full name of the economic event.",
-  "time": "string // The specific date and time of the event in 'YYYY-MM-DD HH:MM UTC' format.",
-  "currency": "string // The primary currency or asset affected (e.g., 'USD', 'EUR').",
-  "directionalBias": "'BUY' | 'SELL' // Your predicted short-term market direction for the currency.",
-  "confidence": "number // Your confidence in this prediction, as an integer from 0 to 100.",
-  "rationale": "string // A concise, one-sentence explanation for your prediction."
+  "eventName": "string",
+  "time": "string",
+  "currency": "string",
+  "directionalBias": "'BUY' | 'SELL'",
+  "confidence": "number",
+  "rationale": "string"
 }
-
-**BEGIN JSON RESPONSE:**
 `;
