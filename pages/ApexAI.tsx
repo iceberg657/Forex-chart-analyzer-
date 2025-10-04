@@ -1,7 +1,8 @@
 
+
 import React, { useState, useRef, useEffect } from 'react';
 import { ChatMessage, ChatMessagePart } from '../types';
-import { sendMessage, fileToImagePart } from '../services/chatService';
+import { sendMessageStream, fileToImagePart } from '../services/chatService';
 import ErrorDisplay from '../components/ErrorDisplay';
 import ChatBubble from '../components/ChatBubble';
 import TypingIndicator from '../components/TypingIndicator';
@@ -80,25 +81,56 @@ const ApexAI: React.FC = () => {
             role: 'user',
             parts: userParts,
         };
+        
+        const modelMessageId = (Date.now() + 1).toString();
+        const modelPlaceholder: ChatMessage = {
+            id: modelMessageId,
+            role: 'model',
+            parts: [{ text: '' }],
+        };
 
-        const currentHistory = [...messages, userMessage];
-        setApexAIMessages(currentHistory);
+        // FIX: Use functional update to avoid stale state issues when adding a new message.
+        setApexAIMessages(prevMessages => [...prevMessages, userMessage, modelPlaceholder]);
         
         setInput('');
         removeImage();
 
         try {
-            const modelResponse = await sendMessage(messages, userParts);
-            setApexAIMessages([...currentHistory, modelResponse]);
-
+            let fullText = '';
+            for await (const chunk of sendMessageStream(messages, userParts)) {
+                if (chunk.textChunk) {
+                    fullText += chunk.textChunk;
+                    // FIX: Added explicit type to the callback function parameter to resolve type inference error.
+                    setApexAIMessages((prevMessages: ChatMessage[]) => 
+                        prevMessages.map(msg => 
+                            msg.id === modelMessageId 
+                            ? { ...msg, parts: [{ text: fullText }] } 
+                            : msg
+                        )
+                    );
+                }
+                if (chunk.sources) {
+                    // FIX: Added explicit type to the callback function parameter to resolve type inference error.
+                    setApexAIMessages((prevMessages: ChatMessage[]) => 
+                        prevMessages.map(msg => 
+                            msg.id === modelMessageId 
+                            ? { ...msg, sources: chunk.sources } 
+                            : msg
+                        )
+                    );
+                }
+            }
         } catch (err) {
             setError(err instanceof Error ? err.message : 'An unknown error occurred with the AI assistant.');
-            const errorResponse: ChatMessage = {
-                id: (Date.now() + 1).toString(),
-                role: 'model',
-                parts: [{ text: 'Sorry, I encountered an error. Please try again.' }],
-            };
-            setApexAIMessages([...currentHistory, errorResponse]);
+            const errorText = 'Sorry, I encountered an error. Please try again.';
+            // FIX: Added explicit type to the callback function parameter to resolve type inference error.
+            setApexAIMessages((prevMessages: ChatMessage[]) => 
+                prevMessages.map(msg => 
+                    msg.id === modelMessageId 
+                    ? { ...msg, parts: [{ text: errorText }] } 
+                    : msg
+                )
+            );
         } finally {
             setIsLoading(false);
         }

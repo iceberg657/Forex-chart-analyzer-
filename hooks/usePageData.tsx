@@ -1,4 +1,5 @@
 
+
 import React, { createContext, useState, useContext, ReactNode } from 'react';
 import { PredictedEvent, MarketSentimentResult, ChatMessage, AnalysisResult } from '../types';
 
@@ -24,7 +25,8 @@ interface PageDataContextType {
     pageData: PageDataState;
     setPredictorData: (data: { events: PredictedEvent[] | null; error: string | null; }) => void;
     setMarketNewsData: (data: { result: MarketSentimentResult | null; asset: string; error: string | null; }) => void;
-    setApexAIMessages: (messages: ChatMessage[]) => void;
+    // FIX: Updated type to allow functional updates, e.g., setApexAIMessages(prev => [...prev, newMessage])
+    setApexAIMessages: (messages: ChatMessage[] | ((prevMessages: ChatMessage[]) => ChatMessage[])) => void;
     clearApexChat: () => void;
     addAnalysisToHistory: (result: AnalysisResult) => void;
     clearAnalysisHistory: () => void;
@@ -62,8 +64,15 @@ export const PageDataProvider: React.FC<{ children: ReactNode }> = ({ children }
         setPageData(prev => ({ ...prev, marketNews: data }));
     };
 
-    const setApexAIMessages = (messages: ChatMessage[]) => {
-        setPageData(prev => ({ ...prev, apexAI: { ...prev.apexAI, messages } }));
+    // FIX: Updated implementation to handle both direct array and functional updates for messages.
+    const setApexAIMessages = (messages: ChatMessage[] | ((prevMessages: ChatMessage[]) => ChatMessage[])) => {
+        setPageData(prev => {
+            const newMessages = typeof messages === 'function' ? messages(prev.apexAI.messages) : messages;
+            return {
+                ...prev,
+                apexAI: { ...prev.apexAI, messages: newMessages },
+            };
+        });
     };
     
     const clearApexChat = () => {

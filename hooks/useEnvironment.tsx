@@ -10,8 +10,9 @@ export const detectEnvironment = (): AppEnvironment => {
         return 'website';
     }
 
-    // AI Studio provides a global `service` object on the window. This is the most reliable check.
-    if (window.service && typeof window.service.gemini?.generateContent === 'function') {
+    // The presence of a client-side API_KEY is the definitive check for the AI Studio environment.
+    // This allows for direct API calls without a backend proxy.
+    if (process.env.API_KEY) {
         return 'aistudio';
     }
 

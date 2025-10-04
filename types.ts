@@ -1,16 +1,3 @@
-
-
-// Declaration for AI Studio environment
-declare global {
-  interface Window {
-    service?: {
-      gemini: {
-        generateContent: (params: any) => Promise<any>;
-      };
-    };
-  }
-}
-
 export interface GroundingSource {
   uri: string;
   title: string;
