@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AnalysisResult, GroundingSource } from '../types';
@@ -195,7 +196,7 @@ const Analysis: React.FC = () => {
                           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm text-center">
                             <div className="bg-black/5 dark:bg-white/5 p-3 rounded-lg"><p className="font-semibold text-gray-600 dark:text-gray-400 text-xs">Entry</p><p className="font-mono font-bold text-lg">{result.entry}</p></div>
                             <div className="bg-red-500/10 dark:bg-red-900/40 p-3 rounded-lg"><p className="font-semibold text-red-700 dark:text-red-300 text-xs">Stop Loss</p><p className="font-mono font-bold text-lg text-red-800 dark:text-red-200">{result.stopLoss}</p></div>
-                            <div className="bg-green-500/10 dark:bg-green-900/40 p-3 rounded-lg"><p className="font-semibold text-green-700 dark:text-green-300 text-xs">Take Profit(s)</p><p className="font-mono font-bold text-lg text-green-800 dark:text-green-200">{result.takeProfits.join(', ')}</p></div>
+                            <div className="bg-green-500/10 dark:bg-green-900/40 p-3 rounded-lg"><p className="font-semibold text-green-700 dark:text-green-300 text-xs">Take Profit(s)</p><p className="font-mono font-bold text-lg text-green-800 dark:text-green-200">{(result.takeProfits || []).join(', ')}</p></div>
                           </div>
                         ) : (
                           <div className="text-center bg-black/5 dark:bg-white/5 p-4 rounded-lg">
@@ -205,16 +206,20 @@ const Analysis: React.FC = () => {
                         
                         <div className="pt-4">
                           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Reasoning</h3>
-                          <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">{result.reasoning}</p>
+                          <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">{result.reasoning || 'No reasoning was provided by the AI.'}</p>
                         </div>
 
                         <div className="pt-4">
                             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Key Points</h3>
                             <ul className="space-y-2 text-sm">
-                              {result.tenReasons.map((reason, index) => (
+                              {(result.tenReasons || []).map((reason, index) => (
                                   <li key={index} className="flex items-start p-2 rounded-md bg-black/5 dark:bg-white/5">
-                                    <span className="mr-2">{reason.charAt(0)}</span>
-                                    <span className="flex-1">{reason.substring(2)}</span>
+                                    {typeof reason === 'string' && (
+                                        <>
+                                            <span className="mr-2">{reason.charAt(0)}</span>
+                                            <span className="flex-1">{reason.substring(2)}</span>
+                                        </>
+                                    )}
                                   </li>
                               ))}
                             </ul>
