@@ -10,6 +10,38 @@ interface AnalysisLocationState {
     error?: string;
 }
 
+const KeyPoint: React.FC<{ reason: string }> = ({ reason }) => {
+    if (typeof reason !== 'string' || reason.length < 2) {
+        return (
+            <li className="flex items-start p-2 rounded-md bg-black/5 dark:bg-white/5">
+                <i className="fas fa-info-circle text-gray-500 mr-3 mt-1 flex-shrink-0 w-5 text-center"></i>
+                <span className="flex-1">{reason || 'Invalid point format'}</span>
+            </li>
+        );
+    }
+    
+    const firstSpaceIndex = reason.indexOf(' ');
+    const emoji = firstSpaceIndex > -1 ? reason.substring(0, firstSpaceIndex).trim() : reason;
+    const text = firstSpaceIndex > -1 ? reason.substring(firstSpaceIndex).trim() : '';
+
+    let iconInfo = { icon: 'fa-info-circle', color: 'text-blue-500' };
+
+    if (['✅', '👍', '📈'].some(char => emoji.includes(char))) {
+        iconInfo = { icon: 'fa-check-circle', color: 'text-green-500' };
+    } else if (['❌', '👎', '📉'].some(char => emoji.includes(char))) {
+        iconInfo = { icon: 'fa-times-circle', color: 'text-red-500' };
+    } else if (['⚠️', '🤔'].some(char => emoji.includes(char))) {
+        iconInfo = { icon: 'fa-exclamation-triangle', color: 'text-yellow-500' };
+    }
+
+    return (
+        <li className="flex items-start p-2 rounded-md bg-black/5 dark:bg-white/5">
+            <i className={`fas ${iconInfo.icon} ${iconInfo.color} mr-3 mt-1 flex-shrink-0 w-5 text-center`}></i>
+            <span className="flex-1">{text}</span>
+        </li>
+    );
+};
+
 const SourcesCard: React.FC<{ sources: GroundingSource[] }> = ({ sources }) => {
   if (!sources || sources.length === 0) return null;
 
@@ -67,46 +99,24 @@ const SignalCard: React.FC<{ signal: 'BUY' | 'SELL' | 'NEUTRAL'; confidence: num
                 </div>
                 <div>
                     <p className={`text-sm font-medium ${textColor}`}>Confidence</p>
-                    <p className={`text-2xl font-bold text-right ${textColor}`}>{confidence}%</p>
+                    <p className={`text-2xl font-bold text-right ${textColor}`}>{confidence || 0}%</p>
                 </div>
             </div>
         </div>
     )
 }
 
-const SetupQualityCard: React.FC<{ quality: string }> = ({ quality }) => {
+const SetupQualityCard: React.FC<{ quality?: string }> = ({ quality }) => {
+    if (!quality) return null;
     const qualityInfo: { [key: string]: { text: string; bgColor: string; textColor: string; borderColor: string; icon: React.ReactNode } } = {
-        'A+ Setup': {
-            text: 'A+ Setup',
-            bgColor: 'bg-teal-500/10 dark:bg-teal-400/20',
-            textColor: 'text-teal-800 dark:text-teal-200',
-            borderColor: 'border-teal-500/80',
-            icon: <i className="fas fa-rocket text-teal-500"></i>,
-        },
-        'A Setup': {
-            text: 'A Setup',
-            bgColor: 'bg-sky-500/10 dark:bg-sky-400/20',
-            textColor: 'text-sky-800 dark:text-sky-200',
-            borderColor: 'border-sky-500/80',
-            icon: <i className="fas fa-thumbs-up text-sky-500"></i>,
-        },
-        'B Setup': {
-            text: 'B Setup',
-            bgColor: 'bg-yellow-500/10 dark:bg-yellow-400/20',
-            textColor: 'text-yellow-800 dark:text-yellow-200',
-            borderColor: 'border-yellow-500/80',
-            icon: <i className="fas fa-check-circle text-yellow-500"></i>,
-        },
-        'C Setup': {
-            text: 'C Setup',
-            bgColor: 'bg-orange-500/10 dark:bg-orange-400/20',
-            textColor: 'text-orange-800 dark:text-orange-200',
-            borderColor: 'border-orange-500/80',
-            icon: <i className="fas fa-exclamation-triangle text-orange-500"></i>,
-        }
+        'A+ Setup': { text: 'A+ Setup', bgColor: 'bg-teal-500/10 dark:bg-teal-400/20', textColor: 'text-teal-800 dark:text-teal-200', borderColor: 'border-teal-500/80', icon: <i className="fas fa-rocket text-teal-500"></i> },
+        'A Setup': { text: 'A Setup', bgColor: 'bg-sky-500/10 dark:bg-sky-400/20', textColor: 'text-sky-800 dark:text-sky-200', borderColor: 'border-sky-500/80', icon: <i className="fas fa-thumbs-up text-sky-500"></i> },
+        'B Setup': { text: 'B Setup', bgColor: 'bg-yellow-500/10 dark:bg-yellow-400/20', textColor: 'text-yellow-800 dark:text-yellow-200', borderColor: 'border-yellow-500/80', icon: <i className="fas fa-check-circle text-yellow-500"></i> },
+        'C Setup': { text: 'C Setup', bgColor: 'bg-orange-500/10 dark:bg-orange-400/20', textColor: 'text-orange-800 dark:text-orange-200', borderColor: 'border-orange-500/80', icon: <i className="fas fa-exclamation-triangle text-orange-500"></i> },
+        'N/A': { text: 'N/A', bgColor: 'bg-gray-500/10 dark:bg-gray-400/20', textColor: 'text-gray-800 dark:text-gray-200', borderColor: 'border-gray-500/80', icon: <i className="fas fa-minus-circle text-gray-500"></i> }
     };
 
-    const info = qualityInfo[quality] || qualityInfo['C Setup'];
+    const info = qualityInfo[quality] || qualityInfo['N/A'];
 
     return (
         <div className={`p-3 rounded-lg border ${info.borderColor} ${info.bgColor}`}>
@@ -166,6 +176,13 @@ const Analysis: React.FC = () => {
           </div>
         );
     }
+    
+    // --- Data Validation and Sanitization ---
+    const validatedSignal = ['BUY', 'SELL', 'NEUTRAL'].includes(result.signal) ? result.signal : 'NEUTRAL';
+    const takeProfits = Array.isArray(result.takeProfits) 
+        ? result.takeProfits 
+        : (result.takeProfits ? [String(result.takeProfits)] : []);
+    const tenReasons = Array.isArray(result.tenReasons) ? result.tenReasons : [];
 
     return (
         <div>
@@ -175,28 +192,28 @@ const Analysis: React.FC = () => {
             </div>
             <div className="bg-white/20 dark:bg-black/20 backdrop-blur-xl border border-white/30 dark:border-white/10 rounded-2xl shadow-lg p-6">
                 <div className="w-full animate-fade-in">
-                    <SignalCard signal={result.signal} confidence={result.confidence} />
+                    <SignalCard signal={validatedSignal} confidence={result.confidence} />
                     <div className="mt-6 space-y-4">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                           <div className="bg-black/5 dark:bg-white/5 p-3 rounded-lg flex items-baseline justify-between">
                             <span className="font-semibold text-gray-600 dark:text-gray-400">Asset:</span> 
-                            <span className="font-mono font-bold text-lg animated-gradient-text">{result.asset}</span>
+                            <span className="font-mono font-bold text-lg animated-gradient-text">{result.asset || 'N/A'}</span>
                           </div>
                           <div className="bg-black/5 dark:bg-white/5 p-3 rounded-lg flex items-baseline justify-between">
                             <span className="font-semibold text-gray-600 dark:text-gray-400">Timeframe:</span> 
-                            <span className="font-mono text-lg">{result.timeframe}</span>
+                            <span className="font-mono text-lg">{result.timeframe || 'N/A'}</span>
                           </div>
                         </div>
 
-                         {result.setupQuality && result.signal !== 'NEUTRAL' && (
+                        {validatedSignal !== 'NEUTRAL' && (
                             <SetupQualityCard quality={result.setupQuality} />
                         )}
 
-                        {result.signal !== 'NEUTRAL' ? (
+                        {validatedSignal !== 'NEUTRAL' ? (
                           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm text-center">
-                            <div className="bg-black/5 dark:bg-white/5 p-3 rounded-lg"><p className="font-semibold text-gray-600 dark:text-gray-400 text-xs">Entry</p><p className="font-mono font-bold text-lg">{result.entry}</p></div>
-                            <div className="bg-red-500/10 dark:bg-red-900/40 p-3 rounded-lg"><p className="font-semibold text-red-700 dark:text-red-300 text-xs">Stop Loss</p><p className="font-mono font-bold text-lg text-red-800 dark:text-red-200">{result.stopLoss}</p></div>
-                            <div className="bg-green-500/10 dark:bg-green-900/40 p-3 rounded-lg"><p className="font-semibold text-green-700 dark:text-green-300 text-xs">Take Profit(s)</p><p className="font-mono font-bold text-lg text-green-800 dark:text-green-200">{(result.takeProfits || []).join(', ')}</p></div>
+                            <div className="bg-black/5 dark:bg-white/5 p-3 rounded-lg"><p className="font-semibold text-gray-600 dark:text-gray-400 text-xs">Entry</p><p className="font-mono font-bold text-lg">{result.entry || '---'}</p></div>
+                            <div className="bg-red-500/10 dark:bg-red-900/40 p-3 rounded-lg"><p className="font-semibold text-red-700 dark:text-red-300 text-xs">Stop Loss</p><p className="font-mono font-bold text-lg text-red-800 dark:text-red-200">{result.stopLoss || '---'}</p></div>
+                            <div className="bg-green-500/10 dark:bg-green-900/40 p-3 rounded-lg"><p className="font-semibold text-green-700 dark:text-green-300 text-xs">Take Profit(s)</p><p className="font-mono font-bold text-lg text-green-800 dark:text-green-200">{takeProfits.join(', ') || '---'}</p></div>
                           </div>
                         ) : (
                           <div className="text-center bg-black/5 dark:bg-white/5 p-4 rounded-lg">
@@ -212,16 +229,11 @@ const Analysis: React.FC = () => {
                         <div className="pt-4">
                             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Key Points</h3>
                             <ul className="space-y-2 text-sm">
-                              {(result.tenReasons || []).map((reason, index) => (
-                                  <li key={index} className="flex items-start p-2 rounded-md bg-black/5 dark:bg-white/5">
-                                    {typeof reason === 'string' && (
-                                        <>
-                                            <span className="mr-2">{reason.charAt(0)}</span>
-                                            <span className="flex-1">{reason.substring(2)}</span>
-                                        </>
-                                    )}
-                                  </li>
-                              ))}
+                              {tenReasons.length > 0 ? (
+                                  tenReasons.map((reason, index) => <KeyPoint key={index} reason={reason} />)
+                                ) : (
+                                  <p className="text-gray-500 text-center py-2">No key points were provided.</p>
+                                )}
                             </ul>
                         </div>
                         {result.alternativeScenario && (
