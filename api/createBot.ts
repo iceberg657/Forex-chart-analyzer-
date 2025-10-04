@@ -8,7 +8,39 @@ const getAi = () => {
 
 const getResponseText = (response: GenerateContentResponse): string => response.text ?? '';
 
-const getBotPrompt = (description: string, language: string) => `You are an expert MQL developer...`; // Full prompt omitted for brevity
+const robustJsonParse = (jsonString: string) => {
+    let cleanJsonString = jsonString.trim();
+    const markdownMatch = cleanJsonString.match(/```(json)?\s*([\s\S]*?)\s*```/);
+    if (markdownMatch && markdownMatch[2]) {
+        cleanJsonString = markdownMatch[2];
+    } else {
+        const start = cleanJsonString.indexOf('{');
+        if (start !== -1) {
+            const end = cleanJsonString.lastIndexOf('}');
+            if (end > start) {
+                cleanJsonString = cleanJsonString.substring(start, end + 1);
+            }
+        }
+    }
+    try {
+        return JSON.parse(cleanJsonString);
+    } catch (e) {
+        console.error("Failed to parse JSON from AI response.", { original: jsonString, cleaned: cleanJsonString });
+        throw new Error("The AI's response was unclear or in an unexpected format. Please try again.");
+    }
+};
+
+const getBotPrompt = (description: string, language: string) => `
+You are a JSON code generator. Your response MUST be ONLY a single valid JSON object with the following structure: { "code": "The complete source code here" }.
+Do not include any other text, markdown, explanations, or greetings. Only return the JSON object.
+
+Language: ${language}
+
+User's Bot Description:
+"${description}"
+
+The generated code must be complete, compilable, and include customizable 'input' parameters for all key strategic variables (e.g., MA periods, RSI levels, lot size, SL/TP). Add concise comments explaining the main sections of the code.
+`;
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (req.method !== 'POST') {
@@ -21,9 +53,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const prompt = getBotPrompt(description, language);
 
         const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
-        const code = getResponseText(response);
+        const rawText = getResponseText(response);
+        
+        const parsedResult = robustJsonParse(rawText);
+        const code = parsedResult.code;
 
-        if (!code) throw new Error("API response did not include the generated code.");
+        if (!code || typeof code !== 'string') {
+            throw new Error("API response did not include the generated code in the expected format.");
+        }
 
         res.status(200).json({ code });
     } catch (error) {

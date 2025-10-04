@@ -59,7 +59,7 @@ const robustJsonParse = (jsonString: string) => {
     }
 };
 
-const getPredictorPrompt = () => `You are 'Oracle', an apex-level trading AI...`; // Full prompt omitted for brevity
+const getPredictorPrompt = () => `You are 'Oracle', an apex-level trading AI. Your response MUST be a single, valid JSON array of objects. Do not include any other text, markdown, or explanations. The response must start with [ and end with ] and contain nothing else. ...`; // Full prompt omitted for brevity
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (req.method !== 'POST') { // Changed to POST for consistency

@@ -61,7 +61,7 @@ const robustJsonParse = (jsonString: string) => {
     }
 };
 
-const getAnalysisPrompt = (tradingStyle: string, riskReward: string) => `You are 'Oracle', an apex-level AI quantitative analyst. Your task is to implement a unified reasoning architecture to produce high-probability trade setups. You are consistent, logical, and your analysis is institutional-grade. Your entire response MUST be a single, valid JSON object that adheres to the provided schema. ...`; // Full prompt omitted for brevity
+const getAnalysisPrompt = (tradingStyle: string, riskReward: string) => `You are 'Oracle', an apex-level AI quantitative analyst. Your task is to implement a unified reasoning architecture to produce high-probability trade setups. You are consistent, logical, and your analysis is institutional-grade. Your entire response MUST be a single, valid JSON object that adheres to the provided schema. Do not include any other text, markdown, or explanations. The response must start with { and end with } and contain nothing else. ...`; // Full prompt omitted for brevity
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (req.method !== 'POST') {
