@@ -102,13 +102,10 @@ export interface ChatMessage {
 }
 
 export interface PredictedEvent {
+  event_description: string;
   asset: string;
-  action: 'BUY' | 'SELL' | 'HOLD';
-  price: number;
-  timestamp: string;
-  confidence: number; // 0-1.0
-  target_price: number | null;
-  stop_loss: number | null;
-  strategy_id: string;
+  predicted_impact: 'High' | 'Medium' | 'Low';
+  probability: number; // 0-1.0
+  potential_effect: string;
   sources?: GroundingSource[];
 }

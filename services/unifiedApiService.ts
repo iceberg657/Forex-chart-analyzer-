@@ -62,14 +62,11 @@ const isJournalFeedback = (data: any): data is JournalFeedback => {
 const isPredictedEvent = (data: any): data is PredictedEvent => {
     return (
         data &&
+        typeof data.event_description === 'string' &&
         typeof data.asset === 'string' &&
-        ['BUY', 'SELL', 'HOLD'].includes(data.action) &&
-        typeof data.price === 'number' &&
-        typeof data.timestamp === 'string' &&
-        typeof data.confidence === 'number' &&
-        (typeof data.target_price === 'number' || data.target_price === null) &&
-        (typeof data.stop_loss === 'number' || data.stop_loss === null) &&
-        typeof data.strategy_id === 'string'
+        ['High', 'Medium', 'Low'].includes(data.predicted_impact) &&
+        typeof data.probability === 'number' &&
+        typeof data.potential_effect === 'string'
     );
 };
 
@@ -306,6 +303,15 @@ export const getPredictions = async (): Promise<PredictedEvent[]> => {
             throw new Error("The AI's predictions were incomplete or malformed. Please try again.");
         }
         
+        if (response.candidates?.[0]?.groundingMetadata?.groundingChunks) {
+            const sources = response.candidates[0].groundingMetadata.groundingChunks
+                .map((c: any) => ({ uri: c.web?.uri || '', title: c.web?.title || 'Source' }))
+                .filter((s: GroundingSource) => s.uri);
+            if (sources.length > 0 && parsedResult.length > 0) {
+                 // Attach all sources to the first event for simplicity
+                parsedResult[0].sources = sources;
+            }
+        }
         return parsedResult;
     } else {
         return postToApi<PredictedEvent[]>('/api/predictions', {});

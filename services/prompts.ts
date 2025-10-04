@@ -97,13 +97,10 @@ You are a JSON generator. Your response MUST be a single valid JSON array of obj
 
 JSON Schema for each object in the array:
 {
-  "asset": "string (e.g., 'BTC/USD', 'NVDA', 'EUR/JPY')",
-  "action": "'BUY' | 'SELL' | 'HOLD'",
-  "price": "number (current price at time of signal)",
-  "timestamp": "string (ISO 8601 format, e.g., '2025-10-04T01:11:00Z')",
-  "confidence": "number (from 0.0 to 1.0)",
-  "target_price": "number | null (the price target for BUY/SELL actions)",
-  "stop_loss": "number | null (the price for stop loss for BUY/SELL actions)",
-  "strategy_id": "string (a unique identifier for the strategy that generated the signal)"
+  "event_description": "string",
+  "asset": "string (the primary asset affected)",
+  "predicted_impact": "'High' | 'Medium' | 'Low'",
+  "probability": "number (from 0.0 to 1.0)",
+  "potential_effect": "string (briefly describe the likely market reaction)"
 }
 `;
