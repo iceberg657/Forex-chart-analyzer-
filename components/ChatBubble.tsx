@@ -84,7 +84,7 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({ message, onRate }) => {
                             return <SimpleMarkdown key={index} text={textToRender} />;
                         }
                         if (part.inlineData) {
-                            return <img key={index} src={`data:${part.inlineData.mimeType};base64,${part.inlineData.data}`} alt="user upload" className="rounded-lg max-w-xs" />;
+                            return <img key={index} src={`data:${part.inlineData.mimeType};base64,${part.inlineData.data}`} alt="user upload" className="rounded-lg max-w-64" />;
                         }
                         return null;
                     })}
