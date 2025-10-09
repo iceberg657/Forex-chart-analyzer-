@@ -13,7 +13,8 @@ const isAnalysisResult = (data: any): data is AnalysisResult => {
         typeof data.timeframe === 'string' &&
         ['BUY', 'SELL', 'NEUTRAL'].includes(data.signal) &&
         typeof data.confidence === 'number' &&
-        typeof data.entry === 'string' &&
+        Array.isArray(data.entryPriceRange) &&
+        data.entryPriceRange.every((e: any) => typeof e === 'string') &&
         typeof data.stopLoss === 'string' &&
         Array.isArray(data.takeProfits) &&
         data.takeProfits.every((tp: any) => typeof tp === 'string') &&

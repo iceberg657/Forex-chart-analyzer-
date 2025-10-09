@@ -211,7 +211,7 @@ const Analysis: React.FC = () => {
 
                         {validatedSignal !== 'NEUTRAL' ? (
                           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm text-center">
-                            <div className="bg-black/5 dark:bg-white/5 p-3 rounded-lg"><p className="font-semibold text-gray-600 dark:text-gray-400 text-xs">Entry</p><p className="font-mono font-bold text-lg">{result.entry || '---'}</p></div>
+                            <div className="bg-black/5 dark:bg-white/5 p-3 rounded-lg"><p className="font-semibold text-gray-600 dark:text-gray-400 text-xs">Entry Range</p><p className="font-mono font-bold text-lg">{Array.isArray(result.entryPriceRange) ? result.entryPriceRange.join(' - ') : '---'}</p></div>
                             <div className="bg-red-500/10 dark:bg-red-900/40 p-3 rounded-lg"><p className="font-semibold text-red-700 dark:text-red-300 text-xs">Stop Loss</p><p className="font-mono font-bold text-lg text-red-800 dark:text-red-200">{result.stopLoss || '---'}</p></div>
                             <div className="bg-green-500/10 dark:bg-green-900/40 p-3 rounded-lg"><p className="font-semibold text-green-700 dark:text-green-300 text-xs">Take Profit(s)</p><p className="font-mono font-bold text-lg text-green-800 dark:text-green-200">{takeProfits.join(', ') || '---'}</p></div>
                           </div>

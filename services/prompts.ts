@@ -13,7 +13,7 @@ JSON Schema:
   "timeframe": "string",
   "signal": "'BUY' | 'SELL' | 'NEUTRAL'",
   "confidence": "number",
-  "entry": "string",
+  "entryPriceRange": "string[]",
   "stopLoss": "string",
   "takeProfits": "string[]",
   "setupQuality": "'A+ Setup' | 'A Setup' | 'B Setup' | 'C Setup' | 'N/A'",

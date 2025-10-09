@@ -10,7 +10,7 @@ export interface AnalysisResult {
   timeframe: string;
   signal: 'BUY' | 'SELL' | 'NEUTRAL';
   confidence: number; // e.g., 85
-  entry: string;
+  entryPriceRange: string[]; // [min, max]
   stopLoss: string;
   takeProfits: string[]; // Can be one or more
   setupQuality?: 'A+ Setup' | 'A Setup' | 'B Setup' | 'C Setup' | 'N/A';
