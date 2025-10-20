@@ -90,9 +90,12 @@ export interface ChatMessage {
 
 export interface PredictedEvent {
   event_description: string;
-  asset: string;
-  predicted_impact: 'High' | 'Medium' | 'Low';
-  probability: number; // 0-1.0
+  day: string; // "Monday", "Tuesday", etc.
+  date: string; // e.g., "July 26, 2024"
+  time: string; // e.g., "08:30 AM EST"
+  direction: 'BUY' | 'SELL';
+  currencyPairs: string[]; // e.g., ["EUR/USD", "GBP/USD"]
+  confidence: number; // 75-90
   potential_effect: string;
   sources?: GroundingSource[];
 }

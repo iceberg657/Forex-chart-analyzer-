@@ -1,4 +1,3 @@
-
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI } from '@google/genai';
 import { getPredictorPrompt } from '../services/prompts';
@@ -10,9 +9,12 @@ const isPredictedEvent = (data: any): data is PredictedEvent => {
     return (
         data &&
         typeof data.event_description === 'string' &&
-        typeof data.asset === 'string' &&
-        ['High', 'Medium', 'Low'].includes(data.predicted_impact) &&
-        typeof data.probability === 'number' &&
+        typeof data.day === 'string' &&
+        typeof data.date === 'string' &&
+        typeof data.time === 'string' &&
+        ['BUY', 'SELL'].includes(data.direction) &&
+        Array.isArray(data.currencyPairs) && data.currencyPairs.every((p: any) => typeof p === 'string') &&
+        typeof data.confidence === 'number' && data.confidence >= 75 && data.confidence <= 90 &&
         typeof data.potential_effect === 'string'
     );
 };
@@ -62,6 +64,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 .map((c: any) => ({ uri: c.web?.uri || '', title: c.web?.title || 'Source' }))
                 .filter((s: GroundingSource) => s.uri);
             if (sources.length > 0 && parsedResult.length > 0) {
+                // Assign sources to the first event for simplicity, as they likely apply to the whole forecast
                 parsedResult[0].sources = sources;
             }
         }

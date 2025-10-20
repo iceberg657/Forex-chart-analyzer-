@@ -1,5 +1,3 @@
-
-
 import * as Prompts from './prompts';
 import {
   AnalysisResult,
@@ -113,9 +111,12 @@ const isPredictedEvent = (data: any): data is PredictedEvent => {
     return (
         data &&
         typeof data.event_description === 'string' &&
-        typeof data.asset === 'string' &&
-        ['High', 'Medium', 'Low'].includes(data.predicted_impact) &&
-        typeof data.probability === 'number' &&
+        typeof data.day === 'string' &&
+        typeof data.date === 'string' &&
+        typeof data.time === 'string' &&
+        ['BUY', 'SELL'].includes(data.direction) &&
+        Array.isArray(data.currencyPairs) && data.currencyPairs.every((p: any) => typeof p === 'string') &&
+        typeof data.confidence === 'number' && data.confidence >= 75 && data.confidence <= 90 &&
         typeof data.potential_effect === 'string'
     );
 };

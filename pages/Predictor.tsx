@@ -1,6 +1,4 @@
-
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { getPredictions } from '../services/predictorService';
 import { PredictedEvent, GroundingSource } from '../types';
 import Spinner from '../components/Spinner';
@@ -30,43 +28,66 @@ const SourcesCard: React.FC<{ sources: GroundingSource[] }> = ({ sources }) => {
 };
 
 const EventCard: React.FC<{ event: PredictedEvent }> = ({ event }) => {
-    const { event_description, asset, predicted_impact, probability, potential_effect, sources } = event;
-    
-    const impactInfo = {
-        High: { color: 'red', icon: 'fa-triangle-exclamation' },
-        Medium: { color: 'yellow', icon: 'fa-bolt' },
-        Low: { color: 'blue', icon: 'fa-info-circle' }
+    const { event_description, time, direction, currencyPairs, confidence, potential_effect, sources } = event;
+
+    const isBuy = direction === 'BUY';
+
+    const directionClasses = {
+        borderColor: isBuy ? 'border-green-500' : 'border-red-500',
+        bgColor: isBuy ? 'bg-green-500/10' : 'bg-red-500/10',
+        textColor: isBuy ? 'text-green-500' : 'text-red-500',
+        icon: isBuy ? 'fa-arrow-up' : 'fa-arrow-down'
     };
-    const { color, icon } = impactInfo[predicted_impact];
-    const probabilityPercentage = (probability * 100).toFixed(0);
 
     return (
-        <div className={`bg-black/10 dark:bg-white/5 border-l-4 border-${color}-500 p-4 rounded-lg shadow-md`}>
-            <div className="flex justify-between items-start">
-                <h3 className="font-bold text-lg text-gray-900 dark:text-white flex-1 pr-4">{event_description}</h3>
-                <div className={`text-center text-${color}-500`}>
-                    <i className={`fas ${icon} text-xl`}></i>
-                    <p className="text-xs font-bold mt-1">{predicted_impact} Impact</p>
+        <div className={`bg-black/10 dark:bg-white/5 p-4 rounded-lg shadow-md flex items-center gap-4 border-l-4 ${directionClasses.borderColor}`}>
+            {/* Left Column: Direction Icon */}
+            <div className="flex-shrink-0">
+                <div className={`w-16 h-16 rounded-full flex items-center justify-center ${directionClasses.bgColor}`}>
+                    <i className={`fas ${directionClasses.icon} text-3xl ${directionClasses.textColor}`}></i>
                 </div>
             </div>
-            <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">{potential_effect}</p>
-            <div className="flex items-center justify-between mt-4 text-sm">
-                <span className="font-semibold text-gray-700 dark:text-gray-200 bg-black/5 dark:bg-white/10 px-2 py-1 rounded">
-                    Asset: {asset}
-                </span>
-                <div className="w-1/3">
-                    <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
-                        <span>Probability</span>
-                        <span>{probabilityPercentage}%</span>
-                    </div>
-                    <div className="w-full bg-gray-300 dark:bg-gray-700 rounded-full h-1.5 mt-1">
-                        <div className={`bg-${color}-500 h-1.5 rounded-full`} style={{ width: `${probabilityPercentage}%` }}></div>
+            
+            {/* Right Column: Details */}
+            <div className="flex-1">
+                <div className="flex justify-between items-center mb-1 gap-4">
+                    <h3 className="font-bold text-lg text-gray-900 dark:text-white">{event_description}</h3>
+                    <span className="text-sm font-mono bg-gray-500/10 dark:bg-gray-900/40 px-2 py-1 rounded text-gray-700 dark:text-gray-300 flex-shrink-0">{time}</span>
+                </div>
+
+                <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">{potential_effect}</p>
+
+                <div className="flex items-center gap-2 flex-wrap my-2">
+                    {currencyPairs.map(pair => (
+                        <span key={pair} className="text-xs font-medium bg-gray-500/10 dark:bg-gray-900/40 px-2 py-1 rounded-full text-gray-600 dark:text-gray-300">
+                            {pair}
+                        </span>
+                    ))}
+                </div>
+                
+                <div className="mt-4">
+                    <div className="text-sm">
+                        <span className="font-semibold text-gray-700 dark:text-gray-200">Confidence:</span>
+                        <span className={`font-bold ml-2 ${directionClasses.textColor}`}>{confidence}%</span>
                     </div>
                 </div>
+                {sources && sources.length > 0 && <SourcesCard sources={sources} />}
             </div>
-            {sources && <SourcesCard sources={sources} />}
         </div>
     );
+};
+
+
+const groupEventsByDate = (events: PredictedEvent[] | null): Record<string, PredictedEvent[]> => {
+    if (!events) return {};
+    return events.reduce((acc, event) => {
+        const groupKey = `${event.day}, ${event.date}`;
+        if (!acc[groupKey]) {
+            acc[groupKey] = [];
+        }
+        acc[groupKey].push(event);
+        return acc;
+    }, {} as Record<string, PredictedEvent[]>);
 };
 
 
@@ -94,6 +115,9 @@ const Predictor: React.FC = () => {
         }
     }, []);
 
+    const groupedEvents = useMemo(() => groupEventsByDate(events), [events]);
+    const eventDates = Object.keys(groupedEvents);
+
     return (
         <div>
             <div className="text-center mb-8">
@@ -113,9 +137,18 @@ const Predictor: React.FC = () => {
                 {error && !isLoading && <ErrorDisplay error={error} />}
 
                 {!isLoading && !error && (
-                    <div className="space-y-4">
-                        {events && events.length > 0 ? (
-                            events.map((event, index) => <EventCard key={index} event={event} />)
+                    <div>
+                        {eventDates.length > 0 ? (
+                            eventDates.map(dateKey => (
+                                <div key={dateKey} className="mb-6 last:mb-0">
+                                    <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-3 border-b-2 border-red-500/20 pb-2">{dateKey}</h3>
+                                    <div className="space-y-4">
+                                        {groupedEvents[dateKey].map((event, index) => (
+                                            <EventCard key={index} event={event} />
+                                        ))}
+                                    </div>
+                                </div>
+                            ))
                         ) : (
                             <p className="text-center text-gray-500 dark:text-gray-400 py-8">No significant events are forecasted at this moment. The Oracle is contemplating the markets.</p>
                         )}

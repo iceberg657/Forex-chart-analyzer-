@@ -1,4 +1,5 @@
 
+
 import React, { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AnalysisResult, GroundingSource } from '../types';
@@ -89,6 +90,9 @@ const SignalCard: React.FC<{ signal: 'BUY' | 'SELL' | 'NEUTRAL'; confidence: num
         }
     }
     const { text, bgColor, textColor, borderColor, glowClasses } = signalInfo[signal];
+    
+    const confidenceValue = confidence || 0;
+    const displayConfidence = confidenceValue > 1 ? confidenceValue : confidenceValue * 100;
 
     return (
         <div className={`p-6 rounded-xl border ${borderColor} ${bgColor} ${glowClasses} transition-all duration-300`}>
@@ -99,7 +103,7 @@ const SignalCard: React.FC<{ signal: 'BUY' | 'SELL' | 'NEUTRAL'; confidence: num
                 </div>
                 <div>
                     <p className={`text-sm font-medium ${textColor}`}>Confidence</p>
-                    <p className={`text-2xl font-bold text-right ${textColor}`}>{confidence || 0}%</p>
+                    <p className={`text-2xl font-bold text-right ${textColor}`}>{displayConfidence.toFixed(0)}%</p>
                 </div>
             </div>
         </div>
