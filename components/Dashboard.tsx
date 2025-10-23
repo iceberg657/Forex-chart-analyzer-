@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 // It uses TailwindCSS for styling and includes hardcoded data for demonstration.
 
 const StatCard: React.FC<{ icon: string, title: string, value: string, change?: string, changeType: 'positive' | 'negative', pulseOverride?: 'red' | 'green' | 'none' }> = ({ icon, title, value, change, changeType, pulseOverride }) => (
-  <div className="bg-black/5 dark:bg-white/5 rounded-xl p-4 sm:p-6 transition-transform hover:-translate-y-1 text-gray-800 dark:text-white">
+  <div className="bg-gray-50 dark:bg-white/5 rounded-xl p-4 sm:p-6 transition-transform hover:-translate-y-1 text-gray-800 dark:text-white">
     <div className="flex justify-between items-center mb-4">
       <div className="text-sm text-gray-600 dark:text-slate-400">{title}</div>
       <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-sky-500/10 text-sky-400">
@@ -38,7 +38,7 @@ const Dashboard: React.FC = () => {
   }, []);
 
   return (
-    <section className="mb-12 text-center">
+    <section className="text-center">
       <h1 className="text-4xl lg:text-5xl font-bold mb-4">
         <span className="animated-gradient-text">Algorithmic</span>
         {' '}
@@ -48,7 +48,7 @@ const Dashboard: React.FC = () => {
          Advanced chart analysis for institutional-grade trade setups. Maximize your profits with AI-driven strategies.
       </p>
 
-      <div className="bg-white/20 dark:bg-black/20 backdrop-blur-xl rounded-2xl p-4 sm:p-8 border border-white/30 dark:border-white/10 relative overflow-hidden shadow-lg">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl p-4 sm:p-8 border border-gray-200/60 dark:border-white/10 relative overflow-hidden shadow-lg">
         <div className="absolute top-0 left-0 w-full h-full z-0">
             <div className="floating-element"></div>
             <div className="floating-element"></div>
