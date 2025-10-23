@@ -149,7 +149,7 @@ const ApexAI: React.FC = () => {
     };
 
     return (
-        <div className="relative flex flex-col flex-1 h-full bg-gray-100 dark:bg-[#121212] text-gray-900 dark:text-white rounded-xl overflow-hidden">
+        <div className="relative flex flex-col flex-1 h-full bg-gradient-to-br from-red-50 to-sky-100 dark:bg-gradient-to-br dark:from-slate-900 dark:to-indigo-900 text-gray-900 dark:text-white rounded-xl overflow-hidden">
             <ChatHeader />
             {messages.length === 0 ? (
                 <div className="flex-1 flex flex-col items-center justify-center text-center p-4">
@@ -187,7 +187,7 @@ const ApexAI: React.FC = () => {
             
             <footer className="p-4 flex-shrink-0">
                  {error && <div className="mb-2"><ErrorDisplay error={error} /></div>}
-                <form onSubmit={handleFormSubmit} className="bg-white dark:bg-[#1e1e1e] border border-black/10 dark:border-transparent shadow-sm rounded-2xl p-2 flex items-end gap-2">
+                <form onSubmit={handleFormSubmit} className="bg-white/20 dark:bg-black/20 backdrop-blur-sm border border-white/30 dark:border-white/10 shadow-sm rounded-2xl p-2 flex items-end gap-2">
                      {imagePreview && (
                         <div className="relative w-16 h-16 m-2 flex-shrink-0">
                             <img src={imagePreview} alt="upload preview" className="w-full h-full object-cover rounded-md" />
@@ -201,7 +201,7 @@ const ApexAI: React.FC = () => {
                         placeholder="Message Apex AI..."
                         rows={1}
                         style={{ maxHeight: '150px' }}
-                        className="flex-1 w-full p-3 bg-transparent border-none focus:ring-0 placeholder-gray-500 resize-none"
+                        className="flex-1 w-full p-3 bg-transparent border-none focus:ring-0 placeholder-gray-500 dark:placeholder-gray-400 resize-none"
                         disabled={isLoading}
                     />
                     <div className="flex items-center gap-1">
