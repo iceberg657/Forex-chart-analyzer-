@@ -1,6 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ChatMessage, GroundingSource } from '../types';
 import SimpleMarkdown from './SimpleMarkdown';
+import { generateSpeech } from '../services/unifiedApiService';
+import { decode, decodeAudioData } from '../utils/audioUtils';
+
 
 const SourcesCard: React.FC<{ sources: GroundingSource[] }> = ({ sources }) => (
     <div className="mt-2">
@@ -29,8 +32,13 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({ message, onRate }) => {
     const { id, role, parts, sources, rating } = message;
     const isModel = role === 'model';
     const [isSpeaking, setIsSpeaking] = useState(false);
+    const [audioError, setAudioError] = useState<string | null>(null);
+
+    const audioContextRef = useRef<AudioContext | null>(null);
+    const sourceNodeRef = useRef<AudioBufferSourceNode | null>(null);
     
     const combinedText = parts.map(p => p.text || '').join('\n');
+    const textToSpeak = combinedText.replace(/^signal:(BUY|SELL)\s*\n/i, '').trim();
 
     let signal: 'BUY' | 'SELL' | null = null;
     if (isModel) {
@@ -40,27 +48,73 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({ message, onRate }) => {
         }
     }
 
+    const stopPlayback = () => {
+        if (sourceNodeRef.current) {
+            try {
+                sourceNodeRef.current.stop();
+            } catch (e) {
+                // Ignore errors if stop is called on an already stopped source.
+            }
+            sourceNodeRef.current.disconnect();
+            sourceNodeRef.current = null;
+        }
+        setIsSpeaking(false);
+    };
 
-    const handleSpeak = () => {
+    const handleSpeak = async () => {
         if (isSpeaking) {
-            window.speechSynthesis.cancel();
-            setIsSpeaking(false);
-        } else if (combinedText) {
-            const utterance = new SpeechSynthesisUtterance(combinedText.replace(/^signal:(BUY|SELL)\s*\n/i, ''));
-            utterance.onend = () => setIsSpeaking(false);
-            utterance.onerror = () => setIsSpeaking(false);
-            window.speechSynthesis.speak(utterance);
+            stopPlayback();
+            return;
+        }
+        
+        if (!textToSpeak) return;
+        
+        setIsSpeaking(true);
+        setAudioError(null);
+
+        try {
+            const base64Audio = await generateSpeech(textToSpeak);
+
+            if (!audioContextRef.current || audioContextRef.current.state === 'closed') {
+                audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+            }
+            const context = audioContextRef.current;
+            if (context.state === 'suspended') {
+              await context.resume();
+            }
+
+            const audioBuffer = await decodeAudioData(
+                decode(base64Audio),
+                context,
+                24000,
+                1,
+            );
+            
+            stopPlayback(); 
             setIsSpeaking(true);
+
+            const source = context.createBufferSource();
+            source.buffer = audioBuffer;
+            source.connect(context.destination);
+            source.onended = () => {
+                setIsSpeaking(false);
+                sourceNodeRef.current = null;
+            };
+            source.start();
+            sourceNodeRef.current = source;
+
+        } catch (error) {
+            console.error("TTS Error:", error);
+            setAudioError("Couldn't play audio.");
+            setIsSpeaking(false);
         }
     };
     
-    React.useEffect(() => {
+    useEffect(() => {
       return () => {
-        if (isSpeaking) {
-          window.speechSynthesis.cancel();
-        }
+        stopPlayback();
       }
-    }, [isSpeaking, message.id]);
+    }, []);
 
     return (
         <div className={`flex items-start gap-3 ${!isModel && 'flex-row-reverse'}`}>
@@ -90,12 +144,15 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({ message, onRate }) => {
                     })}
                 </div>
                 {sources && sources.length > 0 && <SourcesCard sources={sources} />}
-                 {isModel && combinedText && (
+                 {isModel && textToSpeak && (
                    <div className="flex items-center justify-between mt-2 text-xs text-gray-500 dark:text-gray-400">
-                        <button onClick={handleSpeak} className="hover:text-blue-600 dark:hover:text-blue-400 flex items-center" aria-label={isSpeaking ? 'Stop speech' : 'Read message aloud'}>
-                           <i className={`fas ${isSpeaking ? 'fa-stop-circle' : 'fa-play-circle'} mr-1`}></i>
-                           {isSpeaking ? 'Stop' : 'Listen'}
-                        </button>
+                        <div>
+                          <button onClick={handleSpeak} className="hover:text-blue-600 dark:hover:text-blue-400 flex items-center disabled:opacity-50 disabled:cursor-not-allowed" aria-label={isSpeaking ? 'Stop speech' : 'Read message aloud'}>
+                             <i className={`fas ${isSpeaking ? 'fa-stop-circle' : 'fa-play-circle'} mr-1`}></i>
+                             {isSpeaking ? 'Stop' : 'Listen'}
+                          </button>
+                           {audioError && <p className="text-red-500 text-xs mt-1">{audioError}</p>}
+                        </div>
                         <div className="flex items-center gap-3">
                             <button onClick={() => onRate(id, 'up')} className={`transition-colors ${rating === 'up' ? 'text-green-500 dark:text-green-400' : 'hover:text-black dark:hover:text-white'}`} aria-label="Good response">
                                 <i className="fas fa-thumbs-up"></i>
