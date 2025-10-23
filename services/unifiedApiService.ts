@@ -1,3 +1,4 @@
+
 import * as Prompts from './prompts';
 import {
   AnalysisResult,
@@ -11,7 +12,7 @@ import {
   ChatMessagePart,
   PredictedEvent,
 } from '../types';
-import { GoogleGenAI, Type, Modality } from '@google/genai';
+import { GoogleGenAI, Type } from '@google/genai';
 import { detectEnvironment } from '../hooks/useEnvironment';
 
 const environment = detectEnvironment();
@@ -445,37 +446,6 @@ export const processCommandWithAgent = async (command: string): Promise<{ text: 
     };
     return withRetry(apiCall);
 };
-
-export const generateSpeech = async (text: string): Promise<string> => {
-    const apiCall = async (): Promise<string> => {
-        if (environment === 'aistudio') {
-             if (!ai) throw new Error("GenAI client not initialized for direct call.");
-             const response = await ai.models.generateContent({
-                model: "gemini-2.5-flash-preview-tts",
-                contents: [{ parts: [{ text: text }] }],
-                config: {
-                    responseModalities: [Modality.AUDIO],
-                    speechConfig: {
-                        voiceConfig: {
-                          prebuiltVoiceConfig: { voiceName: 'Kore' },
-                        },
-                    },
-                },
-             });
-             const audioContent = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-             if (!audioContent) {
-                 throw new Error("Failed to generate audio content from the API.");
-             }
-             return audioContent;
-        } else {
-            const result = await postToApi<{ audioContent: string }>('/api/generateSpeech', { text });
-            return result.audioContent;
-        }
-    };
-    // Don't retry TTS, it's not critical
-    return apiCall();
-};
-
 
 // This is an AI Studio-only utility. No need for a proxy.
 export const getAutoFixSuggestion = async (errors: { message: string, stack?: string }[]): Promise<string> => {
