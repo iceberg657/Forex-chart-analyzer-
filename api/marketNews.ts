@@ -19,6 +19,9 @@ const isMarketSentimentResult = (data: any): data is MarketSentimentResult => {
 };
 
 const robustJsonParse = (jsonString: string) => {
+    if (typeof jsonString !== 'string' || !jsonString) {
+        throw new Error("The AI's response was unclear or in an unexpected format.");
+    }
     let cleanJsonString = jsonString.trim();
     const markdownMatch = cleanJsonString.match(/```(json)?\s*([\s\S]*?)\s*```/);
     if (markdownMatch && markdownMatch[2]) {

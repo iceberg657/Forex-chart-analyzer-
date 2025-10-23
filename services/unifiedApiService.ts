@@ -125,6 +125,10 @@ const isPredictedEvent = (data: any): data is PredictedEvent => {
 
 // --- Utility Functions ---
 const robustJsonParse = (jsonString: string) => {
+    if (typeof jsonString !== 'string' || !jsonString) {
+        console.error("AI Response Error: Expected a non-empty string for JSON parsing but received", typeof jsonString, { value: jsonString });
+        throw new Error("The AI returned an empty or invalid response. This can happen if a request is blocked for safety reasons.");
+    }
     let cleanJsonString = jsonString.trim();
     const markdownMatch = cleanJsonString.match(/```(json)?\s*([\s\S]*?)\s*```/);
     if (markdownMatch && markdownMatch[2]) {

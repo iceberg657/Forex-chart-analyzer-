@@ -1,3 +1,4 @@
+
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI } from '@google/genai';
 import { getPredictorPrompt } from '../services/prompts';
@@ -24,6 +25,9 @@ const isPredictedEventArray = (data: any): data is PredictedEvent[] => {
 };
 
 const robustJsonParse = (jsonString: string) => {
+    if (typeof jsonString !== 'string' || !jsonString) {
+        throw new Error("The AI's response was unclear or in an unexpected format.");
+    }
     let cleanJsonString = jsonString.trim();
     const markdownMatch = cleanJsonString.match(/```(json)?\s*([\s\S]*?)\s*```/);
     if (markdownMatch && markdownMatch[2]) {

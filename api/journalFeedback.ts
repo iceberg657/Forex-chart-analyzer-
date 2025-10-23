@@ -18,6 +18,9 @@ const isJournalFeedback = (data: any): data is JournalFeedback => {
 };
 
 const robustJsonParse = (jsonString: string) => {
+    if (typeof jsonString !== 'string' || !jsonString) {
+        throw new Error("The AI's response was unclear or in an unexpected format.");
+    }
     try {
         return JSON.parse(jsonString);
     } catch (e) {
