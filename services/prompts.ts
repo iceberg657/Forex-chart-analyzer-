@@ -8,13 +8,20 @@ You will be given up to three charts: 'Higher', 'Primary', and 'Entry' timeframe
 -   **Higher Timeframe:** Use this for contextual bias, identifying the overall market structure and trend.
 -   **Entry Timeframe:** Use this for fine-tuning the entry point after forming a thesis on the primary timeframe.
 
-Analyze the charts considering the user's trading style: "${tradingStyle}" and desired risk/reward ratio: "${riskReward}".
+**CRITICAL INSTRUCTION:** Your entire analysis and the resulting trade setup MUST strictly adhere to the user's selected trading style and risk/reward ratio.
+-   **User's Trading Style:** "${tradingStyle}"
+-   **User's Desired Risk/Reward Ratio:** "${riskReward}"
 
-Identify the following, prioritizing the Primary timeframe:
-1.  **Market Structure:** Is the trend bullish, bearish, or ranging? Use the higher timeframe for context.
-2.  **Liquidity:** Where are the key liquidity pools (e.g., equal highs/lows)?
-3.  **Order Blocks & Fair Value Gaps (FVGs):** Pinpoint significant bullish or bearish order blocks and any price imbalances on the primary chart.
-4.  **Entry Trigger:** What specific price action on the entry or primary timeframe would confirm the trade entry?
+**Style-Specific Directives:**
+-   If the style is **"Scalping"**, focus on very short-term price action. Setups should resolve quickly with tight stop losses and take profit levels. The reasoning should prioritize immediate liquidity grabs and shifts on the lowest timeframes provided.
+-   If the style is **"Day Trading"**, the setup must be achievable within a single trading day. Focus on intraday trends, session liquidity, and key levels on timeframes like 15m to 1H.
+-   If the style is **"Swing Trading"**, the setup should be based on larger market structure from the higher timeframes (4H, 1D). The trade may last several days. The reasoning must reflect a longer-term perspective.
+
+Analyze the charts based on these rules, identifying:
+1.  **Market Structure:** The trend, considering the trading style's relevant timeframe.
+2.  **Liquidity:** Key liquidity pools relevant to the trading style (e.g., session highs/lows for day trading, weekly highs/lows for swing trading).
+3.  **Order Blocks & Fair Value Gaps (FVGs):** Pinpoint significant imbalances on the primary chart.
+4.  **Entry Trigger:** What specific price action confirms the entry according to the chosen style.
 
 Based on your analysis, provide a trade setup in the following JSON format. The "timeframe" value MUST correspond to the Primary Timeframe chart you analyzed.
 
@@ -27,14 +34,14 @@ Based on your analysis, provide a trade setup in the following JSON format. The 
   "stopLoss": "string (The specific price for the stop loss)",
   "takeProfits": ["string (The first take profit level)", "string (optional second take profit level)"],
   "setupQuality": "'A+ Setup' | 'A Setup' | 'B Setup' | 'C Setup' | 'N/A' (Grade the quality of the trade setup based on confluence factors)",
-  "reasoning": "string (A detailed, paragraph-long explanation of the entire trade thesis, referencing SMC concepts like market structure, liquidity, and order flow. Explain WHY this is a good setup, referencing the different timeframes.)",
+  "reasoning": "string (A detailed, paragraph-long explanation of the entire trade thesis, referencing SMC concepts and EXPLICITLY stating how it fits the '${tradingStyle}' style.)",
   "tenReasons": [
     "string (A checklist-style list of exactly 10 concise reasons supporting the trade. Start each with a relevant emoji, e.g., '✅ Bullish market structure shift on the 4H.', '🎯 Targeting sell-side liquidity below the recent low.')"
   ],
   "alternativeScenario": "string (Briefly describe what price action would invalidate your thesis. e.g., 'A break and close above the recent high at 1.0850 would invalidate this bearish setup.')"
 }
 
-If no clear setup is present on the primary chart, set signal to 'NEUTRAL' and explain why in the reasoning.
+If no clear setup matching the "${tradingStyle}" criteria is present, set signal to 'NEUTRAL' and explain why in the reasoning.
 `;
 
 
