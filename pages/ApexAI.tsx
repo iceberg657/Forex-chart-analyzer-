@@ -14,8 +14,8 @@ const ApexAI: React.FC = () => {
     const { messages } = pageData.apexAI;
 
     const [input, setInput] = useState('');
-    const [imageFile, setImageFile] = useState<File | null>(null);
-    const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const [imageFiles, setImageFiles] = useState<File[]>([]);
+    const [imagePreviews, setImagePreviews] = useState<string[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -26,20 +26,35 @@ const ApexAI: React.FC = () => {
     }, [messages, isLoading]);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            setImageFile(file);
-            const previewUrl = URL.createObjectURL(file);
-            setImagePreview(previewUrl);
+        const files = e.target.files;
+        if (files) {
+            // FIX: Explicitly typing `newFiles` as `File[]` ensures correct type inference for the `map` function below.
+            const newFiles: File[] = Array.from(files);
+            setImageFiles(prev => [...prev, ...newFiles]);
+
+            const newPreviews = newFiles.map(file => URL.createObjectURL(file));
+            setImagePreviews(prev => [...prev, ...newPreviews]);
         }
     };
-
-    const removeImage = () => {
-        setImageFile(null);
-        if (imagePreview) {
-            URL.revokeObjectURL(imagePreview);
-            setImagePreview(null);
+    
+    const removeImage = (index: number) => {
+        const urlToRevoke = imagePreviews[index];
+        if (urlToRevoke) {
+            URL.revokeObjectURL(urlToRevoke);
         }
+
+        setImageFiles(prev => prev.filter((_, i) => i !== index));
+        setImagePreviews(prev => prev.filter((_, i) => i !== index));
+        
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    };
+    
+    const clearImages = () => {
+        imagePreviews.forEach(url => URL.revokeObjectURL(url));
+        setImageFiles([]);
+        setImagePreviews([]);
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
         }
@@ -56,18 +71,18 @@ const ApexAI: React.FC = () => {
     };
 
     const handleSubmit = async () => {
-        if (!input.trim() && !imageFile) return;
+        if (!input.trim() && imageFiles.length === 0) return;
 
         setIsLoading(true);
         setError(null);
 
         const userParts: ChatMessagePart[] = [];
-        if (imageFile) {
+        if (imageFiles.length > 0) {
             try {
-                const imagePart = await fileToImagePart(imageFile);
-                userParts.push(imagePart);
+                const imageParts = await Promise.all(imageFiles.map(fileToImagePart));
+                userParts.push(...imageParts);
             } catch (err) {
-                setError("Failed to process image file.");
+                setError("Failed to process one or more image files.");
                 setIsLoading(false);
                 return;
             }
@@ -89,18 +104,16 @@ const ApexAI: React.FC = () => {
             parts: [{ text: '' }],
         };
 
-        // FIX: Use functional update to avoid stale state issues when adding a new message.
         setApexAIMessages(prevMessages => [...prevMessages, userMessage, modelPlaceholder]);
         
         setInput('');
-        removeImage();
+        clearImages();
 
         try {
             let fullText = '';
             for await (const chunk of sendMessageStream(messages, userParts)) {
                 if (chunk.textChunk) {
                     fullText += chunk.textChunk;
-                    // FIX: Added explicit type to the callback function parameter to resolve type inference error.
                     setApexAIMessages((prevMessages: ChatMessage[]) => 
                         prevMessages.map(msg => 
                             msg.id === modelMessageId 
@@ -110,7 +123,6 @@ const ApexAI: React.FC = () => {
                     );
                 }
                 if (chunk.sources) {
-                    // FIX: Added explicit type to the callback function parameter to resolve type inference error.
                     setApexAIMessages((prevMessages: ChatMessage[]) => 
                         prevMessages.map(msg => 
                             msg.id === modelMessageId 
@@ -123,7 +135,6 @@ const ApexAI: React.FC = () => {
         } catch (err) {
             setError(err instanceof Error ? err.message : 'An unknown error occurred with the AI assistant.');
             const errorText = 'Sorry, I encountered an error. Please try again.';
-            // FIX: Added explicit type to the callback function parameter to resolve type inference error.
             setApexAIMessages((prevMessages: ChatMessage[]) => 
                 prevMessages.map(msg => 
                     msg.id === modelMessageId 
@@ -187,31 +198,37 @@ const ApexAI: React.FC = () => {
             
             <footer className="p-4 flex-shrink-0">
                  {error && <div className="mb-2"><ErrorDisplay error={error} /></div>}
-                <form onSubmit={handleFormSubmit} className="bg-white/20 dark:bg-black/20 backdrop-blur-sm border border-white/30 dark:border-white/10 shadow-sm rounded-2xl p-2 flex items-end gap-2">
-                     {imagePreview && (
-                        <div className="relative w-16 h-16 m-2 flex-shrink-0">
-                            <img src={imagePreview} alt="upload preview" className="w-full h-full object-cover rounded-md" />
-                            <button onClick={removeImage} className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">&times;</button>
+                <form onSubmit={handleFormSubmit} className="bg-white/20 dark:bg-black/20 backdrop-blur-sm border border-white/30 dark:border-white/10 shadow-sm rounded-2xl p-2 flex flex-col gap-2">
+                     {imagePreviews.length > 0 && (
+                        <div className="flex items-center gap-2 overflow-x-auto p-2 border-b border-black/10 dark:border-white/10">
+                            {imagePreviews.map((preview, index) => (
+                                <div key={index} className="relative w-16 h-16 flex-shrink-0">
+                                    <img src={preview} alt={`upload preview ${index + 1}`} className="w-full h-full object-cover rounded-md" />
+                                    <button type="button" onClick={() => removeImage(index)} className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs z-10">&times;</button>
+                                </div>
+                            ))}
                         </div>
                     )}
-                    <textarea
-                        value={input}
-                        onChange={e => setInput(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        placeholder="Message Apex AI..."
-                        rows={1}
-                        style={{ maxHeight: '150px' }}
-                        className="flex-1 w-full p-3 bg-transparent border-none focus:ring-0 placeholder-gray-500 dark:placeholder-gray-400 resize-none"
-                        disabled={isLoading}
-                    />
-                    <div className="flex items-center gap-1">
-                         <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" id="file-upload-chat" />
-                        <button type="button" onClick={() => fileInputRef.current?.click()} className="p-3 rounded-full hover:bg-black/5 dark:hover:bg-white/10" aria-label="Attach file">
-                            <i className="fas fa-plus text-lg text-gray-500 dark:text-gray-400"></i>
-                        </button>
-                        <button type="submit" disabled={isLoading || (!input.trim() && !imageFile)} className="w-10 h-10 flex items-center justify-center rounded-full bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-500">
-                            <i className="fas fa-arrow-up text-lg"></i>
-                        </button>
+                    <div className="flex items-end gap-2">
+                        <textarea
+                            value={input}
+                            onChange={e => setInput(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            placeholder="Message Apex AI..."
+                            rows={1}
+                            style={{ maxHeight: '150px' }}
+                            className="flex-1 w-full p-3 bg-transparent border-none focus:ring-0 placeholder-gray-500 dark:placeholder-gray-400 resize-none"
+                            disabled={isLoading}
+                        />
+                        <div className="flex items-center gap-1">
+                             <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" id="file-upload-chat" multiple />
+                            <button type="button" onClick={() => fileInputRef.current?.click()} className="p-3 rounded-full hover:bg-black/5 dark:hover:bg-white/10" aria-label="Attach file">
+                                <i className="fas fa-plus text-lg text-gray-500 dark:text-gray-400"></i>
+                            </button>
+                            <button type="submit" disabled={isLoading || (!input.trim() && imageFiles.length === 0)} className="w-10 h-10 flex items-center justify-center rounded-full bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-500">
+                                <i className="fas fa-arrow-up text-lg"></i>
+                            </button>
+                        </div>
                     </div>
                 </form>
             </footer>
