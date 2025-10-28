@@ -1,4 +1,5 @@
 
+
 import * as Prompts from './prompts';
 import {
   AnalysisResult,
@@ -204,7 +205,7 @@ export const analyzeChart = async (
             }
             
             const response = await generateContentDirect({
-                model: 'gemini-2.5-flash',
+                model: 'gemini-2.5-pro',
                 contents: { parts },
                 config: { tools: [{ googleSearch: {} }] }
             });
@@ -403,7 +404,7 @@ export const getPredictions = async (): Promise<PredictedEvent[]> => {
         if (environment === 'aistudio') {
             const prompt = Prompts.getPredictorPrompt();
             const response = await generateContentDirect({
-                model: 'gemini-2.5-flash',
+                model: 'gemini-2.5-pro',
                 contents: prompt,
                 config: { tools: [{ googleSearch: {} }] }
             });
