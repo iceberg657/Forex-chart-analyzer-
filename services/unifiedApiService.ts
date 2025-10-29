@@ -1,5 +1,6 @@
 
 
+
 import * as Prompts from './prompts';
 import {
   AnalysisResult,
@@ -207,7 +208,10 @@ export const analyzeChart = async (
             const response = await generateContentDirect({
                 model: 'gemini-2.5-pro',
                 contents: { parts },
-                config: { tools: [{ googleSearch: {} }] }
+                config: {
+                    temperature: 0.1, // Lower temperature for more deterministic and consistent responses
+                    tools: [{ googleSearch: {} }]
+                }
             });
     
             const parsedResult = robustJsonParse(response.text);

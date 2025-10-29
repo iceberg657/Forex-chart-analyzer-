@@ -1,4 +1,5 @@
 
+
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI } from '@google/genai';
 import { getAnalysisPrompt } from '../services/prompts';
@@ -67,7 +68,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-pro',
             contents: { parts },
-            config: { tools: [{ googleSearch: {} }] }
+            config: {
+                temperature: 0.1, // Lower temperature for more deterministic and consistent responses
+                tools: [{ googleSearch: {} }]
+            }
         });
 
         const parsedResult = robustJsonParse(response.text);
