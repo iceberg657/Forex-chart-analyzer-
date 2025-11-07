@@ -40,7 +40,7 @@ You must now execute a unified, multi-layered analysis that synthesizes Price Ac
 **--- Top-Down Execution ---**
 *   **Strategic View (Higher Timeframe):** Establish the market's directional bias (the "narrative"). Identify key structural points, liquidity pools, and potential zones for the selected Strategic Model.
 *   **Tactical View (Primary Timeframe):** Confirm the selected Strategic Model is forming. Wait for price to enter a Point of Interest (POI) derived from the HTF analysis. Define the precise entry range, stop loss, and take-profit targets based on the model's rules.
-*   **Execution View (Entry Timeframe):** Pinpoint the exact entry trigger using micro-price action confirmations within the POI.
+*   **Execution View (Entry Timeframe):** Based on micro-price action on this timeframe, refine the entry into a tight 'Entry Zone' or price range. This range should represent an ideal area for execution, potentially near the current market price if conditions are met, rather than a distant limit order.
 *   **Guardrail:** Any signal on a lower timeframe that contradicts the higher timeframe's directional bias is to be disregarded.
 
 **4. Synthesis and Actionable Trade Plan Generation**
@@ -55,7 +55,7 @@ Based on your complete analysis, provide a trade setup in the following JSON for
   "timeframe": "string (The timeframe of the PRIMARY chart, e.g., '1H', '4H', '15m')",
   "signal": "'BUY' | 'SELL' | 'NEUTRAL'",
   "confidence": "number (A score from 0 to 100 representing your absolute confidence in the setup)",
-  "entryPriceRange": ["string (minimum entry price)", "string (maximum entry price)"],
+  "entryPriceRange": ["string (minimum entry price)", "string (maximum entry price)"], // This MUST be a tight price range representing an ideal 'entry zone' for execution, refined from the Entry Timeframe chart. It should be a zone where a trader could look to enter the market, not necessarily a pending order far from the current price.
   "stopLoss": "string (The specific price for the stop loss, calculated based on the R/R ratio)",
   "takeProfits": ["string (The first take profit level, calculated based on the R/R ratio)", "string (optional second take profit level)"],
   "setupQuality": "'A+ Setup' | 'A Setup' | 'B Setup' | 'C Setup' | 'N/A' (Grade the quality of the trade setup based on confluence factors)",
