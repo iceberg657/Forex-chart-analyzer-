@@ -69,7 +69,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             model: 'gemini-2.5-pro',
             contents: { parts },
             config: {
-                temperature: 0.1, // Lower temperature for more deterministic and consistent responses
+                temperature: 0, // Set to 0 for maximum determinism in chart analysis
                 tools: [{ googleSearch: {} }]
             }
         });

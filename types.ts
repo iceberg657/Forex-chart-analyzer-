@@ -10,7 +10,7 @@ export interface AnalysisResult {
   timeframe: string;
   signal: 'BUY' | 'SELL' | 'NEUTRAL';
   confidence: number; // e.g., 85
-  entryPriceRange: string[]; // [min, max]
+  entryPriceRange: string[]; // Distributed entry zone including current price. e.g., ["1.2360", "1.2345", "1.2350", "1.2355"] where the first element is the current price.
   stopLoss: string;
   takeProfits: string[]; // Can be one or more
   setupQuality?: 'A+ Setup' | 'A Setup' | 'B Setup' | 'C Setup' | 'N/A';
