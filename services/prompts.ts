@@ -38,7 +38,7 @@ You must now execute a unified, multi-layered analysis that synthesizes Price Ac
 *   **Higher Timeframe Mean Reversion Model:** Identifies over-extended price movements on a higher timeframe chart and looks for signs of exhaustion and a probable return to the mean (e.g., a key moving average or historical price level).
 
 **--- Top-Down Execution ---**
-*   **Strategic View (Higher Timeframe):** Establish the market's directional bias (the "narrative"). Identify key structural points, liquidity pools, and potential zones for the selected Strategic Model.
+*   **Strategic View (Higher Timeframe):** Establish the market's overall trend and directional bias (the "narrative"). Identify key structural points, liquidity pools, and potential zones for the selected Strategic Model.
 *   **Tactical View (Primary Timeframe):** Confirm the selected Strategic Model is forming. Wait for price to enter a Point of Interest (POI) derived from the HTF analysis. Define the precise entry range, stop loss, and take-profit targets based on the model's rules.
 *   **Execution View (Entry Timeframe):** Based on micro-price action on this timeframe, refine the entry into a tight 'Entry Zone' or price range. This range should represent an ideal area for execution, potentially near the current market price if conditions are met, rather than a distant limit order.
 *   **Guardrail:** Any signal on a lower timeframe that contradicts the higher timeframe's directional bias is to be disregarded.
