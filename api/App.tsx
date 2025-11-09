@@ -79,7 +79,6 @@ const AppContent: React.FC = () => {
             <Route path="/history" element={<History />} />
             <Route path="/apex-ai" element={<ApexAI />} />
             <Route path="/coders" element={<CodersPage />} />
-            <Route path="/pricing" element={<Pricing />} />
           </Route>
           
           <Route path="*" element={<Navigate to="/" />} />

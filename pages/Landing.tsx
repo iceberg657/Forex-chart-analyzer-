@@ -1,7 +1,5 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PRICING_PLANS } from '../constants';
-import { PricingPlan } from '../types';
 
 const FeatureCard: React.FC<{ icon: string; title: string; children: React.ReactNode; }> = ({ icon, title, children }) => (
     <div className="bg-white/5 dark:bg-black/10 backdrop-blur-xl border border-white/20 dark:border-white/10 rounded-2xl p-6 text-center transform hover:-translate-y-2 transition-transform duration-300">
@@ -12,41 +10,6 @@ const FeatureCard: React.FC<{ icon: string; title: string; children: React.React
         <p className="text-gray-600 dark:text-gray-400">{children}</p>
     </div>
 );
-
-const PricingCard: React.FC<{ plan: PricingPlan; onGetStarted: () => void; }> = ({ plan, onGetStarted }) => {
-    const CheckIcon: React.FC = () => (
-        <svg className="w-5 h-5 text-green-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-        </svg>
-    );
-
-  return (
-    <div className={`rounded-2xl p-8 flex flex-col transition-all shadow-lg ${plan.isFeatured ? 'bg-red-500/5 dark:bg-red-900/10 backdrop-blur-xl border-red-500/50 scale-105 border' : 'bg-white/20 dark:bg-black/20 backdrop-blur-xl border-white/30 dark:border-white/10 border'}`}>
-      <h3 className="text-2xl font-bold text-center text-gray-900 dark:text-white">{plan.name}</h3>
-      <div className="mt-4 text-center text-gray-600 dark:text-gray-300">
-        <span className="text-4xl font-extrabold text-gray-900 dark:text-white">{plan.price}</span>
-        {plan.price !== "$0" && <span className="text-base font-medium">/month</span>}
-      </div>
-      <ul className="mt-8 space-y-4">
-        {plan.features.map((feature, index) => (
-          <li key={index} className="flex items-start">
-            <div className="flex-shrink-0"><CheckIcon /></div>
-            <p className="ml-3 text-base text-gray-600 dark:text-gray-300">{feature}</p>
-          </li>
-        ))}
-      </ul>
-      <div className="mt-auto pt-8">
-        <button 
-          onClick={onGetStarted}
-          className={`w-full block text-center py-3 px-4 rounded-md font-medium transition-colors ${plan.isFeatured ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-white/30 dark:bg-white/10 hover:bg-white/40 dark:hover:bg-white/20 text-gray-800 dark:text-gray-200'}`}
-        >
-          Get Started
-        </button>
-      </div>
-    </div>
-  );
-};
-
 
 const Landing: React.FC = () => {
     const navigate = useNavigate();
@@ -127,19 +90,6 @@ const Landing: React.FC = () => {
                             <p className="text-gray-600 dark:text-gray-400">Receive actionable trade setups or copy-paste your custom code directly into your platform.</p>
                         </div>
                     </div>
-                </div>
-            </section>
-
-             {/* Pricing Section */}
-            <section id="pricing">
-                <div className="text-center">
-                    <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white">Choose Your Plan</h2>
-                    <p className="text-lg max-w-2xl mx-auto mt-4 mb-12 text-gray-600 dark:text-slate-400">Unlock your full trading potential with the right plan.</p>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    {PRICING_PLANS.map((plan) => (
-                    <PricingCard key={plan.name} plan={plan} onGetStarted={handleGetStarted} />
-                    ))}
                 </div>
             </section>
 

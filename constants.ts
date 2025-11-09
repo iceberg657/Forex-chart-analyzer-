@@ -24,7 +24,8 @@ export const FOREX_STRATEGIES = [
   "Horizontal High Tight Flag Breakout",
   "Flag/Pennant Breakout (Short-Term Continuation)",
   "Measured Move (Price Swing Projection)",
-  "Volatility Contraction Pattern (VCP) Breakout"
+  "Volatility Contraction Pattern (VCP) Breakout",
+  "Mean Reversion on Higher Timeframe"
 ];
 
 export const ALL_STRATEGIES = [...SYNTHETIC_STRATEGIES, ...FOREX_STRATEGIES];
@@ -43,36 +44,17 @@ export const INDICATOR_LANGUAGES: IndicatorLanguage[] = [IndicatorLanguage.MQL4,
 
 export const PRICING_PLANS: PricingPlan[] = [
   {
-    name: "Free Tier",
+    name: "Free",
     price: "$0",
-    features: [
-      "1 Bot Generation",
-      "1 Indicator Generation",
-      "Basic Chart Analysis",
-      "Community Support",
-    ],
-  },
-  {
-    name: "Pro Trader",
-    price: "$49/mo",
-    features: [
-      "10 Bot Generations per month",
-      "10 Indicator Generations per month",
-      "Advanced Chart Analysis",
-      "Priority Email Support",
-      "Access to All Strategies",
-    ],
-    isFeatured: true,
-  },
-  {
-    name: "Apex Quant",
-    price: "$99/mo",
     features: [
       "Unlimited Bot Generations",
       "Unlimited Indicator Generations",
       "Advanced Chart Analysis",
-      "Dedicated 24/7 Support",
-      "Early Access to New Features",
+      "AI Market Sentiment",
+      "AI Event Predictor",
+      "AI Trading Journal",
+      "Access to All Strategies",
     ],
+    isFeatured: true,
   },
 ];

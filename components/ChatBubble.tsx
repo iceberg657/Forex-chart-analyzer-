@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { ChatMessage, GroundingSource } from '../types';
 import SimpleMarkdown from './SimpleMarkdown';
@@ -35,13 +34,15 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({ message, onRate }) => {
     const combinedText = parts.map(p => p.text || '').join('\n');
     
     let signal: 'BUY' | 'SELL' | null = null;
+    let confidence: number | null = null;
     let textToRender = combinedText;
 
     if (isModel) {
-        const signalMatch = combinedText.match(/^signal:(BUY|SELL)/i);
+        const signalMatch = combinedText.match(/^signal:(BUY|SELL):(\d+)/i);
         if (signalMatch) {
             signal = signalMatch[1].toUpperCase() as 'BUY' | 'SELL';
-            textToRender = combinedText.replace(/^signal:(BUY|SELL)\s*\n?/i, '').trim();
+            confidence = parseInt(signalMatch[2], 10);
+            textToRender = combinedText.replace(/^signal:(BUY|SELL):(\d+)\s*\n?/i, '').trim();
         }
     }
     
@@ -82,65 +83,71 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({ message, onRate }) => {
             <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${isModel ? 'bg-red-500' : 'bg-gray-600'}`}>
                 <i className={`fas ${isModel ? 'fa-robot' : 'fa-user'} text-white text-sm`}></i>
             </div>
-            <div className={`max-w-xl rounded-xl overflow-hidden ${isModel ? 'bg-gray-200 dark:bg-[#262626] rounded-bl-none text-gray-800 dark:text-gray-200' : 'bg-blue-600 rounded-br-none text-white'}`}>
-                {isModel && signal && (() => {
-                    const signalInfo = {
-                        BUY: {
-                            text: 'Strong Buy Signal',
-                            bgColor: 'bg-green-500/10 dark:bg-green-500/20',
-                            textColor: 'text-green-800 dark:text-green-200',
-                            borderColor: 'border-green-500/50',
-                            glowClasses: 'shadow-lg shadow-green-500/40 dark:shadow-green-400/30',
-                        },
-                        SELL: {
-                            text: 'Strong Sell Signal',
-                            bgColor: 'bg-red-500/10 dark:bg-red-500/20',
-                            textColor: 'text-red-800 dark:text-red-200',
-                            borderColor: 'border-red-500/50',
-                            glowClasses: 'shadow-lg shadow-red-500/40 dark:shadow-red-400/30',
-                        },
-                    };
-                    const info = signalInfo[signal];
+            <div className={`max-w-xl rounded-xl overflow-hidden ${isModel ? 'bg-gray-200 dark:bg-[#262626] text-gray-800 dark:text-gray-200' : 'bg-blue-600 rounded-br-none text-white'}`}>
+                <div className="p-3 text-sm space-y-3">
+                    {isModel && signal && confidence !== null && (() => {
+                        const signalInfo = {
+                            BUY: {
+                                text: 'Strong Buy Signal',
+                                bgColor: 'bg-teal-900',
+                                textColor: 'text-white/95',
+                                glowClasses: 'ring-1 ring-inset ring-green-400/30 shadow-lg shadow-green-500/20',
+                            },
+                            SELL: {
+                                text: 'Strong Sell Signal',
+                                bgColor: 'bg-rose-900',
+                                textColor: 'text-white/95',
+                                glowClasses: 'ring-1 ring-inset ring-red-400/30 shadow-lg shadow-red-500/20',
+                            },
+                        };
+                        const info = signalInfo[signal];
 
-                    return (
-                        <div className={`p-4 border-b ${info.borderColor} ${info.bgColor} ${info.glowClasses}`}>
-                            <div className="text-center">
-                                <p className={`text-sm font-medium ${info.textColor}`}>Signal</p>
-                                <p className={`text-2xl font-bold ${info.textColor}`}>{info.text}</p>
+                        return (
+                            <div className={`p-4 rounded-lg ${info.bgColor} ${info.glowClasses}`}>
+                                <div className="flex justify-between items-center">
+                                    <div>
+                                        <p className={`text-sm font-medium ${info.textColor} opacity-80`}>Signal</p>
+                                        <p className={`text-2xl font-bold ${info.textColor}`}>{info.text}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className={`text-sm font-medium ${info.textColor} opacity-80`}>Confidence</p>
+                                        <p className={`text-2xl font-bold ${info.textColor}`}>{confidence}%</p>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                    );
-                })()}
-                
-                {(hasVisibleText || hasImages || (sources && sources.length > 0)) && (
-                    <div className="p-3 text-sm">
+                        );
+                    })()}
+                    
+                    {(hasVisibleText || hasImages) && (
                         <div className="space-y-2">
                             {hasVisibleText && <SimpleMarkdown text={textToRender} />}
                             {parts.map((part, index) => (
                                 part.inlineData ? <img key={index} src={`data:${part.inlineData.mimeType};base64,${part.inlineData.data}`} alt="user upload" className="rounded-lg max-w-64" /> : null
                             ))}
                         </div>
-                        {sources && sources.length > 0 && <SourcesCard sources={sources} />}
-                        {isModel && textToSpeak && (
-                           <div className="flex items-center justify-between mt-2 text-xs text-gray-500 dark:text-gray-400">
-                                <div>
-                                  <button onClick={handleSpeak} className="hover:text-blue-600 dark:hover:text-blue-400 flex items-center disabled:opacity-50 disabled:cursor-not-allowed" aria-label={isSpeaking ? 'Stop speech' : 'Read message aloud'}>
-                                     <i className={`fas ${isSpeaking ? 'fa-stop-circle' : 'fa-play-circle'} mr-1`}></i>
-                                     {isSpeaking ? 'Stop' : 'Listen'}
-                                  </button>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <button onClick={() => onRate(id, 'up')} className={`transition-colors ${rating === 'up' ? 'text-green-500 dark:text-green-400' : 'hover:text-black dark:hover:text-white'}`} aria-label="Good response">
-                                        <i className="fas fa-thumbs-up"></i>
-                                    </button>
-                                    <button onClick={() => onRate(id, 'down')} className={`transition-colors ${rating === 'down' ? 'text-red-500 dark:text-red-400' : 'hover:text-black dark:hover:text-white'}`} aria-label="Bad response">
-                                        <i className="fas fa-thumbs-down"></i>
-                                    </button>
-                                </div>
-                           </div>
-                        )}
-                    </div>
-                )}
+                    )}
+
+                    {sources && sources.length > 0 && <SourcesCard sources={sources} />}
+                    
+                    {isModel && textToSpeak && (
+                       <div className="flex items-center justify-between mt-2 text-xs text-gray-500 dark:text-gray-400">
+                            <div>
+                              <button onClick={handleSpeak} className="hover:text-blue-600 dark:hover:text-blue-400 flex items-center disabled:opacity-50 disabled:cursor-not-allowed" aria-label={isSpeaking ? 'Stop speech' : 'Read message aloud'}>
+                                 <i className={`fas ${isSpeaking ? 'fa-stop-circle' : 'fa-play-circle'} mr-1`}></i>
+                                 {isSpeaking ? 'Stop' : 'Listen'}
+                              </button>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <button onClick={() => onRate(id, 'up')} className={`transition-colors ${rating === 'up' ? 'text-green-500 dark:text-green-400' : 'hover:text-black dark:hover:text-white'}`} aria-label="Good response">
+                                    <i className="fas fa-thumbs-up"></i>
+                                </button>
+                                <button onClick={() => onRate(id, 'down')} className={`transition-colors ${rating === 'down' ? 'text-red-500 dark:text-red-400' : 'hover:text-black dark:hover:text-white'}`} aria-label="Bad response">
+                                    <i className="fas fa-thumbs-down"></i>
+                                </button>
+                            </div>
+                       </div>
+                    )}
+                </div>
             </div>
         </div>
     );

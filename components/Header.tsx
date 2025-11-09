@@ -16,7 +16,6 @@ const Header: React.FC = () => {
     return (
         <>
             <a href="#features" onClick={() => setIsOpen(false)} className={`${navLinkClassName} ${mobileClass}`}>Features</a>
-            <a href="#pricing" onClick={() => setIsOpen(false)} className={`${navLinkClassName} ${mobileClass}`}>Pricing</a>
             <Link to="/login" onClick={() => setIsOpen(false)} className={`${navLinkClassName} ${mobileClass}`}>Login</Link>
             <Link to="/signup" onClick={() => setIsOpen(false)} className={`${navLinkClassName} ${mobileClass}`}>Sign Up</Link>
         </>

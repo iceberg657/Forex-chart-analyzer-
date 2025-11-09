@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect, ReactNode, useCallback } from 'react';
+import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 
 interface User {
   email?: string;
@@ -8,18 +8,12 @@ interface User {
 
 interface AuthContextType {
   user: User;
-  usage: { bots: number; indicators: number };
   login: (email: string) => void;
   signup: (email: string) => void;
   logout: () => void;
-  incrementBotUsage: () => boolean;
-  incrementIndicatorUsage: () => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-const MAX_FREE_BOTS = 1;
-const MAX_FREE_INDICATORS = 1;
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User>(() => {
@@ -35,8 +29,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return { plan: 'Free', isGuest: true };
   });
 
-  const [usage, setUsage] = useState({ bots: 0, indicators: 0 });
-
   useEffect(() => {
     try {
       if (!user.isGuest) {
@@ -51,39 +43,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
 
   const login = (email: string) => {
+    // Plan is always 'Free' now.
     setUser({ email, plan: 'Free', isGuest: false });
-    setUsage({ bots: 0, indicators: 0 }); // Reset usage on login
   };
 
   const signup = (email: string) => {
     // In a real app, this would involve a server call
     setUser({ email, plan: 'Free', isGuest: false });
-    setUsage({ bots: 0, indicators: 0 });
   };
   
   const logout = () => {
     setUser({ plan: 'Free', isGuest: true });
-    setUsage({ bots: 0, indicators: 0 });
   };
 
-  const incrementBotUsage = useCallback(() => {
-    if (user?.plan === 'Free' && usage.bots >= MAX_FREE_BOTS) {
-      return false;
-    }
-    setUsage(prev => ({ ...prev, bots: prev.bots + 1 }));
-    return true;
-  }, [user, usage.bots]);
-
-  const incrementIndicatorUsage = useCallback(() => {
-    if (user?.plan === 'Free' && usage.indicators >= MAX_FREE_INDICATORS) {
-      return false;
-    }
-    setUsage(prev => ({ ...prev, indicators: prev.indicators + 1 }));
-    return true;
-  }, [user, usage.indicators]);
-
   return (
-    <AuthContext.Provider value={{ user, usage, login, signup, logout, incrementBotUsage, incrementIndicatorUsage }}>
+    <AuthContext.Provider value={{ user, login, signup, logout }}>
       {children}
     </AuthContext.Provider>
   );
