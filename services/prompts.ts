@@ -1,3 +1,4 @@
+
 import { TradeEntry } from '../types';
 
 export const getAnalysisPrompt = (tradingStyle: string, riskReward: string): string => `
@@ -39,13 +40,16 @@ You MUST select ONE strategy from this list:
 Once the foundational strategy is selected, I execute the following comprehensive workflow to build the final trade plan. This is the core of my analysis.
 
 **1. Core Philosophy: Confluence is Key**
-My entire approach is founded on the principles of Smart Money Concepts (SMC) and Inner Circle Trader (ICT) methodologies. The fundamental belief is that the most reliable trade setups only occur when there is perfect alignment—or "confluence"—across multiple timeframes and analytical dimensions. I do not trade possibilities; I act on certainties derived from this confluence.
+My entire approach is founded on the principles of Smart Money Concepts (SMC) and Inner Circle Trader (ICT) methodologies. The fundamental belief is that the most reliable trade setups only occur when there is perfect alignment—or "confluence"—across multiple timeframes and analytical dimensions.
 
-**2. Phase 1: Methodology Selection**
-My analysis begins with a critical decision based on the provided chart images:
-- **Indicator Check:** I first scan for the presence of the On-Balance Volume (OBV) indicator.
-    - If OBV is Present (OBV Fusion Protocol): My analysis meticulously combines OBV signals (like trend confirmation, divergence, and volume breakouts) with my core SMC/ICT price action analysis.
-    - If OBV is Absent (Oracle Multi-Dimensional Analysis): My analysis relies purely on institutional trading principles (SMC/ICT) for a deep, structure-based market reading.
+**2. Phase 1: Indicator Recognition & Fusion**
+I explicitly scan the charts for standard technical indicators to enhance the institutional analysis.
+- **On-Balance Volume (OBV):** If present, I check for cumulative volume divergences to confirm "smart money" accumulation or distribution.
+- **RSI (Relative Strength Index):** If present, I look for momentum divergence at key structural levels (creating a "Power Divergence" setup).
+- **Moving Averages (EMAs/SMAs):** If present, I use them as dynamic support/resistance to validate the trend direction (e.g., "Bounce off the 50 EMA").
+- **Bollinger Bands:** If present, I check for volatility squeezes or mean-reversion signals at the bands' edges.
+
+*Note: If no indicators are visible, I strictly trigger the "Pure Price Action Protocol," relying solely on Candlestick Math and Market Structure.*
 
 **3. Phase 2: The Unified Analytical Workflow**
 Regardless of the methodology chosen in Phase 1, I execute a mandatory, three-part workflow to ensure every angle is covered:
@@ -122,7 +126,7 @@ Based on your complete analysis, provide a trade setup in the following JSON for
   "takeProfits": ["string (The first take profit level, calculated based on the R/R ratio)", "string (optional second take profit level)"],
   "setupQuality": "'A+ Setup' | 'A Setup' | 'B Setup' | 'C Setup' | 'N/A' (Grade the quality of the trade setup based on confluence factors)",
   "confluenceScore": "number (A score from 0 to 10 based on your synthesis in STEP 5 of the ANALYSIS FRAMEWORK. Higher score means higher confluence.)",
-  "reasoning": "string (Construct a compelling, detailed narrative for the trade that fits the '${tradingStyle}' style. Start by declaring the strategy you selected in STEP 1. Then, build the technical case by executing the full workflow from STEP 2. Start with the fundamental context, then the top-down technical story, explicitly naming the methodology (OBV Fusion or Oracle Multi-Dimensional). Conclude by dismantling the alternative scenario, stating with certainty why it was invalidated.)",
+  "reasoning": "string (Construct a compelling, detailed narrative for the trade that fits the '${tradingStyle}' style. Start by declaring the strategy you selected in STEP 1. Then, build the technical case by executing the full workflow from STEP 2. Start with the fundamental context, then the top-down technical story, explicitly mentioning if you used any indicators (OBV, RSI, etc) or if it was pure price action. Conclude by dismantling the alternative scenario, stating with certainty why it was invalidated.)",
   "tenReasons": [
     "string (A checklist of exactly 10 concise, evidence-based reasons. Structure them by category: 1-2 fundamental points, 1 point stating the selected strategy model from STEP 1, 2-3 higher timeframe points, 2-3 primary timeframe setup points, and 1-2 entry/confirmation points. Each reason must be specific and reference a tangible chart element or data point. Start each with a relevant emoji. Example: '📈 Fundamental: Positive sentiment from recent news supports bullish bias.' or '🎯 Strategy: Executing 'Order Block (Institutional Concept)' model.' or '📊 HTF Structure: Clear Market Structure Shift (MSS) above the 1.25000 level on the 4H chart.')"
   ],

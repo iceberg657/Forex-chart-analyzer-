@@ -248,6 +248,20 @@ const Trader: React.FC<TraderProps> = () => {
               </select>
             </div>
           </div>
+
+          <div className="bg-blue-500/10 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-500/20 dark:border-blue-500/30 flex items-start gap-3">
+              <i className="fas fa-lightbulb text-blue-600 dark:text-blue-400 mt-1"></i>
+              <div className="text-sm text-gray-700 dark:text-gray-300">
+                  <strong className="text-blue-700 dark:text-blue-300 block mb-1">Pro Tip for Maximum Accuracy:</strong>
+                  Include indicators in your screenshot for better confluence. The AI specifically looks for:
+                  <ul className="list-disc list-inside mt-1 space-y-0.5 text-xs opacity-90">
+                      <li><b>OBV (On-Balance Volume):</b> Best for volume confirmation.</li>
+                      <li><b>RSI:</b> For detecting momentum divergence.</li>
+                      <li><b>EMAs (50/200):</b> For trend direction and dynamic support.</li>
+                  </ul>
+              </div>
+          </div>
+
           {error && <div className="text-center text-red-700 dark:text-red-400 bg-red-500/10 p-3 rounded-lg text-sm">{error}</div>}
           <button onClick={handleSubmit} disabled={isAnalyzeDisabled} className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 dark:focus:ring-offset-gray-900 focus:ring-red-500 disabled:bg-gray-400 dark:disabled:bg-gray-500 disabled:cursor-not-allowed transition-colors">
             {isLoading ? 'Analyzing...' : 'Analyze Chart'}
