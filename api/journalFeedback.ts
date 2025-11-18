@@ -41,7 +41,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         
         const prompt = getJournalFeedbackPrompt(trades as TradeEntry[]);
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-flash-latest',
             contents: prompt,
             config: { responseMimeType: 'application/json' }
         });

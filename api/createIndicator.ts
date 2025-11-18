@@ -17,7 +17,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
         
         const prompt = getIndicatorPrompt(description, language);
-        const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
+        const response = await ai.models.generateContent({ model: 'gemini-flash-latest', contents: prompt });
         
         return res.status(200).json({ code: response.text });
     } catch (error: any) {

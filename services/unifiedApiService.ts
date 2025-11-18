@@ -1,3 +1,4 @@
+
 import * as Prompts from './prompts';
 import {
   AnalysisResult,
@@ -241,7 +242,7 @@ export const createBot = async ({ description, language }: { description: string
     const apiCall = async () => {
         if (environment === 'aistudio') {
             const prompt = Prompts.getBotPrompt(description, language);
-            const response = await generateContentDirect({ model: 'gemini-2.5-flash', contents: prompt });
+            const response = await generateContentDirect({ model: 'gemini-flash-latest', contents: prompt });
             return response.text;
         } else {
             const result = await postToApi<{ code: string }>('/api/createBot', { description, language });
@@ -255,7 +256,7 @@ export const createIndicator = async ({ description, language }: { description: 
     const apiCall = async () => {
         if (environment === 'aistudio') {
             const prompt = Prompts.getIndicatorPrompt(description, language);
-            const response = await generateContentDirect({ model: 'gemini-2.5-flash', contents: prompt });
+            const response = await generateContentDirect({ model: 'gemini-flash-latest', contents: prompt });
             return response.text;
         } else {
             const result = await postToApi<{ code: string }>('/api/createIndicator', { description, language });
@@ -359,7 +360,7 @@ export const getMarketNews = async (asset: string): Promise<MarketSentimentResul
         if (environment === 'aistudio') {
             const prompt = Prompts.getMarketSentimentPrompt(asset);
             const response = await generateContentDirect({ 
-                model: 'gemini-2.5-flash', 
+                model: 'gemini-flash-latest', 
                 contents: prompt, 
                 config: { tools: [{ googleSearch: {} }] } 
             });
@@ -385,7 +386,7 @@ export const getTradingJournalFeedback = async (trades: TradeEntry[]): Promise<J
         if (environment === 'aistudio') {
             const prompt = Prompts.getJournalFeedbackPrompt(trades);
             const response = await generateContentDirect({
-                model: 'gemini-2.5-flash',
+                model: 'gemini-flash-latest',
                 contents: prompt,
                 config: { responseMimeType: 'application/json' }
             });
@@ -442,7 +443,7 @@ export const processCommandWithAgent = async (command: string): Promise<{ text: 
                 ]
             }];
             const response = await generateContentDirect({
-                model: 'gemini-2.5-flash',
+                model: 'gemini-flash-latest',
                 contents: command,
                 config: { tools: agentTools }
             });
