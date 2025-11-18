@@ -133,6 +133,39 @@ const SetupQualityCard: React.FC<{ quality?: string }> = ({ quality }) => {
     );
 };
 
+const ConfluenceScore: React.FC<{ score?: number }> = ({ score }) => {
+    if (score === undefined || score < 0 || score > 10) return null;
+
+    const percentage = score * 10;
+    const circumference = 2 * Math.PI * 20; // radius 20
+    const strokeDashoffset = circumference - (percentage / 100) * circumference;
+
+    const getColor = () => {
+        if (score >= 8) return { main: 'text-teal-500', stroke: '#14B8A6' };
+        if (score >= 5) return { main: 'text-amber-500', stroke: '#F59E0B' };
+        return { main: 'text-red-500', stroke: '#EF4444' };
+    };
+    const { main: color, stroke } = getColor();
+
+    return (
+        <div className={`p-3 rounded-lg border border-gray-500/20 bg-black/5 dark:bg-white/5`}>
+            <div className="flex items-center justify-center space-x-3 text-center">
+                 <div className="relative w-12 h-12">
+                    <svg className="w-full h-full" viewBox="0 0 50 50">
+                        <circle className="text-gray-200 dark:text-gray-700" strokeWidth="5" stroke="currentColor" fill="transparent" r="20" cx="25" cy="25"/>
+                        <circle strokeWidth="5" strokeDasharray={circumference} strokeDashoffset={strokeDashoffset} strokeLinecap="round" stroke={stroke} fill="transparent" r="20" cx="25" cy="25" transform="rotate(-90 25 25)" style={{ transition: 'stroke-dashoffset 0.8s ease-in-out' }}/>
+                    </svg>
+                    <span className={`absolute inset-0 flex items-center justify-center text-sm font-bold ${color}`}>{score.toFixed(1)}</span>
+                </div>
+                <div>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Confluence</p>
+                    <p className={`text-xl font-bold ${color}`}>{score}/10</p>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 
 const Analysis: React.FC = () => {
     const location = useLocation();
@@ -208,7 +241,10 @@ const Analysis: React.FC = () => {
                         </div>
 
                         {validatedSignal !== 'NEUTRAL' && (
-                            <SetupQualityCard quality={result.setupQuality} />
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <SetupQualityCard quality={result.setupQuality} />
+                                <ConfluenceScore score={result.confluenceScore} />
+                            </div>
                         )}
 
                         {validatedSignal !== 'NEUTRAL' ? (

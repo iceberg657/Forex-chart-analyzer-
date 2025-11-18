@@ -14,6 +14,7 @@ export interface AnalysisResult {
   stopLoss: string;
   takeProfits: string[]; // Can be one or more
   setupQuality?: 'A+ Setup' | 'A Setup' | 'B Setup' | 'C Setup' | 'N/A';
+  confluenceScore?: number; // e.g., 8.5/10
   reasoning: string; // The main explanation
   tenReasons: string[]; // e.g., ["✅ Bullish engulfing pattern identified."]
   alternativeScenario?: string; // What would invalidate the thesis

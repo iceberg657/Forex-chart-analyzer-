@@ -1,7 +1,3 @@
-
-
-
-
 import * as Prompts from './prompts';
 import {
   AnalysisResult,
@@ -84,7 +80,8 @@ const isAnalysisResult = (data: any): data is AnalysisResult => {
         data.takeProfits.every((tp: any) => typeof tp === 'string') &&
         typeof data.reasoning === 'string' &&
         Array.isArray(data.tenReasons) &&
-        data.tenReasons.every((r: any) => typeof r === 'string')
+        data.tenReasons.every((r: any) => typeof r === 'string') &&
+        (data.confluenceScore === undefined || typeof data.confluenceScore === 'number')
     );
 };
 const isMarketSentimentResult = (data: any): data is MarketSentimentResult => {
@@ -404,6 +401,62 @@ export const getTradingJournalFeedback = async (trades: TradeEntry[]): Promise<J
     return withRetry(apiCall);
 };
 
+export const processCommandWithAgent = async (command: string): Promise<{ text: string, functionCalls: any[] | null }> => {
+    const apiCall = async () => {
+        if (environment === 'aistudio') {
+            if (!ai) throw new Error("GenAI client not initialized for direct agent call.");
+            const agentTools = [{
+                functionDeclarations: [
+                    { 
+                        name: "navigate", 
+                        description: "Navigates to a specific page in the application. Valid pages are: home, landing, dashboard, analysis, market-news, journal, coders, bot-maker, indicator-maker, pricing, predictor, apex-ai, login, signup.",
+                        parameters: {
+                            type: Type.OBJECT,
+                            properties: { page: { type: Type.STRING, description: "The page to navigate to." } },
+                            required: ['page'],
+                        },
+                    },
+                    { 
+                        name: "changeTheme", 
+                        description: "Switches the application's color theme.",
+                        parameters: {
+                            type: Type.OBJECT,
+                            properties: { theme: { type: Type.STRING, description: "The theme to switch to. Can be 'light' or 'dark'.", enum: ['light', 'dark'] } },
+                            required: ['theme'],
+                        },
+                    },
+                    { 
+                        name: "setEdgeLighting", 
+                        description: "Changes the color of the application's edge lighting effect.",
+                        parameters: {
+                            type: Type.OBJECT,
+                            properties: { color: { type: Type.STRING, description: "The color for the edge lighting. Valid colors are: default, green, red, orange, yellow, blue, purple, white.", enum: ['default', 'green', 'red', 'orange', 'yellow', 'blue', 'purple', 'white'] } },
+                            required: ['color'],
+                        },
+                    },
+                    { 
+                        name: "logout", 
+                        description: "Logs the current user out of the application.",
+                        parameters: { type: Type.OBJECT, properties: {} }
+                    }
+                ]
+            }];
+            const response = await generateContentDirect({
+                model: 'gemini-2.5-flash',
+                contents: command,
+                config: { tools: agentTools }
+            });
+
+            const functionCalls = response.functionCalls || null;
+            const text = functionCalls ? '' : response.text;
+            return { text, functionCalls };
+        } else {
+            return postToApi<{ text: string, functionCalls: any[] | null }>('/api/agent', { command });
+        }
+    };
+    return withRetry(apiCall);
+};
+
 export const getPredictions = async (): Promise<PredictedEvent[]> => {
     const apiCall = async () => {
         if (environment === 'aistudio') {
@@ -417,7 +470,6 @@ export const getPredictions = async (): Promise<PredictedEvent[]> => {
             if (!isPredictedEventArray(parsedResult)) {
                 throw new Error("The AI's predictions were incomplete or malformed.");
             }
-            
             if (response.candidates?.[0]?.groundingMetadata?.groundingChunks) {
                 const sources = response.candidates[0].groundingMetadata.groundingChunks
                     .map((c: any) => ({ uri: c.web?.uri || '', title: c.web?.title || 'Source' }))
@@ -434,42 +486,16 @@ export const getPredictions = async (): Promise<PredictedEvent[]> => {
     return withRetry(apiCall);
 };
 
-const agentTools = [{ functionDeclarations: [ { name: "navigate", description: "Navigates to a specific page in the application. Valid pages are: home, landing, dashboard, analysis, market-news, journal, coders, bot-maker, indicator-maker, pricing, predictor, apex-ai, login, signup.", parameters: { type: Type.OBJECT, properties: { page: { type: Type.STRING } }, required: ['page'], }, }, { name: "changeTheme", description: "Switches the application's color theme.", parameters: { type: Type.OBJECT, properties: { theme: { type: Type.STRING, enum: ['light', 'dark'] } }, required: ['theme'], }, }, { name: "setEdgeLighting", description: "Changes the color of the application's edge lighting effect.", parameters: { type: Type.OBJECT, properties: { color: { type: Type.STRING, enum: ['default', 'green', 'red', 'orange', 'yellow', 'blue', 'purple', 'white'] } }, required: ['color'], }, }, { name: "logout", description: "Logs the current user out of the application.", parameters: { type: Type.OBJECT, properties: {} } } ] }];
-
-export const processCommandWithAgent = async (command: string): Promise<{ text: string; functionCalls: any[] | null; }> => {
-    const apiCall = async () => {
-        if (environment === 'aistudio') {
-            const response = await generateContentDirect({
-                model: 'gemini-2.5-flash',
-                contents: command,
-                config: { tools: agentTools }
-            });
-    
-            const functionCalls = response.functionCalls || null;
-            const text = functionCalls ? '' : response.text;
-    
-            return { text, functionCalls };
-        } else {
-            // FIX: Explicitly provide the generic type to postToApi to match the function's return signature.
-            return postToApi<{ text: string; functionCalls: any[] | null; }>('/api/agent', { command });
-        }
-    };
-    return withRetry(apiCall);
-};
-
-// This is an AI Studio-only utility. No need for a proxy.
-export const getAutoFixSuggestion = async (errors: { message: string, stack?: string }[]): Promise<string> => {
-    const apiCall = async () => {
-        if (environment !== 'aistudio') {
-            return "Auto-fix is only available in the AI Studio environment.";
-        }
-        const errorLog = errors.map(e => `Message: ${e.message}\nStack: ${e.stack || 'Not available'}`).join('\n\n');
-        const prompt = Prompts.getAutoFixPrompt(errorLog);
-        const response = await generateContentDirect({
-            model: 'gemini-2.5-flash',
-            contents: prompt
-        });
-        return response.text;
-    };
-    return withRetry(apiCall);
-};
+export const getAutoFixSuggestion = async (errors: any[]): Promise<string> => {
+     // This is a dev-only tool for AI Studio, so no backend is needed.
+    if (environment !== 'aistudio' || !ai) {
+        return "Auto-fix is only available in the AI Studio environment.";
+    }
+    const errorLog = errors.map(e => `Type: ${e.type}\nMessage: ${e.message}\nStack: ${e.stack || 'N/A'}`).join('\n\n---\n\n');
+    const prompt = Prompts.getAutoFixPrompt(errorLog);
+    const response = await generateContentDirect({
+        model: 'gemini-2.5-pro',
+        contents: prompt
+    });
+    return response.text;
+}

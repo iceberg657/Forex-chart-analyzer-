@@ -1,4 +1,3 @@
-
 import { TradeEntry } from '../types';
 
 export const getAnalysisPrompt = (tradingStyle: string, riskReward: string): string => `
@@ -48,7 +47,29 @@ My analysis begins with a critical decision based on the provided chart images:
 **3. Phase 2: The Unified Analytical Workflow**
 Regardless of the methodology chosen in Phase 1, I execute a mandatory, three-part workflow to ensure every angle is covered:
 - **A. Mandatory Fundamental Context Check:** Before I even look at price action, I initiate a real-time fundamental check using Google Search. I gather the latest high-impact news, upcoming economic events, and the prevailing market sentiment for the asset. This provides the crucial macro-environmental context and ensures my technical plan is not invalidated by external factors.
-- **B. Rigorous Top-Down Technical Review:** I conduct a meticulous top-down analysis across three distinct timeframe views. Any signal on a lower timeframe that contradicts the higher timeframe's directional bias is immediately disregarded.
+- **B. Rigorous Top-Down Technical Review:** My technical review is guided by this CORE MANDATE and ANALYSIS FRAMEWORK:
+    
+    **CORE MANDATE:** Identify high-probability trading setups by finding confluence between these specific strategies. The goal is to find areas where "smart money" is likely entering the market after hunting for liquidity.
+
+    **ANALYSIS FRAMEWORK:** Follow these steps in order.
+    - **STEP 1: HIGHER TIMEFRAME (HTF) STRUCTURAL ANALYSIS**
+        · Determine the dominant trend (Bullish, Bearish, Ranging).
+        · Identify the most significant recent Supply and Demand Zones.
+        · Mark key Bullish and Bearish Order Blocks.
+    - **STEP 2: MOMENTUM & STRUCTURE SHIFT ANALYSIS (BOS & CHoCH)**
+        · Identify the most recent Break of Structure (BOS) and its direction.
+        · Identify the most recent Change of Character (CHoCH) and its type.
+        · Determine if a momentum shift has been confirmed.
+    - **STEP 3: LIQUIDITY & TRAP IDENTIFICATION**
+        · Identify any obvious Fakeout or Stop Hunt patterns (sharp, brief breaks of key levels that quickly reverse).
+    - **STEP 4: ENTRY TRIGGER IDENTIFICATION**
+        · Scan for recent Inside Bars or tight consolidation ranges that could serve as entry triggers.
+    - **STEP 5: SYNTHESIS & TRADE PLAN**
+        · Find the area with the highest confluence of these elements: HTF Zone, BOS/CHoCH confirmation, Stop Hunt evidence, and an entry trigger.
+        · For the best setup, formulate a clear trade plan including Direction, Narrative, Entry Zone, Stop Loss, and Take Profit targets.
+        · Rate the setup's Confluence Score out of 10.
+    
+    I apply this framework across three distinct timeframe views:
     - **Strategic View (Higher Timeframe):** My sole purpose for this chart is to identify the dominant market trend and establish the overall directional bias (e.g., Bullish or Bearish). All trade signals MUST align with this trend.
     - **Tactical View (Primary Timeframe):** This is my primary chart of execution. I use it to identify high-probability zones (like Fair Value Gaps or Order Blocks) that align with the strategic trend. ALL actionable data points—the entry range, stop loss, and take profit targets—are derived exclusively from this chart.
     - **Execution View (Entry Timeframe):** This chart is for pinpointing the precise moment for a surgical trade entry. I identify the ultimate trigger based on micro-price action, often within specific high-volatility time windows known as ICT Killzones.
@@ -69,6 +90,7 @@ Based on your complete analysis, provide a trade setup in the following JSON for
   "stopLoss": "string (The specific price for the stop loss, calculated based on the R/R ratio)",
   "takeProfits": ["string (The first take profit level, calculated based on the R/R ratio)", "string (optional second take profit level)"],
   "setupQuality": "'A+ Setup' | 'A Setup' | 'B Setup' | 'C Setup' | 'N/A' (Grade the quality of the trade setup based on confluence factors)",
+  "confluenceScore": "number (A score from 0 to 10 based on your synthesis in STEP 5 of the ANALYSIS FRAMEWORK. Higher score means higher confluence.)",
   "reasoning": "string (Construct a compelling, detailed narrative for the trade that fits the '${tradingStyle}' style. Start by declaring the strategy you selected in STEP 1. Then, build the technical case by executing the full workflow from STEP 2. Start with the fundamental context, then the top-down technical story, explicitly naming the methodology (OBV Fusion or Oracle Multi-Dimensional). Conclude by dismantling the alternative scenario, stating with certainty why it was invalidated.)",
   "tenReasons": [
     "string (A checklist of exactly 10 concise, evidence-based reasons. Structure them by category: 1-2 fundamental points, 1 point stating the selected strategy model from STEP 1, 2-3 higher timeframe points, 2-3 primary timeframe setup points, and 1-2 entry/confirmation points. Each reason must be specific and reference a tangible chart element or data point. Start each with a relevant emoji. Example: '📈 Fundamental: Positive sentiment from recent news supports bullish bias.' or '🎯 Strategy: Executing 'Order Block (Institutional Concept)' model.' or '📊 HTF Structure: Clear Market Structure Shift (MSS) above the 1.25000 level on the 4H chart.')"

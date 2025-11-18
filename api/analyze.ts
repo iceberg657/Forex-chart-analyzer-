@@ -1,5 +1,3 @@
-
-
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI } from '@google/genai';
 import { getAnalysisPrompt } from '../services/prompts';
@@ -21,7 +19,8 @@ const isAnalysisResult = (data: any): data is AnalysisResult => {
         data.takeProfits.every((tp: any) => typeof tp === 'string') &&
         typeof data.reasoning === 'string' &&
         Array.isArray(data.tenReasons) &&
-        data.tenReasons.every((r: any) => typeof r === 'string')
+        data.tenReasons.every((r: any) => typeof r === 'string') &&
+        (data.confluenceScore === undefined || typeof data.confluenceScore === 'number')
     );
 };
 
