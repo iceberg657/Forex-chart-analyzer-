@@ -150,7 +150,7 @@ export const analyzeChart = async (chartFiles: { [key: string]: File | null }, r
                 }
             }
             const response = await generateContentDirect({
-                model: 'gemini-2.5-pro',
+                model: 'gemini-flash-latest',
                 contents: { parts },
                 config: { temperature: 0, tools: [{ googleSearch: {} }] }
             });
@@ -330,7 +330,7 @@ export const getPredictions = async (): Promise<PredictedEvent[]> => {
     const apiCall = async () => {
         if (environment === 'aistudio') {
             const prompt = Prompts.getPredictorPrompt();
-            const response = await generateContentDirect({ model: 'gemini-2.5-pro', contents: prompt, config: { tools: [{ googleSearch: {} }] } });
+            const response = await generateContentDirect({ model: 'gemini-flash-latest', contents: prompt, config: { tools: [{ googleSearch: {} }] } });
             const parsedResult = robustJsonParse(response.text);
             if (!isPredictedEventArray(parsedResult)) throw new Error("Incomplete predictions.");
             if (response.candidates?.[0]?.groundingMetadata?.groundingChunks) {
@@ -351,7 +351,7 @@ export const getDashboardOverview = async (): Promise<DashboardOverview> => {
     const apiCall = async () => {
         if (environment === 'aistudio') {
             const prompt = Prompts.getDashboardOverviewPrompt();
-            const response = await generateContentDirect({ model: 'gemini-2.5-pro', contents: prompt, config: { tools: [{ googleSearch: {} }] } });
+            const response = await generateContentDirect({ model: 'gemini-flash-latest', contents: prompt, config: { tools: [{ googleSearch: {} }] } });
             const parsedResult = robustJsonParse(response.text);
             if (!isDashboardOverview(parsedResult)) throw new Error("Incomplete market overview.");
             parsedResult.lastUpdated = Date.now();
@@ -367,6 +367,6 @@ export const getAutoFixSuggestion = async (errors: any[]): Promise<string> => {
     if (environment !== 'aistudio' || !ai) return "Auto-fix is only available in the AI Studio environment.";
     const errorLog = errors.map(e => `Type: ${e.type}\nMessage: ${e.message}\nStack: ${e.stack || 'N/A'}`).join('\n\n---\n\n');
     const prompt = Prompts.getAutoFixPrompt(errorLog);
-    const response = await generateContentDirect({ model: 'gemini-2.5-pro', contents: prompt });
+    const response = await generateContentDirect({ model: 'gemini-flash-latest', contents: prompt });
     return response.text;
 };

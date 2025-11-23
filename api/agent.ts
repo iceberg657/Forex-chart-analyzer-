@@ -182,7 +182,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             case 'dashboardOverview': {
                 const prompt = Prompts.getDashboardOverviewPrompt();
                 const response = await ai.models.generateContent({ 
-                    model: 'gemini-2.5-pro', 
+                    model: 'gemini-flash-latest', 
                     contents: prompt, 
                     config: { tools: [{ googleSearch: {} }] } 
                 });
@@ -216,7 +216,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             case 'predictions': {
                 const prompt = Prompts.getPredictorPrompt();
                 const response = await ai.models.generateContent({
-                    model: 'gemini-2.5-pro',
+                    model: 'gemini-flash-latest',
                     contents: prompt,
                     config: { tools: [{ googleSearch: {} }] }
                 });

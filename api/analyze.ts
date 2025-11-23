@@ -1,3 +1,4 @@
+
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI } from '@google/genai';
 import { getAnalysisPrompt } from '../services/prompts';
@@ -65,7 +66,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
     
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-pro',
+            model: 'gemini-flash-latest',
             contents: { parts },
             config: {
                 temperature: 0, // Set to 0 for maximum determinism in chart analysis
