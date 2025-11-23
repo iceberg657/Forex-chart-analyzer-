@@ -160,7 +160,7 @@ const ApexAI: React.FC = () => {
     };
 
     return (
-        <div className="relative flex flex-col flex-1 h-full bg-gradient-to-br from-red-50 to-sky-100 dark:bg-gradient-to-br dark:from-slate-900 dark:to-indigo-900 text-gray-900 dark:text-white rounded-xl overflow-hidden">
+        <div className="relative flex flex-col flex-1 h-full bg-transparent text-gray-900 dark:text-white rounded-xl overflow-hidden">
             <ChatHeader />
             {messages.length === 0 ? (
                 <div className="flex-1 flex flex-col items-center justify-center text-center p-4">

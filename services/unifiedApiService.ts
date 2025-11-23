@@ -1,4 +1,5 @@
 
+
 import * as Prompts from './prompts';
 import {
   AnalysisResult,
@@ -11,6 +12,7 @@ import {
   ChatMessage,
   ChatMessagePart,
   PredictedEvent,
+  DashboardOverview,
 } from '../types';
 import { GoogleGenAI, Type } from '@google/genai';
 import { detectEnvironment } from '../hooks/useEnvironment';
@@ -120,6 +122,23 @@ const isPredictedEvent = (data: any): data is PredictedEvent => {
         Array.isArray(data.currencyPairs) && data.currencyPairs.every((p: any) => typeof p === 'string') &&
         typeof data.confidence === 'number' && data.confidence >= 75 && data.confidence <= 90 &&
         typeof data.potential_effect === 'string'
+    );
+};
+const isDashboardOverview = (data: any): data is DashboardOverview => {
+    return (
+        data &&
+        data.marketCondition &&
+        ['Bullish', 'Bearish', 'Neutral'].includes(data.marketCondition.sentiment) &&
+        typeof data.marketCondition.trendingPairs === 'string' &&
+        data.economicData &&
+        Array.isArray(data.economicData.recentEvents) &&
+        Array.isArray(data.economicData.upcomingEvents) &&
+        data.technicalSummary &&
+        Array.isArray(data.technicalSummary.dominantTrends) &&
+        Array.isArray(data.technicalSummary.keyLevels) &&
+        data.tradingOpportunities &&
+        Array.isArray(data.tradingOpportunities.highProbabilitySetups) &&
+        data.tradingOpportunities.riskAssessment
     );
 };
 
@@ -482,6 +501,28 @@ export const getPredictions = async (): Promise<PredictedEvent[]> => {
             return parsedResult;
         } else {
             return postToApi<PredictedEvent[]>('/api/predictions', {});
+        }
+    };
+    return withRetry(apiCall);
+};
+
+export const getDashboardOverview = async (): Promise<DashboardOverview> => {
+    const apiCall = async () => {
+        if (environment === 'aistudio') {
+            const prompt = Prompts.getDashboardOverviewPrompt();
+            const response = await generateContentDirect({
+                model: 'gemini-2.5-pro',
+                contents: prompt,
+                config: { tools: [{ googleSearch: {} }] }
+            });
+            const parsedResult = robustJsonParse(response.text);
+            if (!isDashboardOverview(parsedResult)) {
+                throw new Error("The AI's market overview was incomplete or malformed.");
+            }
+            parsedResult.lastUpdated = Date.now();
+            return parsedResult;
+        } else {
+            return postToApi<DashboardOverview>('/api/dashboardOverview', {});
         }
     };
     return withRetry(apiCall);

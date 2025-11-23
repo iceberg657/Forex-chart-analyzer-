@@ -1,3 +1,4 @@
+
 export interface GroundingSource {
   uri: string;
   title: string;
@@ -30,6 +31,29 @@ export interface MarketSentimentResult {
     sources?: GroundingSource[];
 }
 
+export interface DashboardOverview {
+  marketCondition: {
+    sentiment: 'Bullish' | 'Bearish' | 'Neutral';
+    trendingPairs: string; // e.g. "Strong: USD, Weak: JPY"
+    volatility: 'High' | 'Medium' | 'Low';
+  };
+  economicData: {
+    recentEvents: { event: string; impact: string }[];
+    upcomingEvents: { time: string; event: string; expectedImpact: string }[];
+  };
+  technicalSummary: {
+    dominantTrends: { pair: string; direction: string }[]; // e.g. GBPUSD: Downtrend
+    keyLevels: string[]; // List of key price levels e.g. "EURUSD Support: 1.0500"
+  };
+  tradingOpportunities: {
+    highProbabilitySetups: { pair: string; strategy: string; confidence: string }[];
+    riskAssessment: {
+      marketRisk: 'High' | 'Medium' | 'Low';
+      positionSizing: 'Conservative' | 'Moderate' | 'Aggressive';
+    };
+  };
+  lastUpdated: number; // Timestamp
+}
 
 export interface GeneratedCode {
   code: string;
