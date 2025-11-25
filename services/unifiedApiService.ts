@@ -1,4 +1,10 @@
 
+
+
+
+
+
+
 import * as Prompts from './prompts';
 import {
   AnalysisResult,
@@ -112,7 +118,7 @@ const isPredictedEventArray = (data: any): data is PredictedEvent[] => {
     return Array.isArray(data) && data.length > 0 ? typeof data[0].event_description === 'string' : Array.isArray(data);
 };
 const isDashboardOverview = (data: any): data is DashboardOverview => {
-    return (data && data.marketCondition && data.economicData);
+    return (data && data.marketCondition && typeof data.marketCondition.dominantSession === 'string' && Array.isArray(data.dailyBiases) && data.economicData && data.tradingOpportunities && Array.isArray(data.next24hOutlook));
 };
 
 const clientFileToImagePart = async (file: File): Promise<ChatMessagePart> => {

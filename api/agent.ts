@@ -1,4 +1,8 @@
 
+
+
+
+
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI, Type } from '@google/genai';
 import * as Prompts from '../services/prompts';
@@ -20,7 +24,15 @@ const isDashboardOverview = (data: any): data is DashboardOverview => {
         data &&
         data.marketCondition &&
         ['Bullish', 'Bearish', 'Neutral'].includes(data.marketCondition.sentiment) &&
-        typeof data.marketCondition.trendingPairs === 'string' &&
+        Array.isArray(data.marketCondition.trendingPairs) &&
+        typeof data.marketCondition.dominantSession === 'string' &&
+        typeof data.marketCondition.marketDriver === 'string' &&
+        Array.isArray(data.dailyBiases) &&
+        data.dailyBiases.every((b: any) => 
+            typeof b.pair === 'string' && 
+            ['Bullish', 'Bearish', 'Neutral'].includes(b.bias) &&
+            typeof b.reasoning === 'string'
+        ) &&
         data.economicData &&
         Array.isArray(data.economicData.recentEvents) &&
         Array.isArray(data.economicData.upcomingEvents) &&
@@ -29,7 +41,11 @@ const isDashboardOverview = (data: any): data is DashboardOverview => {
         Array.isArray(data.technicalSummary.keyLevels) &&
         data.tradingOpportunities &&
         Array.isArray(data.tradingOpportunities.highProbabilitySetups) &&
-        data.tradingOpportunities.riskAssessment
+        data.tradingOpportunities.highProbabilitySetups.every((setup: any) => 
+            setup.entry && setup.stopLoss && setup.takeProfit && setup.rrRatio
+        ) &&
+        data.tradingOpportunities.riskAssessment &&
+        Array.isArray(data.next24hOutlook)
     );
 };
 

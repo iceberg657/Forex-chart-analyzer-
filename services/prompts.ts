@@ -1,5 +1,4 @@
 
-
 import { TradeEntry } from '../types';
 
 export const getAnalysisPrompt = (tradingStyle: string, riskReward: string): string => `
@@ -315,36 +314,60 @@ Your response MUST be a single, valid JSON object with the following structure. 
 {
   "marketCondition": {
     "sentiment": "'Bullish' | 'Bearish' | 'Neutral'",
-    "trendingPairs": "string (List the strongest and weakest currencies, e.g., 'Strong: USD, GBP; Weak: JPY')",
-    "volatility": "'High' | 'Medium' | 'Low'"
+    "trendingPairs": [
+       { "name": "string (e.g. USD)", "strength": "'Strong' | 'Weak'" },
+       { "name": "string (e.g. JPY)", "strength": "'Strong' | 'Weak'" }
+    ],
+    "volatility": "'High' | 'Medium' | 'Low'",
+    "dominantSession": "string (e.g., 'London Open', 'New York/London Overlap', 'Asian Session')",
+    "marketDriver": "string (Identify the #1 high-impact event driving the market right now)"
   },
+  "dailyBiases": [
+      {
+        "pair": "string (Select exactly 10 pairs: 5 Major Forex pairs, 3 Minor/Cross pairs, plus 'BTC/USD' and 'XAU/USD')",
+        "bias": "'Bullish' | 'Bearish' | 'Neutral'",
+        "strength": "'Strong' | 'Moderate' | 'Weak'",
+        "reasoning": "string (A short, punchy sentence explaining the bias)"
+      }
+  ],
   "economicData": {
     "recentEvents": [
-      { "event": "string (Name of a recent high-impact economic event)", "impact": "string (Short description of market impact)" }
+      { "event": "string (Name of event)", "impact": "'High' | 'Medium' | 'Low'", "result": "string (e.g. 'Better than expected')" }
     ],
     "upcomingEvents": [
-      { "time": "string (Time in GMT)", "event": "string (Name of event)", "expectedImpact": "string (e.g., 'High Volatility Expected')" }
+      { "time": "string (Time in GMT)", "event": "string (Name of event)", "expectedImpact": "'High' | 'Medium' | 'Low'" }
     ]
   },
   "technicalSummary": {
     "dominantTrends": [
-       { "pair": "string (e.g. GBP/USD)", "direction": "string (e.g. Downtrend)" },
-       { "pair": "string (e.g. EUR/USD)", "direction": "string (e.g. Uptrend)" },
-       { "pair": "string (e.g. USD/JPY)", "direction": "string (e.g. Ranging)" }
+       { "pair": "string (e.g. GBP/USD)", "direction": "'Uptrend' | 'Downtrend' | 'Ranging'", "sparkline": [number, number, number, number, number, number, number] (Array of 7 numbers representing the recent price trend for a sparkline chart) }
     ],
     "keyLevels": [
-      "string (e.g., 'EUR/USD Support: 1.0500', 'GBP/USD Resistance: 1.2500')"
+      { "pair": "string (e.g. EUR/USD)", "level": "string", "type": "'Support' | 'Resistance'" }
     ]
   },
   "tradingOpportunities": {
     "highProbabilitySetups": [
-      { "pair": "string (e.g. GBP/USD)", "strategy": "string (e.g. Breakout)", "confidence": "string (e.g. 'High - 85%')" }
+      { 
+        "pair": "string (e.g. GBP/USD)", 
+        "strategy": "string (e.g. Breakout)", 
+        "confidence": number (0-100), 
+        "riskLevel": "'High' | 'Medium' | 'Low'", 
+        "signal": "'Buy' | 'Sell'",
+        "entry": "string (Specific entry price level)",
+        "stopLoss": "string (Specific SL price)",
+        "takeProfit": "string (Specific TP price)",
+        "rrRatio": "string (e.g., '1:3')"
+      }
     ],
     "riskAssessment": {
       "marketRisk": "'High' | 'Medium' | 'Low'",
       "positionSizing": "'Conservative' | 'Moderate' | 'Aggressive'"
     }
-  }
+  },
+  "next24hOutlook": [
+    { "pair": "string", "outlook": "string (Brief actionable guidance)", "bias": "'Bullish' | 'Bearish' | 'Neutral'" }
+  ]
 }
 
 Ensure all data is real-time and accurate.

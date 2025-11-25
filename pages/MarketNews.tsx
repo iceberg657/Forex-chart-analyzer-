@@ -1,5 +1,6 @@
 
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { getMarketNews } from '../services/newsService';
 import { MarketSentimentResult, GroundingSource } from '../types';
 import Spinner from '../components/Spinner';
@@ -104,6 +105,13 @@ const MarketNews: React.FC = () => {
 
     const [inputAsset, setInputAsset] = useState(savedAsset || '');
     const [isLoading, setIsLoading] = useState(false);
+
+    // Sync input when the global asset state changes (e.g. navigation from dashboard)
+    useEffect(() => {
+        if (savedAsset) {
+            setInputAsset(savedAsset);
+        }
+    }, [savedAsset]);
 
     const performAnalysis = async (assetToAnalyze: string) => {
         setIsLoading(true);

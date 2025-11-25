@@ -31,27 +31,48 @@ export interface MarketSentimentResult {
     sources?: GroundingSource[];
 }
 
+export interface DailyBias {
+  pair: string;
+  bias: 'Bullish' | 'Bearish' | 'Neutral';
+  strength: 'Strong' | 'Moderate' | 'Weak';
+  reasoning: string;
+}
+
 export interface DashboardOverview {
   marketCondition: {
     sentiment: 'Bullish' | 'Bearish' | 'Neutral';
-    trendingPairs: string; // e.g. "Strong: USD, Weak: JPY"
+    trendingPairs: { name: string; strength: 'Strong' | 'Weak' }[];
     volatility: 'High' | 'Medium' | 'Low';
+    dominantSession: string; // e.g., "London/New York Overlap"
+    marketDriver: string; // e.g., "Upcoming FOMC Meeting"
   };
+  dailyBiases: DailyBias[];
   economicData: {
-    recentEvents: { event: string; impact: string }[];
-    upcomingEvents: { time: string; event: string; expectedImpact: string }[];
+    recentEvents: { event: string; impact: 'High' | 'Medium' | 'Low'; result: string }[];
+    upcomingEvents: { time: string; event: string; expectedImpact: 'High' | 'Medium' | 'Low' }[];
   };
   technicalSummary: {
-    dominantTrends: { pair: string; direction: string }[]; // e.g. GBPUSD: Downtrend
-    keyLevels: string[]; // List of key price levels e.g. "EURUSD Support: 1.0500"
+    dominantTrends: { pair: string; direction: 'Uptrend' | 'Downtrend' | 'Ranging'; sparkline: number[] }[];
+    keyLevels: { pair: string; level: string; type: 'Support' | 'Resistance' }[];
   };
   tradingOpportunities: {
-    highProbabilitySetups: { pair: string; strategy: string; confidence: string }[];
+    highProbabilitySetups: { 
+      pair: string; 
+      strategy: string; 
+      confidence: number; 
+      riskLevel: 'High' | 'Medium' | 'Low'; 
+      signal: 'Buy' | 'Sell';
+      entry: string;
+      stopLoss: string;
+      takeProfit: string;
+      rrRatio: string;
+    }[];
     riskAssessment: {
       marketRisk: 'High' | 'Medium' | 'Low';
       positionSizing: 'Conservative' | 'Moderate' | 'Aggressive';
     };
   };
+  next24hOutlook: { pair: string; outlook: string; bias: 'Bullish' | 'Bearish' | 'Neutral' }[];
   lastUpdated: number; // Timestamp
 }
 
