@@ -357,7 +357,9 @@ Your response MUST be a single, valid JSON object with the following structure. 
         "entry": "string (Specific entry price level)",
         "stopLoss": "string (Specific SL price)",
         "takeProfit": "string (Specific TP price)",
-        "rrRatio": "string (e.g., '1:3')"
+        "rrRatio": "string (e.g., '1:3')",
+        "support1H": "string (Key Support level from 1H timeframe)",
+        "resistance1H": "string (Key Resistance level from 1H timeframe)"
       }
     ],
     "riskAssessment": {
@@ -369,6 +371,10 @@ Your response MUST be a single, valid JSON object with the following structure. 
     { "pair": "string", "outlook": "string (Brief actionable guidance)", "bias": "'Bullish' | 'Bearish' | 'Neutral'" }
   ]
 }
+
+**CRITICAL INSTRUCTION FOR TRADING OPPORTUNITIES:**
+You MUST generate exactly **TWO (2)** distinct high-probability setups in the 'highProbabilitySetups' array. Do not provide just one.
+Ensure you specifically identify the Support and Resistance levels from the **1-Hour (1H)** timeframe for these setups.
 
 Ensure all data is real-time and accurate.
 `;

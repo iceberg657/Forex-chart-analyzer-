@@ -4,6 +4,10 @@
 
 
 
+
+
+
+
 import React, { useEffect, useState } from 'react';
 import { getDashboardOverview } from '../services/dashboardService';
 import { DashboardOverview, DailyBias } from '../types';
@@ -258,225 +262,220 @@ const Dashboard: React.FC = () => {
                                          <p className="text-[10px] text-gray-500 uppercase font-bold mb-1">Sentiment</p>
                                          <SentimentBadge value={overview.marketCondition.sentiment} />
                                      </div>
-                                     
                                      <div className="flex flex-col justify-center">
                                          <p className="text-[10px] text-gray-500 uppercase font-bold mb-1">Volatility</p>
                                          <div className="flex items-center gap-2">
-                                            <div className="flex gap-1">
-                                                {[1,2,3].map(i => (
-                                                    <div key={i} className={`w-1.5 h-4 rounded-full ${
-                                                        (overview.marketCondition.volatility === 'High' && i <= 3) || 
-                                                        (overview.marketCondition.volatility === 'Medium' && i <= 2) ||
-                                                        (overview.marketCondition.volatility === 'Low' && i <= 1) 
-                                                        ? 'bg-red-500' : 'bg-gray-200 dark:bg-gray-700'
-                                                    }`}></div>
-                                                ))}
-                                            </div>
-                                            <span className="text-sm font-semibold">{overview.marketCondition.volatility}</span>
+                                            {overview.marketCondition.volatility === 'High' && <div className="flex gap-1"><div className="w-1.5 h-4 bg-red-500 rounded-sm"></div><div className="w-1.5 h-4 bg-red-500 rounded-sm"></div><div className="w-1.5 h-4 bg-red-500 rounded-sm"></div></div>}
+                                            {overview.marketCondition.volatility === 'Medium' && <div className="flex gap-1"><div className="w-1.5 h-4 bg-yellow-500 rounded-sm"></div><div className="w-1.5 h-4 bg-yellow-500 rounded-sm"></div><div className="w-1.5 h-4 bg-gray-300 dark:bg-gray-700 rounded-sm"></div></div>}
+                                            {overview.marketCondition.volatility === 'Low' && <div className="flex gap-1"><div className="w-1.5 h-4 bg-green-500 rounded-sm"></div><div className="w-1.5 h-4 bg-gray-300 dark:bg-gray-700 rounded-sm"></div><div className="w-1.5 h-4 bg-gray-300 dark:bg-gray-700 rounded-sm"></div></div>}
+                                            <span className="font-bold text-sm">{overview.marketCondition.volatility}</span>
                                          </div>
                                      </div>
-
-                                     <div className="flex flex-col justify-center">
-                                          <p className="text-[10px] text-gray-500 uppercase font-bold mb-1">Active Session</p>
-                                          <div className="text-xs font-medium bg-blue-500/10 text-blue-600 dark:text-blue-300 px-2 py-1 rounded border border-blue-500/20 truncate">
-                                             {overview.marketCondition.dominantSession || "N/A"}
-                                          </div>
+                                      <div className="flex flex-col justify-center">
+                                         <p className="text-[10px] text-gray-500 uppercase font-bold mb-1">Active Session</p>
+                                         <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 text-xs font-semibold px-2 py-1 rounded truncate border border-blue-200 dark:border-blue-800">
+                                            {overview.marketCondition.dominantSession}
+                                         </span>
                                      </div>
-
-                                     <div className="flex flex-col justify-center">
-                                          <p className="text-[10px] text-gray-500 uppercase font-bold mb-1">Key Driver</p>
-                                          <div className="text-xs font-medium bg-purple-500/10 text-purple-600 dark:text-purple-300 px-2 py-1 rounded border border-purple-500/20 truncate" title={overview.marketCondition.marketDriver}>
-                                             {overview.marketCondition.marketDriver || "N/A"}
-                                          </div>
+                                      <div className="flex flex-col justify-center">
+                                         <p className="text-[10px] text-gray-500 uppercase font-bold mb-1">Key Driver</p>
+                                         <span className="bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200 text-xs font-semibold px-2 py-1 rounded truncate border border-purple-200 dark:border-purple-800" title={overview.marketCondition.marketDriver}>
+                                            {overview.marketCondition.marketDriver}
+                                         </span>
                                      </div>
                                 </div>
-                                <div className="mt-4 pt-4 border-t border-gray-100 dark:border-white/5">
+                                
+                                <div className="mt-6 pt-6 border-t border-gray-100 dark:border-white/5">
                                     <p className="text-[10px] text-gray-500 uppercase font-bold mb-2">Trending Pairs</p>
                                     <div className="flex flex-wrap gap-2">
-                                    {overview.marketCondition.trendingPairs.map((tp, i) => (
-                                        <span key={i} className={`text-xs px-2 py-1 rounded border flex items-center gap-1 ${
-                                            tp.strength === 'Strong' 
-                                            ? 'bg-green-500/5 text-green-700 dark:text-green-400 border-green-500/20' 
-                                            : 'bg-red-500/5 text-red-700 dark:text-red-400 border-red-500/20'
-                                        }`}>
-                                            <b>{tp.name}</b> <i className={`fas fa-arrow-${tp.strength === 'Strong' ? 'up' : 'down'} text-[10px]`}></i>
-                                        </span>
-                                    ))}
+                                        {overview.marketCondition.trendingPairs.map((pair, idx) => (
+                                            <span key={idx} className={`px-2 py-1 rounded text-xs font-medium border flex items-center gap-1 ${pair.strength === 'Strong' ? 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20' : 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20'}`}>
+                                                {pair.name}
+                                                {pair.strength === 'Strong' ? <i className="fas fa-arrow-up text-[10px]"></i> : <i className="fas fa-arrow-down text-[10px]"></i>}
+                                            </span>
+                                        ))}
                                     </div>
                                 </div>
                              </Card>
                          </div>
                          <div className="md:col-span-4 h-full">
-                             {/* Replaced static Daily Bias with new animated component */}
-                             <DailyBiasCard biases={overview.dailyBiases || []} />
+                            <DailyBiasCard biases={overview.dailyBiases} />
                          </div>
                     </div>
 
-                    {/* Middle Section: Technicals & Economy */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                         
-                         {/* Technical Summary with Sparklines */}
-                         <Card title="Technical Trend Scanner" icon="fas fa-chart-line">
+                        {/* Technical Trend Scanner */}
+                        <Card title="Technical Trend Scanner" icon="fas fa-chart-line">
                             <div className="space-y-4">
-                                {overview.technicalSummary.dominantTrends.map((t, i) => (
-                                    <div 
-                                        key={i} 
-                                        onClick={() => handleTrendClick(t.pair)}
-                                        className="flex items-center justify-between p-3 -mx-2 rounded hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer transition-colors group"
-                                        title={`View detailed analysis for ${t.pair}`}
-                                    >
-                                        <div className="w-20">
-                                            <span className="font-bold text-sm block group-hover:text-red-500 transition-colors">{t.pair}</span>
-                                            <span className={`text-[10px] ${t.direction.includes('Up') ? 'text-green-500' : t.direction.includes('Down') ? 'text-red-500' : 'text-gray-400'}`}>
-                                                {t.direction}
-                                            </span>
-                                        </div>
-                                        <div className="flex-1 mx-4 h-8">
-                                            <Sparkline 
-                                                data={t.sparkline} 
-                                                color={t.direction.includes('Up') ? '#22c55e' : t.direction.includes('Down') ? '#ef4444' : '#9ca3af'} 
-                                            />
-                                        </div>
-                                        <div className="text-right w-24">
-                                             <span className="text-[10px] text-gray-500 block uppercase">Key Level</span>
-                                             <span className="text-xs font-mono font-medium">
-                                                 {overview.technicalSummary.keyLevels.find(k => k.pair === t.pair)?.level || '---'}
-                                             </span>
-                                        </div>
-                                        <div className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <i className="fas fa-chevron-right text-gray-400 text-xs"></i>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                         </Card>
-
-                         {/* Economic Data */}
-                         <Card title="Economic Calendar" icon="fas fa-calendar-alt">
-                            <div className="space-y-4">
-                                <div className="mb-4">
-                                    <h3 className="text-[10px] font-bold text-gray-500 uppercase mb-2 tracking-wider">Recently Released</h3>
-                                    {overview.economicData.recentEvents.map((e, i) => (
-                                        <div key={i} className="flex justify-between items-center text-sm mb-2 border-l-2 pl-3 border-gray-300 dark:border-gray-600">
-                                            <span className="font-medium truncate mr-2" title={e.event}>{e.event}</span>
-                                            <span className={`text-[10px] px-2 py-0.5 rounded flex-shrink-0 ${
-                                                e.impact === 'High' ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
-                                            }`}>{e.result}</span>
-                                        </div>
-                                    ))}
-                                    {overview.economicData.recentEvents.length === 0 && <p className="text-xs text-gray-400 italic">No high-impact events recently.</p>}
+                                <div className="grid grid-cols-12 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 px-2">
+                                    <div className="col-span-3">Asset</div>
+                                    <div className="col-span-6 text-center">Trend (24H)</div>
+                                    <div className="col-span-3 text-right">Key Level</div>
                                 </div>
-                                <div>
-                                    <h3 className="text-[10px] font-bold text-gray-500 uppercase mb-2 tracking-wider">Coming Up</h3>
-                                    {overview.economicData.upcomingEvents.map((e, i) => (
-                                        <div key={i} className="flex items-center gap-3 bg-black/5 dark:bg-white/5 p-2 rounded-lg mb-2">
-                                            <div className="text-center bg-white dark:bg-black/30 rounded px-2 py-1 min-w-[50px] shadow-sm">
-                                                <span className="block text-xs font-bold">{e.time.split(' ')[0]}</span>
-                                                <span className="block text-[9px] text-gray-400">{e.time.split(' ')[1]}</span>
+                                {overview.technicalSummary.dominantTrends.map((trend, i) => {
+                                    const keyLevel = overview.technicalSummary.keyLevels.find(k => k.pair === trend.pair);
+                                    return (
+                                        <div 
+                                            key={i} 
+                                            onClick={() => handleTrendClick(trend.pair)}
+                                            className="grid grid-cols-12 items-center p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors cursor-pointer group relative"
+                                        >
+                                            <div className="col-span-3">
+                                                <div className="font-bold text-sm">{trend.pair}</div>
+                                                <div className={`text-[10px] font-medium ${trend.direction === 'Uptrend' ? 'text-green-500' : trend.direction === 'Downtrend' ? 'text-red-500' : 'text-gray-500'}`}>
+                                                    {trend.direction}
+                                                </div>
                                             </div>
-                                            <div className="flex-1 min-w-0">
-                                                <p className="text-sm font-semibold leading-tight truncate" title={e.event}>{e.event}</p>
-                                                <p className="text-[10px] text-red-500">{e.expectedImpact} Impact</p>
+                                            <div className="col-span-6 px-2 h-8 flex items-center justify-center">
+                                                <Sparkline 
+                                                    data={trend.sparkline} 
+                                                    color={trend.direction === 'Uptrend' ? '#10b981' : trend.direction === 'Downtrend' ? '#ef4444' : '#9ca3af'} 
+                                                />
                                             </div>
-                                        </div>
-                                    ))}
-                                     {overview.economicData.upcomingEvents.length === 0 && <p className="text-xs text-gray-400 italic">No major events upcoming.</p>}
-                                </div>
-                            </div>
-                         </Card>
-                    </div>
-
-                    {/* Bottom Section: Trading Opportunities & Outlook */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {/* Trading Opportunities */}
-                        <div className="md:col-span-2">
-                            <Card title="High Probability Setups" icon="fas fa-crosshairs">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    {overview.tradingOpportunities.highProbabilitySetups.map((setup, i) => (
-                                        <div key={i} className="bg-white/50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl p-0 relative overflow-hidden group shadow-sm hover:shadow-md transition-shadow">
-                                            <div className={`absolute top-0 left-0 w-1.5 h-full ${setup.signal === 'Buy' ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                                            <div className="col-span-3 text-right">
+                                                <div className="text-[10px] text-gray-500 uppercase">{keyLevel?.type || 'Level'}</div>
+                                                <div className="font-mono text-xs font-bold">{keyLevel?.level || '---'}</div>
+                                            </div>
                                             
-                                            <div className="p-4">
-                                                <div className="flex justify-between items-start mb-3">
-                                                    <div>
-                                                        <h3 className="font-bold text-xl tracking-tight">{setup.pair}</h3>
-                                                        <div className="flex items-center gap-2 mt-0.5">
-                                                            <span className={`text-xs font-bold uppercase ${setup.signal === 'Buy' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>{setup.signal}</span>
-                                                            <span className="w-1 h-1 rounded-full bg-gray-400"></span>
-                                                            <span className="text-xs text-gray-500">{setup.strategy}</span>
-                                                        </div>
-                                                    </div>
-                                                    <span className={`text-[10px] font-bold px-2 py-1 rounded uppercase border ${
-                                                        setup.riskLevel === 'Low' ? 'border-green-500/30 text-green-600' : 
-                                                        setup.riskLevel === 'Medium' ? 'border-yellow-500/30 text-yellow-600' : 
-                                                        'border-red-500/30 text-red-600'
-                                                    }`}>{setup.riskLevel} Risk</span>
-                                                </div>
-
-                                                <div className="grid grid-cols-3 gap-2 mb-4 bg-black/5 dark:bg-black/20 p-2 rounded-lg">
-                                                     <div className="text-center">
-                                                         <p className="text-[9px] text-gray-500 uppercase font-bold">Entry</p>
-                                                         <p className="text-xs font-mono font-medium">{setup.entry || '---'}</p>
-                                                     </div>
-                                                     <div className="text-center border-l border-gray-300 dark:border-white/10">
-                                                         <p className="text-[9px] text-gray-500 uppercase font-bold">Stop Loss</p>
-                                                         <p className="text-xs font-mono font-medium text-red-500">{setup.stopLoss || '---'}</p>
-                                                     </div>
-                                                     <div className="text-center border-l border-gray-300 dark:border-white/10">
-                                                         <p className="text-[9px] text-gray-500 uppercase font-bold">Target</p>
-                                                         <p className="text-xs font-mono font-medium text-green-500">{setup.takeProfit || '---'}</p>
-                                                     </div>
-                                                </div>
-
-                                                <div className="space-y-1">
-                                                    <div className="flex justify-between text-xs text-gray-500">
-                                                        <span>AI Confidence</span>
-                                                        <span className="font-bold">{setup.confidence}%</span>
-                                                    </div>
-                                                    <ConfidenceMeter value={setup.confidence} />
-                                                </div>
-
-                                                <div className="mt-3 text-right">
-                                                    <span className="text-[10px] text-gray-400 font-mono">R:R Ratio: {setup.rrRatio || '1:2+'}</span>
-                                                </div>
+                                            {/* Tooltip */}
+                                            <div className="absolute left-1/2 -translate-x-1/2 -top-8 bg-gray-900 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                                                Analyze {trend.pair} Sentiment
                                             </div>
                                         </div>
-                                    ))}
-                                </div>
-                                <div className="mt-4 pt-4 border-t border-gray-100 dark:border-white/5 flex gap-6 text-xs text-gray-500 justify-end">
-                                    <div className="flex items-center gap-2">
-                                        <i className="fas fa-shield-alt text-gray-400"></i>
-                                        <span className="font-bold text-gray-700 dark:text-gray-300">Market Risk:</span> {overview.tradingOpportunities.riskAssessment.marketRisk}
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <i className="fas fa-coins text-gray-400"></i>
-                                        <span className="font-bold text-gray-700 dark:text-gray-300">Rec. Size:</span> {overview.tradingOpportunities.riskAssessment.positionSizing}
-                                    </div>
-                                </div>
-                            </Card>
-                        </div>
+                                    );
+                                })}
+                            </div>
+                        </Card>
 
-                        {/* 24H Outlook */}
-                        <div className="md:col-span-1">
-                             <Card title="Next 24H Outlook" icon="fas fa-binoculars" className="h-full">
-                                <div className="space-y-3">
-                                    {overview.next24hOutlook.map((item, i) => (
-                                        <div key={i} className="p-3 bg-black/5 dark:bg-white/5 rounded-lg border border-transparent hover:border-gray-200 dark:hover:border-gray-700 transition-colors">
-                                            <div className="flex justify-between items-center mb-1">
-                                                <span className="font-bold text-sm">{item.pair}</span>
-                                                <span className={`text-[10px] font-bold uppercase ${
-                                                    item.bias === 'Bullish' ? 'text-green-500' : item.bias === 'Bearish' ? 'text-red-500' : 'text-gray-400'
-                                                }`}>{item.bias}</span>
+                        {/* Economic Calendar */}
+                        <Card title="Economic Calendar" icon="fas fa-calendar-alt">
+                            <div className="space-y-6">
+                                <div>
+                                    <p className="text-[10px] text-gray-500 uppercase font-bold mb-3 pl-1">Recently Released</p>
+                                    <div className="space-y-2">
+                                        {overview.economicData.recentEvents.slice(0, 3).map((event, i) => (
+                                            <div key={i} className="flex items-center justify-between bg-black/5 dark:bg-white/5 p-2 rounded text-xs border-l-2 border-gray-400">
+                                                <span className="font-semibold truncate max-w-[60%]">{event.event}</span>
+                                                <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${event.impact === 'High' ? 'bg-red-500/10 text-red-600' : 'bg-gray-500/10 text-gray-600'}`}>
+                                                    {event.result}
+                                                </span>
                                             </div>
-                                            <p className="text-xs text-gray-600 dark:text-gray-300 leading-snug">
-                                                {item.outlook}
-                                            </p>
-                                        </div>
-                                    ))}
+                                        ))}
+                                    </div>
                                 </div>
-                             </Card>
-                        </div>
+                                
+                                <div>
+                                    <p className="text-[10px] text-gray-500 uppercase font-bold mb-3 pl-1">Coming Up</p>
+                                    <div className="space-y-2">
+                                        {overview.economicData.upcomingEvents.slice(0, 3).map((event, i) => (
+                                            <div key={i} className="flex items-center gap-3 bg-black/5 dark:bg-white/5 p-3 rounded-lg border-l-2 border-red-500">
+                                                <div className="bg-black/10 dark:bg-white/10 px-2 py-1 rounded text-center min-w-[3rem]">
+                                                    <span className="block font-bold text-xs">{event.time}</span>
+                                                    <span className="block text-[9px] text-gray-500 uppercase">GMT</span>
+                                                </div>
+                                                <div className="flex-1">
+                                                    <div className="font-bold text-xs text-gray-800 dark:text-gray-200">{event.event}</div>
+                                                    <div className="text-[10px] text-red-500 font-bold uppercase mt-0.5">{event.expectedImpact} Impact</div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </Card>
                     </div>
+
+                    {/* High Probability Setups */}
+                    <Card title="High Probability Setups" icon="fas fa-crosshairs" className="overflow-hidden">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {overview.tradingOpportunities.highProbabilitySetups.map((setup, i) => (
+                                <div key={i} className="bg-gradient-to-br from-gray-900 to-gray-800 dark:from-black dark:to-gray-900 rounded-xl p-5 text-white shadow-lg border border-gray-700 relative overflow-hidden group">
+                                     <div className={`absolute top-0 left-0 w-1.5 h-full ${setup.signal === 'Buy' ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                                     
+                                     <div className="flex justify-between items-start mb-4 pl-3">
+                                         <div>
+                                             <h3 className="text-2xl font-bold tracking-tight">{setup.pair}</h3>
+                                             <div className="flex items-center gap-2 mt-1">
+                                                <span className={`text-xs font-bold uppercase px-2 py-0.5 rounded ${setup.signal === 'Buy' ? 'bg-green-500 text-black' : 'bg-red-500 text-white'}`}>
+                                                    {setup.signal}
+                                                </span>
+                                                <span className="text-xs text-gray-400 font-medium">• {setup.strategy}</span>
+                                             </div>
+                                         </div>
+                                         <div className={`border px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${setup.riskLevel === 'High' ? 'border-red-500 text-red-500' : setup.riskLevel === 'Medium' ? 'border-yellow-500 text-yellow-500' : 'border-green-500 text-green-500'}`}>
+                                             {setup.riskLevel} Risk
+                                         </div>
+                                     </div>
+
+                                     <div className="grid grid-cols-3 gap-2 mb-4 bg-white/5 rounded-lg p-3 mx-3">
+                                         <div className="text-center">
+                                             <p className="text-[10px] text-gray-400 uppercase mb-0.5">Entry</p>
+                                             <p className="font-mono font-bold text-sm">{setup.entry}</p>
+                                         </div>
+                                         <div className="text-center border-l border-white/10">
+                                             <p className="text-[10px] text-red-400 uppercase mb-0.5">Stop Loss</p>
+                                             <p className="font-mono font-bold text-sm text-red-400">{setup.stopLoss}</p>
+                                         </div>
+                                         <div className="text-center border-l border-white/10">
+                                             <p className="text-[10px] text-green-400 uppercase mb-0.5">Target</p>
+                                             <p className="font-mono font-bold text-sm text-green-400">{setup.takeProfit}</p>
+                                         </div>
+                                     </div>
+
+                                     <div className="pl-3 mb-4">
+                                         <div className="flex justify-between text-xs mb-1">
+                                             <span className="text-gray-400">AI Confidence</span>
+                                             <span className="font-bold">{setup.confidence}%</span>
+                                         </div>
+                                         <ConfidenceMeter value={setup.confidence} />
+                                         <div className="text-right mt-1">
+                                            <span className="text-[10px] text-gray-500 font-mono">R:R Ratio: {setup.rrRatio}</span>
+                                         </div>
+                                     </div>
+                                     
+                                     {/* 1H Key Levels Section */}
+                                     <div className="pl-3 pt-3 border-t border-white/10 grid grid-cols-2 gap-2">
+                                          <div>
+                                              <p className="text-[9px] text-gray-500 uppercase font-bold mb-0.5">1H Support</p>
+                                              <p className="font-mono text-xs text-white/80">{setup.support1H || '---'}</p>
+                                          </div>
+                                          <div className="text-right">
+                                              <p className="text-[9px] text-gray-500 uppercase font-bold mb-0.5">1H Resistance</p>
+                                              <p className="font-mono text-xs text-white/80">{setup.resistance1H || '---'}</p>
+                                          </div>
+                                     </div>
+                                </div>
+                            ))}
+                        </div>
+                        
+                        <div className="mt-4 flex gap-6 text-xs text-gray-500 dark:text-gray-400 justify-center border-t border-gray-100 dark:border-white/5 pt-4">
+                            <div className="flex items-center gap-2">
+                                <i className="fas fa-shield-alt"></i>
+                                <span>Market Risk: <strong className="text-gray-700 dark:text-gray-200">{overview.tradingOpportunities.riskAssessment.marketRisk}</strong></span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <i className="fas fa-coins"></i>
+                                <span>Rec. Size: <strong className="text-gray-700 dark:text-gray-200">{overview.tradingOpportunities.riskAssessment.positionSizing}</strong></span>
+                            </div>
+                        </div>
+                    </Card>
+
+                    {/* Bottom: Next 24H Outlook */}
+                     <Card title="Next 24H Outlook" icon="fas fa-binoculars">
+                        <div className="space-y-4">
+                            {overview.next24hOutlook.map((item, i) => (
+                                <div key={i} className="bg-black/5 dark:bg-white/5 p-4 rounded-lg border-l-4 border-transparent hover:border-gray-400 transition-colors">
+                                    <div className="flex justify-between items-center mb-2">
+                                        <h4 className="font-bold text-sm">{item.pair}</h4>
+                                        <SentimentBadge value={item.bias} />
+                                    </div>
+                                    <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
+                                        {item.outlook}
+                                    </p>
+                                </div>
+                            ))}
+                        </div>
+                     </Card>
                 </>
             )}
         </section>
