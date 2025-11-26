@@ -66,8 +66,6 @@ export interface DashboardOverview {
       stopLoss: string;
       takeProfit: string;
       rrRatio: string;
-      support: string;
-      resistance: string;
     }[];
     riskAssessment: {
       marketRisk: 'High' | 'Medium' | 'Low';
