@@ -53,19 +53,37 @@ export const PageDataProvider: React.FC<{ children: ReactNode }> = ({ children }
         try {
             const savedHistory = localStorage.getItem('analysisHistory');
             if (savedHistory) {
-                history = JSON.parse(savedHistory);
+                const parsedHistory = JSON.parse(savedHistory);
+                if (Array.isArray(parsedHistory)) {
+                    history = parsedHistory;
+                }
             }
             
             const savedDashboard = localStorage.getItem('dashboardOverview');
             if (savedDashboard) {
                 const parsed = JSON.parse(savedDashboard);
-                // Check if data is older than 1 hour (3600000 ms)
-                if (Date.now() - parsed.lastUpdated < 3600000) {
-                    dashboardData = { overview: parsed, error: null };
+                
+                // Schema Validation: Ensure the cached data has the new required fields
+                // to prevent crashes in the UI components.
+                if (parsed && typeof parsed === 'object') {
+                    const isSchemaValid = 
+                        parsed.dailyBiases && 
+                        Array.isArray(parsed.dailyBiases) && 
+                        parsed.dailyBiases.length > 0 &&
+                        parsed.tradingOpportunities?.highProbabilitySetups?.length >= 2 &&
+                        parsed.marketCondition?.dominantSession;
+
+                    // Check if data is older than 1 hour (3600000 ms) AND matches current schema
+                    // Also check if lastUpdated exists, if not, treat as invalid
+                    if (parsed.lastUpdated && (Date.now() - parsed.lastUpdated < 3600000) && isSchemaValid) {
+                        dashboardData = { overview: parsed, error: null };
+                    }
                 }
             }
         } catch (error) {
             console.error("Failed to parse data from localStorage", error);
+            // Optionally clear corrupt data
+            localStorage.removeItem('dashboardOverview');
         }
         return { ...initialState, analysisHistory: { history }, dashboard: dashboardData };
     });

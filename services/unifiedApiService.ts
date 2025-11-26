@@ -9,6 +9,8 @@
 
 
 
+
+
 import * as Prompts from './prompts';
 import {
   AnalysisResult,
@@ -130,6 +132,7 @@ const isDashboardOverview = (data: any): data is DashboardOverview => {
         data.economicData && 
         data.tradingOpportunities &&
         Array.isArray(data.tradingOpportunities.highProbabilitySetups) &&
+        data.tradingOpportunities.highProbabilitySetups.length >= 2 && // Strict check for at least 2 setups
         data.tradingOpportunities.highProbabilitySetups.every((setup: any) => 
             setup.support1H && setup.resistance1H
         ) && 

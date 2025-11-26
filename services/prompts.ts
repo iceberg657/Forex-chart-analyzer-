@@ -360,6 +360,19 @@ Your response MUST be a single, valid JSON object with the following structure. 
         "rrRatio": "string (e.g., '1:3')",
         "support1H": "string (Key Support level from 1H timeframe)",
         "resistance1H": "string (Key Resistance level from 1H timeframe)"
+      },
+      { 
+        "pair": "string (e.g. XAU/USD)", 
+        "strategy": "string (e.g. Reversal)", 
+        "confidence": number (0-100), 
+        "riskLevel": "'High' | 'Medium' | 'Low'", 
+        "signal": "'Buy' | 'Sell'",
+        "entry": "string (Specific entry price level)",
+        "stopLoss": "string (Specific SL price)",
+        "takeProfit": "string (Specific TP price)",
+        "rrRatio": "string (e.g., '1:3')",
+        "support1H": "string (Key Support level from 1H timeframe)",
+        "resistance1H": "string (Key Resistance level from 1H timeframe)"
       }
     ],
     "riskAssessment": {
