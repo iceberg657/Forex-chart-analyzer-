@@ -11,6 +11,10 @@
 
 
 
+
+
+
+
 import * as Prompts from './prompts';
 import {
   AnalysisResult,
@@ -202,7 +206,7 @@ export const createBot = async ({ description, language }: { description: string
     const apiCall = async () => {
         if (environment === 'aistudio') {
             const prompt = Prompts.getBotPrompt(description, language);
-            const response = await generateContentDirect({ model: 'gemini-flash-latest', contents: prompt });
+            const response = await generateContentDirect({ model: 'gemini-2.5-flash', contents: prompt });
             return response.text;
         } else {
             const result = await postToApi<{ code: string }>('/api/agent', { action: 'createBot', payload: { description, language } });
@@ -216,7 +220,7 @@ export const createIndicator = async ({ description, language }: { description: 
     const apiCall = async () => {
         if (environment === 'aistudio') {
             const prompt = Prompts.getIndicatorPrompt(description, language);
-            const response = await generateContentDirect({ model: 'gemini-flash-latest', contents: prompt });
+            const response = await generateContentDirect({ model: 'gemini-2.5-flash', contents: prompt });
             return response.text;
         } else {
             const result = await postToApi<{ code: string }>('/api/agent', { action: 'createIndicator', payload: { description, language } });
@@ -294,7 +298,7 @@ export const getMarketNews = async (asset: string): Promise<MarketSentimentResul
         if (environment === 'aistudio') {
             const prompt = Prompts.getMarketSentimentPrompt(asset);
             const response = await generateContentDirect({ 
-                model: 'gemini-flash-latest', 
+                model: 'gemini-2.5-flash', 
                 contents: prompt, 
                 config: { tools: [{ googleSearch: {} }] } 
             });
@@ -317,7 +321,7 @@ export const getTradingJournalFeedback = async (trades: TradeEntry[]): Promise<J
     const apiCall = async () => {
         if (environment === 'aistudio') {
             const prompt = Prompts.getJournalFeedbackPrompt(trades);
-            const response = await generateContentDirect({ model: 'gemini-flash-latest', contents: prompt, config: { responseMimeType: 'application/json' } });
+            const response = await generateContentDirect({ model: 'gemini-2.5-flash', contents: prompt, config: { responseMimeType: 'application/json' } });
             const parsedResult = robustJsonParse(response.text);
             if (!isJournalFeedback(parsedResult)) throw new Error("Incomplete journal feedback.");
             return parsedResult;
@@ -340,7 +344,7 @@ export const processCommandWithAgent = async (command: string): Promise<{ text: 
                     { name: "logout", description: "Logs out.", parameters: { type: Type.OBJECT, properties: {} } }
                 ]
             }];
-            const response = await generateContentDirect({ model: 'gemini-flash-latest', contents: command, config: { tools: agentTools } });
+            const response = await generateContentDirect({ model: 'gemini-2.5-flash', contents: command, config: { tools: agentTools } });
             const functionCalls = response.functionCalls || null;
             const text = functionCalls ? '' : response.text;
             return { text, functionCalls };
@@ -355,7 +359,7 @@ export const getPredictions = async (): Promise<PredictedEvent[]> => {
     const apiCall = async () => {
         if (environment === 'aistudio') {
             const prompt = Prompts.getPredictorPrompt();
-            const response = await generateContentDirect({ model: 'gemini-flash-latest', contents: prompt, config: { tools: [{ googleSearch: {} }] } });
+            const response = await generateContentDirect({ model: 'gemini-2.5-flash', contents: prompt, config: { tools: [{ googleSearch: {} }] } });
             const parsedResult = robustJsonParse(response.text);
             if (!isPredictedEventArray(parsedResult)) throw new Error("Incomplete predictions.");
             if (response.candidates?.[0]?.groundingMetadata?.groundingChunks) {
@@ -376,7 +380,11 @@ export const getDashboardOverview = async (): Promise<DashboardOverview> => {
     const apiCall = async () => {
         if (environment === 'aistudio') {
             const prompt = Prompts.getDashboardOverviewPrompt();
-            const response = await generateContentDirect({ model: 'gemini-flash-latest', contents: prompt, config: { tools: [{ googleSearch: {} }] } });
+            const response = await generateContentDirect({ 
+                model: 'gemini-2.5-flash', 
+                contents: prompt, 
+                config: { tools: [{ googleSearch: {} }] } 
+            });
             const parsedResult = robustJsonParse(response.text);
             if (!isDashboardOverview(parsedResult)) throw new Error("Incomplete market overview.");
             parsedResult.lastUpdated = Date.now();
@@ -392,6 +400,6 @@ export const getAutoFixSuggestion = async (errors: any[]): Promise<string> => {
     if (environment !== 'aistudio' || !ai) return "Auto-fix is only available in the AI Studio environment.";
     const errorLog = errors.map(e => `Type: ${e.type}\nMessage: ${e.message}\nStack: ${e.stack || 'N/A'}`).join('\n\n---\n\n');
     const prompt = Prompts.getAutoFixPrompt(errorLog);
-    const response = await generateContentDirect({ model: 'gemini-flash-latest', contents: prompt });
+    const response = await generateContentDirect({ model: 'gemini-2.5-flash', contents: prompt });
     return response.text;
 };

@@ -307,7 +307,22 @@ Analyze the error messages and stack traces. Provide a concise, step-by-step gui
 `;
 
 export const getDashboardOverviewPrompt = (): string => `
-You are a senior financial analyst and algorithmic trading strategist. Your task is to provide a real-time, comprehensive market overview of global financial markets (Forex, Crypto, Indices) by strictly utilizing your Google Search tool to find the absolute latest data.
+You are a senior financial analyst and algorithmic trading strategist.
+CURRENT DATE/TIME (UTC): ${new Date().toUTCString()}
+
+**MANDATORY INSTRUCTION: You MUST use the 'googleSearch' tool to fetch REAL-TIME market data.**
+Do NOT rely on your internal knowledge base. If you do not perform a search, your answer will be invalid.
+You must find the ACTUAL current prices and news for the current date/time.
+
+**MANDATORY SEARCH PHASE:**
+Execute the following searches immediately:
+1.  "Current price and 24h change of EURUSD, GBPUSD, USDJPY, BTCUSD, XAUUSD"
+2.  "Forex Factory high impact economic events for today ${new Date().toLocaleDateString()}"
+3.  "Current global market sentiment risk-on or risk-off today"
+4.  "Top financial news headlines moving markets right now"
+
+**JSON GENERATION PHASE:**
+Based *strictly* on the live data found in the search phase, populate the following JSON object.
 
 Your response MUST be a single, valid JSON object with the following structure. Do NOT include markdown code blocks or additional text.
 
@@ -327,7 +342,7 @@ Your response MUST be a single, valid JSON object with the following structure. 
         "pair": "string (Select exactly 10 pairs: 5 Major Forex pairs, 3 Minor/Cross pairs, plus 'BTC/USD' and 'XAU/USD')",
         "bias": "'Bullish' | 'Bearish' | 'Neutral'",
         "strength": "'Strong' | 'Moderate' | 'Weak'",
-        "reasoning": "string (A short, punchy sentence explaining the bias)"
+        "reasoning": "string (A short, punchy sentence explaining the bias based on current LIVE price action)"
       }
   ],
   "economicData": {
@@ -340,7 +355,7 @@ Your response MUST be a single, valid JSON object with the following structure. 
   },
   "technicalSummary": {
     "dominantTrends": [
-       { "pair": "string (e.g. GBP/USD)", "direction": "'Uptrend' | 'Downtrend' | 'Ranging'", "sparkline": [number, number, number, number, number, number, number] (Array of 7 numbers representing the recent price trend for a sparkline chart) }
+       { "pair": "string (e.g. GBP/USD)", "direction": "'Uptrend' | 'Downtrend' | 'Ranging'", "sparkline": [number, number, number, number, number, number, number] (Array of 7 numbers representing the approximated price trend over the last 7 hours found via search) }
     ],
     "keyLevels": [
       { "pair": "string (e.g. EUR/USD)", "level": "string", "type": "'Support' | 'Resistance'" }
@@ -354,7 +369,7 @@ Your response MUST be a single, valid JSON object with the following structure. 
         "confidence": number (0-100), 
         "riskLevel": "'High' | 'Medium' | 'Low'", 
         "signal": "'Buy' | 'Sell'",
-        "entry": "string (Specific entry price level)",
+        "entry": "string (Specific entry price level near CURRENT price)",
         "stopLoss": "string (Specific SL price)",
         "takeProfit": "string (Specific TP price)",
         "rrRatio": "string (e.g., '1:3')",
@@ -367,7 +382,7 @@ Your response MUST be a single, valid JSON object with the following structure. 
         "confidence": number (0-100), 
         "riskLevel": "'High' | 'Medium' | 'Low'", 
         "signal": "'Buy' | 'Sell'",
-        "entry": "string (Specific entry price level)",
+        "entry": "string (Specific entry price level near CURRENT price)",
         "stopLoss": "string (Specific SL price)",
         "takeProfit": "string (Specific TP price)",
         "rrRatio": "string (e.g., '1:3')",
@@ -381,7 +396,7 @@ Your response MUST be a single, valid JSON object with the following structure. 
     }
   },
   "next24hOutlook": [
-    { "pair": "string", "outlook": "string (Brief actionable guidance)", "bias": "'Bullish' | 'Bearish' | 'Neutral'" }
+    { "pair": "string", "outlook": "string (Brief actionable guidance based on upcoming news)", "bias": "'Bullish' | 'Bearish' | 'Neutral'" }
   ]
 }
 

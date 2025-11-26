@@ -9,6 +9,10 @@
 
 
 
+
+
+
+
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI, Type } from '@google/genai';
 import * as Prompts from '../services/prompts';
@@ -180,7 +184,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             // Legacy support for the original agent call which might just send { command }
             if (req.body.command) {
                  const response = await ai.models.generateContent({
-                    model: 'gemini-flash-latest',
+                    model: 'gemini-2.5-flash',
                     contents: req.body.command,
                     config: { tools: agentTools }
                 });
@@ -194,7 +198,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         switch (action) {
             case 'agent': {
                 const response = await ai.models.generateContent({
-                    model: 'gemini-flash-latest',
+                    model: 'gemini-2.5-flash',
                     contents: payload.command,
                     config: { tools: agentTools }
                 });
@@ -206,7 +210,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             case 'dashboardOverview': {
                 const prompt = Prompts.getDashboardOverviewPrompt();
                 const response = await ai.models.generateContent({ 
-                    model: 'gemini-flash-latest', 
+                    model: 'gemini-2.5-flash', 
                     contents: prompt, 
                     config: { tools: [{ googleSearch: {} }] } 
                 });
@@ -221,7 +225,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             case 'marketNews': {
                 const prompt = Prompts.getMarketSentimentPrompt(payload.asset);
                 const response = await ai.models.generateContent({ 
-                    model: 'gemini-flash-latest', 
+                    model: 'gemini-2.5-flash', 
                     contents: prompt, 
                     config: { tools: [{ googleSearch: {} }] } 
                 });
@@ -240,7 +244,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             case 'predictions': {
                 const prompt = Prompts.getPredictorPrompt();
                 const response = await ai.models.generateContent({
-                    model: 'gemini-flash-latest',
+                    model: 'gemini-2.5-flash',
                     contents: prompt,
                     config: { tools: [{ googleSearch: {} }] }
                 });
@@ -262,7 +266,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             case 'journalFeedback': {
                 const prompt = Prompts.getJournalFeedbackPrompt(payload.trades);
                 const response = await ai.models.generateContent({
-                    model: 'gemini-flash-latest',
+                    model: 'gemini-2.5-flash',
                     contents: prompt,
                     config: { responseMimeType: 'application/json' }
                 });
@@ -275,13 +279,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
             case 'createBot': {
                 const prompt = Prompts.getBotPrompt(payload.description, payload.language);
-                const response = await ai.models.generateContent({ model: 'gemini-flash-latest', contents: prompt });
+                const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
                 return res.status(200).json({ code: response.text });
             }
 
             case 'createIndicator': {
                 const prompt = Prompts.getIndicatorPrompt(payload.description, payload.language);
-                const response = await ai.models.generateContent({ model: 'gemini-flash-latest', contents: prompt });
+                const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
                 return res.status(200).json({ code: response.text });
             }
 
