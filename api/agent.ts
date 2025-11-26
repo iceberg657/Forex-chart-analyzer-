@@ -3,6 +3,10 @@
 
 
 
+
+
+
+
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI, Type } from '@google/genai';
 import * as Prompts from '../services/prompts';
@@ -42,7 +46,7 @@ const isDashboardOverview = (data: any): data is DashboardOverview => {
         data.tradingOpportunities &&
         Array.isArray(data.tradingOpportunities.highProbabilitySetups) &&
         data.tradingOpportunities.highProbabilitySetups.every((setup: any) => 
-            setup.entry && setup.stopLoss && setup.takeProfit && setup.rrRatio
+            setup.entry && setup.stopLoss && setup.takeProfit && setup.rrRatio && setup.support && setup.resistance
         ) &&
         data.tradingOpportunities.riskAssessment &&
         Array.isArray(data.next24hOutlook)

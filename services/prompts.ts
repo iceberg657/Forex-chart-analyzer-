@@ -1,4 +1,5 @@
 
+
 import { TradeEntry } from '../types';
 
 export const getAnalysisPrompt = (tradingStyle: string, riskReward: string): string => `
@@ -357,7 +358,22 @@ Your response MUST be a single, valid JSON object with the following structure. 
         "entry": "string (Specific entry price level)",
         "stopLoss": "string (Specific SL price)",
         "takeProfit": "string (Specific TP price)",
-        "rrRatio": "string (e.g., '1:3')"
+        "rrRatio": "string (e.g., '1:3')",
+        "support": "string (Key support level closest to price)",
+        "resistance": "string (Key resistance level closest to price)"
+      },
+      { 
+        "pair": "string (Another high probability setup, different pair)", 
+        "strategy": "string", 
+        "confidence": number, 
+        "riskLevel": "'High' | 'Medium' | 'Low'", 
+        "signal": "'Buy' | 'Sell'",
+        "entry": "string",
+        "stopLoss": "string",
+        "takeProfit": "string",
+        "rrRatio": "string",
+        "support": "string",
+        "resistance": "string"
       }
     ],
     "riskAssessment": {
@@ -370,5 +386,5 @@ Your response MUST be a single, valid JSON object with the following structure. 
   ]
 }
 
-Ensure all data is real-time and accurate.
+Ensure all data is real-time and accurate. Identify exactly 2 high-probability setups to fill the dashboard.
 `;
