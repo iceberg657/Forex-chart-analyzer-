@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback, DragEvent } from 'react';
+import React, { useState, useCallback, DragEvent, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { analyzeChart } from '../services/apiClient';
 import { TRADING_STYLES } from '../constants';
@@ -9,6 +9,11 @@ import { AnalysisResult } from '../types';
 import Dashboard from '../components/Dashboard';
 
 interface TraderProps {}
+
+const isDateInSeasonalWindow = (date: Date): boolean => {
+    const month = date.getMonth(); // 0-11
+    return month >= 10 || month === 0; // Nov, Dec, Jan
+};
 
 const ChartUploadSlot: React.FC<{
   timeframe: 'higher' | 'primary' | 'entry';
@@ -105,7 +110,14 @@ const Trader: React.FC<TraderProps> = () => {
   const [error, setError] = useState<string | null>(null);
   const [isSingleChartMode, setIsSingleChartMode] = useState(false);
   const navigate = useNavigate();
-  const { addAnalysisToHistory } = usePageData();
+  const { pageData, addAnalysisToHistory } = usePageData();
+
+  const isSeasonalModeActive = useMemo(() => {
+    const { seasonalModeSetting } = pageData;
+    if (seasonalModeSetting === 'On') return true;
+    if (seasonalModeSetting === 'Off') return false;
+    return isDateInSeasonalWindow(new Date());
+  }, [pageData.seasonalModeSetting]);
 
   const handleFileChange = (file: File, timeframe: string) => {
     setChartFiles(prev => ({ ...prev, [timeframe]: file }));
@@ -144,7 +156,7 @@ const Trader: React.FC<TraderProps> = () => {
     setIsLoading(true);
 
     try {
-      const analysisResult = await analyzeChart(chartFiles, riskReward, tradingStyle);
+      const analysisResult = await analyzeChart(chartFiles, riskReward, tradingStyle, isSeasonalModeActive);
       const resultWithMeta: AnalysisResult = {
         ...analysisResult,
         id: new Date().toISOString(),
@@ -159,7 +171,7 @@ const Trader: React.FC<TraderProps> = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [chartFiles, riskReward, tradingStyle, navigate, addAnalysisToHistory]);
+  }, [chartFiles, riskReward, tradingStyle, isSeasonalModeActive, navigate, addAnalysisToHistory]);
   
   const riskRewardOptions = ['1:1', '1:2', '1:3', '1:4', '1:5'];
   const isAnalyzeDisabled = isLoading || !chartFiles.primary;

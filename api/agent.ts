@@ -1,18 +1,4 @@
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI, Type } from '@google/genai';
 import * as Prompts from '../services/prompts';
@@ -208,7 +194,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             }
 
             case 'dashboardOverview': {
-                const prompt = Prompts.getDashboardOverviewPrompt();
+                const { isSeasonal } = payload;
+                const prompt = Prompts.getDashboardOverviewPrompt(isSeasonal);
                 const response = await ai.models.generateContent({ 
                     model: 'gemini-2.5-flash', 
                     contents: prompt, 

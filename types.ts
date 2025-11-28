@@ -147,3 +147,11 @@ export interface PredictedEvent {
   potential_effect: string;
   sources?: GroundingSource[];
 }
+
+export type SeasonalModeSetting = 'Auto' | 'On' | 'Off';
+
+export interface AppNotification {
+  id: string;
+  message: string;
+  type: 'info' | 'success' | 'warning';
+}

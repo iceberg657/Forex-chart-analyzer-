@@ -1,11 +1,12 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { getDashboardOverview } from '../services/dashboardService';
 import { DashboardOverview, DailyBias } from '../types';
 import Spinner from './Spinner';
 import ErrorDisplay from './ErrorDisplay';
 import { usePageData } from '../hooks/usePageData';
 import { useNavigate } from 'react-router-dom';
+import SeasonalModeToggle from './SeasonalModeToggle';
 
 const Sparkline: React.FC<{ data: number[], color: string }> = ({ data, color }) => {
     const height = 40;
@@ -51,8 +52,9 @@ const ConfidenceMeter: React.FC<{ value: number }> = ({ value }) => {
     );
 };
 
-const Card: React.FC<{ title: string; children: React.ReactNode; className?: string; icon?: string }> = ({ title, children, className = "", icon }) => (
-    <div className={`bg-white/40 dark:bg-black/40 backdrop-blur-xl border border-white/30 dark:border-white/10 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] flex flex-col hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-shadow duration-300 ${className}`}>
+const Card: React.FC<{ title: string; children: React.ReactNode; className?: string; icon?: string, isSeasonalGlow?: boolean; }> = ({ title, children, className = "", icon, isSeasonalGlow }) => (
+    <div className={`relative bg-white/40 dark:bg-black/40 backdrop-blur-xl border border-white/30 dark:border-white/10 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] flex flex-col hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-shadow duration-300 ${className} ${isSeasonalGlow ? 'seasonal-glow' : ''}`}>
+        {isSeasonalGlow && <div className="seasonal-badge">🟢 Seasonal Bias Active</div>}
         <div className="p-4 border-b border-gray-100 dark:border-white/5 flex items-center justify-between">
             <h2 className="text-sm font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider flex items-center gap-2">
                 {icon && <i className={`${icon} text-red-500`}></i>}
@@ -77,7 +79,7 @@ const SentimentBadge: React.FC<{ value: string }> = ({ value }) => {
     );
 };
 
-const DailyBiasCard: React.FC<{ biases: DailyBias[] }> = ({ biases }) => {
+const DailyBiasCard: React.FC<{ biases: DailyBias[], isSeasonal: boolean }> = ({ biases, isSeasonal }) => {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [fade, setFade] = useState(false);
 
@@ -102,7 +104,12 @@ const DailyBiasCard: React.FC<{ biases: DailyBias[] }> = ({ biases }) => {
         triggerTransition();
     };
 
-    if (!biases || biases.length === 0) return null;
+    if (!biases || biases.length === 0) return (
+        <div className="bg-gray-800 rounded-xl p-5 text-white h-full flex items-center justify-center">
+            <p>No bias data available.</p>
+        </div>
+    );
+
 
     const currentBias = biases[currentIndex] || biases[0];
     const isBullish = currentBias.bias === 'Bullish';
@@ -124,8 +131,9 @@ const DailyBiasCard: React.FC<{ biases: DailyBias[] }> = ({ biases }) => {
     return (
         <div 
             onClick={handleClick}
-            className={`cursor-pointer bg-gradient-to-br ${gradientClass} rounded-xl p-5 text-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] h-full flex flex-col justify-between transition-colors duration-500 ease-in-out hover:shadow-xl hover:scale-[1.01] transform transition-transform`}
+            className={`relative cursor-pointer bg-gradient-to-br ${gradientClass} rounded-xl p-5 text-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] h-full flex flex-col justify-between transition-colors duration-500 ease-in-out hover:shadow-xl hover:scale-[1.01] transform transition-transform ${isSeasonal ? 'seasonal-glow' : ''}`}
         >
+            {isSeasonal && <div className="seasonal-badge">🟢 Seasonal Bias Active</div>}
             <div className={`transition-opacity duration-300 ${fade ? 'opacity-0' : 'opacity-100'}`}>
                 <div className="flex justify-between items-start mb-2">
                     <h3 className="font-bold text-lg mb-1 flex items-center gap-2">
@@ -160,7 +168,7 @@ const DailyBiasCard: React.FC<{ biases: DailyBias[] }> = ({ biases }) => {
 };
 
 const Dashboard: React.FC = () => {
-    const { pageData, setDashboardData, setMarketNewsData } = usePageData();
+    const { pageData, setDashboardData, setMarketNewsData, isSeasonalModeActive } = usePageData();
     const { overview, error } = pageData.dashboard;
     const [isLoading, setIsLoading] = useState(!overview);
     const navigate = useNavigate();
@@ -168,7 +176,7 @@ const Dashboard: React.FC = () => {
     const fetchOverview = async () => {
         setIsLoading(true);
         try {
-            const data = await getDashboardOverview();
+            const data = await getDashboardOverview(isSeasonalModeActive);
             setDashboardData({ overview: data, error: null });
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'Failed to fetch market data.';
@@ -179,18 +187,20 @@ const Dashboard: React.FC = () => {
     };
 
     useEffect(() => {
-        if (!overview) {
+        // Initial fetch if no data, or if seasonal mode changes and we want fresh data
+        if (!overview || pageData.dashboard.error) {
             fetchOverview();
         }
+        
+        // Refresh data every hour
         const interval = setInterval(() => {
             fetchOverview();
         }, 3600000); // 1 hour
 
         return () => clearInterval(interval);
-    }, []);
+    }, [isSeasonalModeActive]);
 
     const handleTrendClick = (pair: string) => {
-        // Pre-fill market news data for the selected pair and navigate
         setMarketNewsData({ result: null, asset: pair, error: null });
         navigate('/market-news');
     };
@@ -213,6 +223,8 @@ const Dashboard: React.FC = () => {
                 </div>
             </div>
 
+            <SeasonalModeToggle />
+
             {/* Quick Actions Row */}
             <div className="grid grid-cols-4 gap-4">
                  <button onClick={() => fetchOverview()} className={quickActionClass}>
@@ -228,7 +240,6 @@ const Dashboard: React.FC = () => {
                     <i className="fas fa-book text-lg text-green-500"></i> My Journal
                  </button>
             </div>
-
 
             {isLoading && (
                 <div className="py-20 flex flex-col items-center justify-center bg-white/20 dark:bg-white/5 rounded-xl border border-dashed border-gray-300 dark:border-gray-700">
@@ -292,13 +303,13 @@ const Dashboard: React.FC = () => {
                              </Card>
                          </div>
                          <div className="md:col-span-4">
-                            <DailyBiasCard biases={overview.dailyBiases} />
+                            <DailyBiasCard biases={overview.dailyBiases} isSeasonal={isSeasonalModeActive} />
                          </div>
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         {/* Technical Summary */}
-                        <Card title="Technical Trend Scanner" icon="fas fa-chart-line">
+                        <Card title="Technical Trend Scanner" icon="fas fa-chart-line" isSeasonalGlow={isSeasonalModeActive}>
                             <div className="space-y-4">
                                 {overview.technicalSummary.dominantTrends.map((trend, idx) => (
                                     <div 
@@ -370,9 +381,9 @@ const Dashboard: React.FC = () => {
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         {/* High Prob Setups */}
                         <div className="lg:col-span-2">
-                            <Card title="High Probability Setups" icon="fas fa-crosshairs">
+                            <Card title="High Probability Setups" icon="fas fa-crosshairs" isSeasonalGlow={isSeasonalModeActive}>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {overview.tradingOpportunities.highProbabilitySetups.map((setup, idx) => {
+                                    {overview.tradingOpportunities?.highProbabilitySetups?.map((setup, idx) => {
                                         const isBuy = setup.signal === 'Buy';
                                         return (
                                             <div key={idx} className="bg-black/5 dark:bg-white/5 rounded-xl p-5 border border-transparent hover:border-gray-200 dark:hover:border-white/10 transition-all group relative overflow-hidden">

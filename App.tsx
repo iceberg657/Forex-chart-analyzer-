@@ -18,6 +18,8 @@ import IndicatorMaker from './pages/IndicatorMaker';
 import Pricing from './pages/Pricing';
 import Predictor from './pages/Predictor';
 import TabbedNav from './components/TabbedNav';
+import Notifications from './components/Notifications';
+import SeasonalRibbon from './components/SeasonalRibbon';
 import { AuthProvider, useAuth } from './hooks/useAuth';
 import { ThemeProvider } from './hooks/useTheme';
 import { EdgeLightingProvider } from './hooks/useEdgeLighting';
@@ -62,6 +64,8 @@ const AppContent: React.FC = () => {
   return (
     <ResponsiveFix>
       <div className="relative isolate flex flex-col min-h-screen text-gray-800 dark:text-gray-200 font-sans overflow-x-hidden">
+        <SeasonalRibbon />
+        <Notifications />
         <Routes>
           <Route element={<GuestLayout />}>
             <Route path="/" element={<Landing />} />
@@ -98,7 +102,7 @@ const GuestLayout: React.FC = () => {
     <>
       <Header />
       <main className="flex-grow w-full flex flex-col py-4 sm:py-6 lg:py-8">
-        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex-1 flex flex-col justify-center">
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:py-8 flex-1 flex flex-col justify-center">
           <Outlet />
         </div>
       </main>
@@ -112,7 +116,7 @@ const AppLayout: React.FC = () => (
     <Header />
     <TabbedNav />
     <main className="flex-grow w-full flex flex-col py-4 sm:py-6 lg:py-8">
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex-1 flex flex-col justify-center">
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:py-8 flex-1 flex flex-col justify-center">
         <Outlet />
       </div>
     </main>

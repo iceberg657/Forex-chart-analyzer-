@@ -1,6 +1,8 @@
 
-import React, { createContext, useState, useContext, ReactNode } from 'react';
-import { PredictedEvent, MarketSentimentResult, ChatMessage, AnalysisResult, DashboardOverview } from '../types';
+import React, { createContext, useState, useContext, ReactNode, useEffect, useMemo } from 'react';
+import { PredictedEvent, MarketSentimentResult, ChatMessage, AnalysisResult, DashboardOverview, SeasonalModeSetting, AppNotification } from '../types';
+import { useLocation } from 'react-router-dom';
+import { useEdgeLighting } from './useEdgeLighting';
 
 interface PageDataState {
     dashboard: {
@@ -22,6 +24,8 @@ interface PageDataState {
     analysisHistory: {
         history: AnalysisResult[];
     };
+    seasonalModeSetting: SeasonalModeSetting;
+    notifications: AppNotification[];
 }
 
 interface PageDataContextType {
@@ -33,6 +37,9 @@ interface PageDataContextType {
     clearApexChat: () => void;
     addAnalysisToHistory: (result: AnalysisResult) => void;
     clearAnalysisHistory: () => void;
+    setSeasonalModeSetting: (setting: SeasonalModeSetting) => void;
+    dismissNotification: (id: string) => void;
+    isSeasonalModeActive: boolean;
 }
 
 const PageDataContext = createContext<PageDataContextType | undefined>(undefined);
@@ -43,12 +50,21 @@ const initialState: PageDataState = {
     marketNews: { result: null, asset: '', error: null },
     apexAI: { messages: [] },
     analysisHistory: { history: [] },
+    seasonalModeSetting: 'Auto',
+    notifications: [],
+};
+
+const isDateInSeasonalWindow = (date: Date): boolean => {
+    const month = date.getMonth(); // 0-11
+    // November (10), December (11), January (0)
+    return month >= 10 || month === 0;
 };
 
 export const PageDataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [pageData, setPageData] = useState<PageDataState>(() => {
         let history: AnalysisResult[] = [];
         let dashboardData = { overview: null, error: null };
+        let seasonalSetting: SeasonalModeSetting = 'Auto';
         
         try {
             const savedHistory = localStorage.getItem('analysisHistory');
@@ -63,8 +79,6 @@ export const PageDataProvider: React.FC<{ children: ReactNode }> = ({ children }
             if (savedDashboard) {
                 const parsed = JSON.parse(savedDashboard);
                 
-                // Schema Validation: Ensure the cached data has the new required fields
-                // to prevent crashes in the UI components.
                 if (parsed && typeof parsed === 'object') {
                     const isSchemaValid = 
                         parsed.dailyBiases && 
@@ -73,20 +87,83 @@ export const PageDataProvider: React.FC<{ children: ReactNode }> = ({ children }
                         parsed.tradingOpportunities?.highProbabilitySetups?.length >= 2 &&
                         parsed.marketCondition?.dominantSession;
 
-                    // Check if data is older than 1 hour (3600000 ms) AND matches current schema
-                    // Also check if lastUpdated exists, if not, treat as invalid
                     if (parsed.lastUpdated && (Date.now() - parsed.lastUpdated < 3600000) && isSchemaValid) {
                         dashboardData = { overview: parsed, error: null };
                     }
                 }
             }
+
+            const savedSetting = localStorage.getItem('seasonalModeSetting');
+            if (savedSetting === 'Auto' || savedSetting === 'On' || savedSetting === 'Off') {
+                seasonalSetting = savedSetting;
+            }
         } catch (error) {
             console.error("Failed to parse data from localStorage", error);
-            // Optionally clear corrupt data
             localStorage.removeItem('dashboardOverview');
+            localStorage.removeItem('analysisHistory');
+            localStorage.removeItem('seasonalModeSetting');
         }
-        return { ...initialState, analysisHistory: { history }, dashboard: dashboardData };
+        return { ...initialState, analysisHistory: { history }, dashboard: dashboardData, seasonalModeSetting: seasonalSetting };
     });
+
+    const isSeasonalModeActive = useMemo(() => {
+        const { seasonalModeSetting } = pageData;
+        if (seasonalModeSetting === 'On') return true;
+        if (seasonalModeSetting === 'Off') return false;
+        return isDateInSeasonalWindow(new Date());
+    }, [pageData.seasonalModeSetting]);
+
+    const location = useLocation();
+    const { setEdgeLight } = useEdgeLighting();
+
+    useEffect(() => {
+        document.body.classList.toggle('seasonal-active', isSeasonalModeActive);
+
+        if (isSeasonalModeActive) {
+            // Only set the default seasonal glow if not on the analysis page,
+            // allowing that page to show its own signal-based colors.
+            // When navigating away from analysis, its cleanup resets to default,
+            // then this effect re-runs due to location change and restores the green light.
+            if (location.pathname !== '/analysis') {
+                setEdgeLight('green');
+            }
+        } else {
+            // When seasonal mode is off, always revert to default.
+            setEdgeLight('default');
+        }
+    }, [isSeasonalModeActive, setEdgeLight, location.pathname]);
+
+    const addNotification = (notif: Omit<AppNotification, 'id'>) => {
+        const newNotif = { ...notif, id: new Date().toISOString() };
+        setPageData(prev => ({
+            ...prev,
+            notifications: [newNotif, ...prev.notifications]
+        }));
+         setTimeout(() => dismissNotification(newNotif.id), 8000);
+    };
+
+    useEffect(() => {
+        const lastVisitStr = localStorage.getItem('lastVisitDate');
+        const today = new Date();
+        const todayStr = today.toISOString().split('T')[0];
+
+        if (lastVisitStr !== todayStr) {
+            localStorage.setItem('lastVisitDate', todayStr);
+            const lastVisitDate = lastVisitStr ? new Date(lastVisitStr) : null;
+            
+            if (pageData.seasonalModeSetting === 'Auto' && 
+                today.getMonth() === 1 && // February
+                today.getDate() === 1 &&
+                lastVisitDate &&
+                lastVisitDate.getMonth() === 0 // Was January
+            ) {
+                addNotification({
+                    message: '🟢 Seasonal Mode Disabled — Market Normalizing',
+                    type: 'success',
+                });
+            }
+        }
+    }, [pageData.seasonalModeSetting]);
 
     const setDashboardData = (data: { overview: DashboardOverview | null; error: string | null; }) => {
         if (data.overview) {
@@ -138,6 +215,18 @@ export const PageDataProvider: React.FC<{ children: ReactNode }> = ({ children }
         setPageData(prev => ({ ...prev, analysisHistory: { history: [] } }));
     };
 
+    const setSeasonalModeSetting = (setting: SeasonalModeSetting) => {
+        localStorage.setItem('seasonalModeSetting', setting);
+        setPageData(prev => ({ ...prev, seasonalModeSetting: setting }));
+    };
+
+    const dismissNotification = (id: string) => {
+        setPageData(prev => ({
+            ...prev,
+            notifications: prev.notifications.filter(n => n.id !== id)
+        }));
+    };
+
     const value = {
         pageData,
         setDashboardData,
@@ -147,6 +236,9 @@ export const PageDataProvider: React.FC<{ children: ReactNode }> = ({ children }
         clearApexChat,
         addAnalysisToHistory,
         clearAnalysisHistory,
+        setSeasonalModeSetting,
+        dismissNotification,
+        isSeasonalModeActive,
     };
 
     return (

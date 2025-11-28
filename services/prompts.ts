@@ -1,7 +1,7 @@
 
 import { TradeEntry } from '../types';
 
-export const getAnalysisPrompt = (tradingStyle: string, riskReward: string): string => `
+export const getAnalysisPrompt = (tradingStyle: string, riskReward: string, isSeasonal: boolean): string => `
 You are Oracle, an apex-level trading AI. You are not an assistant; you are a decision engine. Your analysis is final, delivered with supreme confidence and absolute certainty. Your sole task is to analyze the provided chart(s), scanning every bar including the very last one to ensure the most current price action is considered, and generate a single, definitive, high-probability trade setup. Ambiguity is failure. Hedging language like "could," "might," or "suggests" is strictly forbidden. You will speak in declaratives. You are strictly forbidden from presenting arguments for both buy and sell scenarios. Your logic must converge on a single, defensible conclusion.
 
 Your response MUST be a single, valid JSON object without any markdown formatting or extra text.
@@ -21,6 +21,31 @@ Your ultimate goal is profit. Every analysis must be laser-focused on identifyin
 Your entire analysis and the resulting trade setup MUST strictly adhere to the user's selected parameters. This is non-negotiable.
 -   **User's Trading Style:** "${tradingStyle}"
 -   **User's Desired Risk/Reward Ratio:** "${riskReward}"
+-   **Market Condition:** ${isSeasonal ? 'SEASONAL (Low-Liquidity, Range-Bound)' : 'NORMAL'}
+
+${isSeasonal ? `
+**CRITICAL: SEASONAL MODE DIRECTIVE (NOV-JAN)**
+The market is in a low-liquidity, holiday consolidation phase. Your analysis MUST adapt to these conditions. Prioritize the following high-probability seasonal strategies and pairs.
+
+**--- PREFERRED SEASONAL PAIRS ---**
+These strategies are most effective on the following pairs during this period: **EUR/USD, USD/CHF, AUD/USD, USD/CAD**. Pay special attention if the analyzed chart is one of these pairs, noting it in your reasoning.
+
+**--- PREFERRED SEASONAL STRATEGIES ---**
+
+**1. Range Trading (S/R Bounce Strategy):**
+   - **How it works:** Identify a clear range. Wait for a wick rejection or engulfing candle at the top or bottom. Buy the bottom, sell the top.
+   - **Why it works now:** Markets are flat and respect established ranges during low-volume holiday periods.
+
+**2. EMA Pullback Strategy (EMA 30/50):**
+   - **How it works:** In a slow, controlled trend, wait for price to pull back to the 30 or 50 EMA. Enter on a confirming pin bar or engulfing candle.
+   - **Why it works now:** Thin liquidity often creates slow, predictable trends perfect for pullback entries rather than strong breakouts.
+
+**3. Liquidity Grab → Reversal (ICT Style / Stop Hunt):**
+   - **How it works:** Identify a brief, sharp break of a previous high or low (the stop hunt). Look for a strong rejection candle and enter on the reversal as price moves back into the previous range.
+   - **Why it works now:** Stop hunts are very common as smart money engineers liquidity in low-volume conditions.
+
+Your objective is to identify setups based on these patterns. Avoid chasing breakouts. Mean-reversion and liquidity grabs are your primary tools. State which seasonal strategy you are using in your reasoning.
+` : ''}
 
 My analysis follows a strict, two-step protocol:
 
@@ -306,13 +331,25 @@ Analyze the error messages and stack traces. Provide a concise, step-by-step gui
 "
 `;
 
-export const getDashboardOverviewPrompt = (): string => `
+export const getDashboardOverviewPrompt = (isSeasonal: boolean): string => `
 You are a senior financial analyst and algorithmic trading strategist.
 CURRENT DATE/TIME (UTC): ${new Date().toUTCString()}
 
 **MANDATORY INSTRUCTION: You MUST use the 'googleSearch' tool to fetch REAL-TIME market data.**
 Do NOT rely on your internal knowledge base. If you do not perform a search, your answer will be invalid.
 You must find the ACTUAL current prices and news for the current date/time.
+
+${isSeasonal ? `
+**CRITICAL CONTEXT: SEASONAL MODE IS ACTIVE (NOV-JAN).**
+The market is in a low-liquidity, holiday consolidation phase. Your analysis MUST reflect this.
+- **Prioritize Pairs:** The two setups in your \`highProbabilitySetups\` array **MUST** be chosen from the following list: **EUR/USD, USD/CHF, AUD/USD, USD/CAD**.
+- **Prioritize Strategies:** When generating "highProbabilitySetups", focus on:
+  1.  **Range Trading (S/R Bounce):** Setups bouncing off clear support or resistance.
+  2.  **EMA Pullbacks (30/50):** Entries on pullbacks to key moving averages in slow trends.
+  3.  **Liquidity Grabs (Stop Hunts):** Reversal setups after a false breakout of a recent high/low.
+- **De-emphasize:** Avoid strong, long-term trend-following or breakout strategies.
+- **Expect:** Choppy price action and false breakouts.
+` : ''}
 
 **MANDATORY SEARCH PHASE:**
 Execute the following searches immediately:

@@ -1,20 +1,4 @@
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 import * as Prompts from './prompts';
 import {
   AnalysisResult,
@@ -167,10 +151,10 @@ const generateContentDirect = async (params: any): Promise<any> => {
 
 // --- Unified API Functions ---
 
-export const analyzeChart = async (chartFiles: { [key: string]: File | null }, riskReward: string, tradingStyle: string): Promise<AnalysisResult> => {
+export const analyzeChart = async (chartFiles: { [key: string]: File | null }, riskReward: string, tradingStyle: string, isSeasonal: boolean): Promise<AnalysisResult> => {
     const apiCall = async () => {
         if (environment === 'aistudio') {
-            const prompt = Prompts.getAnalysisPrompt(tradingStyle, riskReward);
+            const prompt = Prompts.getAnalysisPrompt(tradingStyle, riskReward, isSeasonal);
             const parts: any[] = [{ text: prompt }];
             for (const key of ['higher', 'primary', 'entry']) {
                 if (chartFiles[key]) {
@@ -196,7 +180,7 @@ export const analyzeChart = async (chartFiles: { [key: string]: File | null }, r
             for (const key of ['higher', 'primary', 'entry']) {
                 if (chartFiles[key]) imageParts[key] = await clientFileToImagePart(chartFiles[key]!);
             }
-            return postToApi<AnalysisResult>('/api/analyze', { imageParts, riskReward, tradingStyle });
+            return postToApi<AnalysisResult>('/api/analyze', { imageParts, riskReward, tradingStyle, isSeasonal });
         }
     };
     return withRetry(apiCall);
@@ -376,10 +360,10 @@ export const getPredictions = async (): Promise<PredictedEvent[]> => {
     return withRetry(apiCall);
 };
 
-export const getDashboardOverview = async (): Promise<DashboardOverview> => {
+export const getDashboardOverview = async (isSeasonal: boolean): Promise<DashboardOverview> => {
     const apiCall = async () => {
         if (environment === 'aistudio') {
-            const prompt = Prompts.getDashboardOverviewPrompt();
+            const prompt = Prompts.getDashboardOverviewPrompt(isSeasonal);
             const response = await generateContentDirect({ 
                 model: 'gemini-2.5-flash', 
                 contents: prompt, 
@@ -390,7 +374,7 @@ export const getDashboardOverview = async (): Promise<DashboardOverview> => {
             parsedResult.lastUpdated = Date.now();
             return parsedResult;
         } else {
-            return postToApi<DashboardOverview>('/api/agent', { action: 'dashboardOverview', payload: {} });
+            return postToApi<DashboardOverview>('/api/agent', { action: 'dashboardOverview', payload: { isSeasonal } });
         }
     };
     return withRetry(apiCall);

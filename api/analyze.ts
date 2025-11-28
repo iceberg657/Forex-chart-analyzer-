@@ -54,9 +54,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     try {
-        const { imageParts, riskReward, tradingStyle } = req.body;
+        const { imageParts, riskReward, tradingStyle, isSeasonal } = req.body;
         
-        const prompt = getAnalysisPrompt(tradingStyle, riskReward);
+        const prompt = getAnalysisPrompt(tradingStyle, riskReward, isSeasonal);
         const parts: any[] = [{ text: prompt }];
         for (const key of ['higher', 'primary', 'entry']) {
             if (imageParts[key]) {
