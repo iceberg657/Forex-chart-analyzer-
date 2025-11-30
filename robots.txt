@@ -1,0 +1,7 @@
+
+# Allow all web crawlers to access all content
+User-agent: *
+Allow: /
+
+# Point crawlers to the sitemap for a list of all pages
+Sitemap: https://forex-chart-analyzer-lemon.vercel.app/sitemap.xml
