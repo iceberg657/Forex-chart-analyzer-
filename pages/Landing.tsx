@@ -20,8 +20,8 @@ const Landing: React.FC = () => {
             {/* Hero Section */}
             <section className="text-center pt-16 md:pt-24">
                 <h1 className="text-4xl lg:text-6xl font-extrabold mb-4 tracking-tight">
-                    <span className="block text-gray-900 dark:text-white">Trade Smarter, Not Harder with</span>
-                    <span className="block animated-gradient-text mt-2">AI-Powered Analysis</span>
+                    <span className="block text-gray-900 dark:text-white">The Ultimate AI-Powered</span>
+                    <span className="block animated-gradient-text mt-2">Forex Chart Analyzer</span>
                 </h1>
                 <p className="text-lg max-w-3xl mx-auto my-6 text-gray-600 dark:text-slate-300">
                     Leverage institutional-grade AI to analyze market charts, generate custom trading bots, and gain an unbeatable edge. Welcome to the future of trading.
