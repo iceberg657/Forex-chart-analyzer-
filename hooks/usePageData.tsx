@@ -97,11 +97,10 @@ export const PageDataProvider: React.FC<{ children: ReactNode }> = ({ children }
             if (savedSetting === 'Auto' || savedSetting === 'On' || savedSetting === 'Off') {
                 seasonalSetting = savedSetting;
             }
+
         } catch (error) {
             console.error("Failed to parse data from localStorage", error);
-            localStorage.removeItem('dashboardOverview');
-            localStorage.removeItem('analysisHistory');
-            localStorage.removeItem('seasonalModeSetting');
+            localStorage.clear(); // Clear all on parsing error to be safe
         }
         return { ...initialState, analysisHistory: { history }, dashboard: dashboardData, seasonalModeSetting: seasonalSetting };
     });
@@ -120,15 +119,10 @@ export const PageDataProvider: React.FC<{ children: ReactNode }> = ({ children }
         document.body.classList.toggle('seasonal-active', isSeasonalModeActive);
 
         if (isSeasonalModeActive) {
-            // Only set the default seasonal glow if not on the analysis page,
-            // allowing that page to show its own signal-based colors.
-            // When navigating away from analysis, its cleanup resets to default,
-            // then this effect re-runs due to location change and restores the green light.
             if (location.pathname !== '/analysis') {
                 setEdgeLight('green');
             }
         } else {
-            // When seasonal mode is off, always revert to default.
             setEdgeLight('default');
         }
     }, [isSeasonalModeActive, setEdgeLight, location.pathname]);

@@ -65,9 +65,32 @@ async function postToApi<T>(endpoint: string, body: any): Promise<T> {
 }
 
 // --- Validation Utilities ---
+const getValidatedTextFromResponse = (response: any): string => {
+    const responseText = response.text;
+    
+    if (responseText && typeof responseText === 'string') {
+        return responseText;
+    }
+
+    const finishReason = response.candidates?.[0]?.finishReason;
+    if (finishReason && finishReason !== 'STOP') {
+        if (finishReason === 'SAFETY') {
+            const safetyRatings = response.candidates?.[0]?.safetyRatings;
+            const blockedCategories = safetyRatings?.filter((r: any) => r.blocked).map((r: any) => r.category).join(', ');
+            throw new Error(`Request blocked for safety reasons. Categories: ${blockedCategories || 'Unknown'}. Please revise your input.`);
+        }
+        if (finishReason === 'RECITATION') {
+            throw new Error(`Request blocked due to potential recitation from a copyrighted source.`);
+        }
+        throw new Error(`The AI's response was terminated. Reason: ${finishReason}.`);
+    }
+    
+    throw new Error("The AI returned an empty or invalid response. This can happen if a request is blocked for safety reasons or due to an internal error.");
+};
+
 const robustJsonParse = (jsonString: string) => {
     if (typeof jsonString !== 'string' || !jsonString) {
-        console.error("AI Response Error: Expected a non-empty string for JSON parsing but received", typeof jsonString, { value: jsonString });
+        console.error("AI Response Error: robustJsonParse was called with an invalid argument.", { type: typeof jsonString, value: jsonString });
         throw new Error("The AI returned an empty or invalid response. This can happen if a request is blocked for safety reasons.");
     }
     let cleanJsonString = jsonString.trim();
@@ -167,7 +190,8 @@ export const analyzeChart = async (chartFiles: { [key: string]: File | null }, r
                 contents: { parts },
                 config: { temperature: 0, tools: [{ googleSearch: {} }] }
             });
-            const parsedResult = robustJsonParse(response.text);
+            const responseText = getValidatedTextFromResponse(response);
+            const parsedResult = robustJsonParse(responseText);
             if (!isAnalysisResult(parsedResult)) throw new Error("The AI's analysis was incomplete.");
             if (response.candidates?.[0]?.groundingMetadata?.groundingChunks) {
                 parsedResult.sources = response.candidates[0].groundingMetadata.groundingChunks
@@ -191,7 +215,7 @@ export const createBot = async ({ description, language }: { description: string
         if (environment === 'aistudio') {
             const prompt = Prompts.getBotPrompt(description, language);
             const response = await generateContentDirect({ model: 'gemini-2.5-flash', contents: prompt });
-            return response.text;
+            return getValidatedTextFromResponse(response);
         } else {
             const result = await postToApi<{ code: string }>('/api/agent', { action: 'createBot', payload: { description, language } });
             return result.code;
@@ -205,7 +229,7 @@ export const createIndicator = async ({ description, language }: { description: 
         if (environment === 'aistudio') {
             const prompt = Prompts.getIndicatorPrompt(description, language);
             const response = await generateContentDirect({ model: 'gemini-2.5-flash', contents: prompt });
-            return response.text;
+            return getValidatedTextFromResponse(response);
         } else {
             const result = await postToApi<{ code: string }>('/api/agent', { action: 'createIndicator', payload: { description, language } });
             return result.code;
@@ -286,7 +310,8 @@ export const getMarketNews = async (asset: string): Promise<MarketSentimentResul
                 contents: prompt, 
                 config: { tools: [{ googleSearch: {} }] } 
             });
-            const parsedResult = robustJsonParse(response.text);
+            const responseText = getValidatedTextFromResponse(response);
+            const parsedResult = robustJsonParse(responseText);
             if (!isMarketSentimentResult(parsedResult)) throw new Error("Incomplete market sentiment analysis.");
             if (response.candidates?.[0]?.groundingMetadata?.groundingChunks) {
                 parsedResult.sources = response.candidates[0].groundingMetadata.groundingChunks
@@ -306,7 +331,8 @@ export const getTradingJournalFeedback = async (trades: TradeEntry[]): Promise<J
         if (environment === 'aistudio') {
             const prompt = Prompts.getJournalFeedbackPrompt(trades);
             const response = await generateContentDirect({ model: 'gemini-2.5-flash', contents: prompt, config: { responseMimeType: 'application/json' } });
-            const parsedResult = robustJsonParse(response.text);
+            const responseText = getValidatedTextFromResponse(response);
+            const parsedResult = robustJsonParse(responseText);
             if (!isJournalFeedback(parsedResult)) throw new Error("Incomplete journal feedback.");
             return parsedResult;
         } else {
@@ -330,7 +356,7 @@ export const processCommandWithAgent = async (command: string): Promise<{ text: 
             }];
             const response = await generateContentDirect({ model: 'gemini-2.5-flash', contents: command, config: { tools: agentTools } });
             const functionCalls = response.functionCalls || null;
-            const text = functionCalls ? '' : response.text;
+            const text = functionCalls ? '' : (response.text || ''); // Ensure text is always a string
             return { text, functionCalls };
         } else {
             return postToApi<{ text: string, functionCalls: any[] | null }>('/api/agent', { action: 'agent', payload: { command } });
@@ -344,7 +370,8 @@ export const getPredictions = async (): Promise<PredictedEvent[]> => {
         if (environment === 'aistudio') {
             const prompt = Prompts.getPredictorPrompt();
             const response = await generateContentDirect({ model: 'gemini-2.5-flash', contents: prompt, config: { tools: [{ googleSearch: {} }] } });
-            const parsedResult = robustJsonParse(response.text);
+            const responseText = getValidatedTextFromResponse(response);
+            const parsedResult = robustJsonParse(responseText);
             if (!isPredictedEventArray(parsedResult)) throw new Error("Incomplete predictions.");
             if (response.candidates?.[0]?.groundingMetadata?.groundingChunks) {
                 const sources = response.candidates[0].groundingMetadata.groundingChunks
@@ -369,7 +396,8 @@ export const getDashboardOverview = async (isSeasonal: boolean): Promise<Dashboa
                 contents: prompt, 
                 config: { tools: [{ googleSearch: {} }] } 
             });
-            const parsedResult = robustJsonParse(response.text);
+            const responseText = getValidatedTextFromResponse(response);
+            const parsedResult = robustJsonParse(responseText);
             if (!isDashboardOverview(parsedResult)) throw new Error("Incomplete market overview.");
             parsedResult.lastUpdated = Date.now();
             return parsedResult;
@@ -385,5 +413,5 @@ export const getAutoFixSuggestion = async (errors: any[]): Promise<string> => {
     const errorLog = errors.map(e => `Type: ${e.type}\nMessage: ${e.message}\nStack: ${e.stack || 'N/A'}`).join('\n\n---\n\n');
     const prompt = Prompts.getAutoFixPrompt(errorLog);
     const response = await generateContentDirect({ model: 'gemini-2.5-flash', contents: prompt });
-    return response.text;
+    return getValidatedTextFromResponse(response);
 };

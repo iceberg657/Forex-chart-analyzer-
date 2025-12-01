@@ -27,6 +27,10 @@ ${isSeasonal ? `
 **CRITICAL: SEASONAL MODE DIRECTIVE (NOV-JAN)**
 The market is in a low-liquidity, holiday consolidation phase. Your analysis MUST adapt to these conditions. Prioritize the following high-probability seasonal strategies and pairs.
 
+**--- EXECUTION & PROFIT PROTOCOL ---**
+1.  **QUICK PROFIT MANDATE (Shortened Targets):** For ALL trading styles, you MUST significantly shorten the distance of Stop Losses and Take Profits. The market currently lacks the volume for extended runs. Aim for quick, surgical profits ("scalp-like" targets) even on higher timeframe setups. Get in, grab the liquidity, and get out.
+2.  **EXECUTION OVER PREDICTION:** Shift your mentality to focus purely on **EXECUTION**, not prediction. Do not try to forecast where the market will go next week. Focus entirely on where the liquidity is sitting **RIGHT NOW** and how to execute a trade against it immediately. React to the setup present on the chart, do not predict future market moves.
+
 **--- PREFERRED SEASONAL PAIRS ---**
 These strategies are most effective on the following pairs during this period: **EUR/USD, USD/CHF, AUD/USD, USD/CAD**. Pay special attention if the analyzed chart is one of these pairs, noting it in your reasoning.
 
@@ -342,6 +346,7 @@ You must find the ACTUAL current prices and news for the current date/time.
 ${isSeasonal ? `
 **CRITICAL CONTEXT: SEASONAL MODE IS ACTIVE (NOV-JAN).**
 The market is in a low-liquidity, holiday consolidation phase. Your analysis MUST reflect this.
+- **QUICK PROFIT PROTOCOL:** Shorten Stop Loss and Take Profit distances for all setups. Focus on execution and immediate liquidity grabs rather than long-term predictions.
 - **Prioritize Pairs:** The two setups in your \`highProbabilitySetups\` array **MUST** be chosen from the following list: **EUR/USD, USD/CHF, AUD/USD, USD/CAD**.
 - **Prioritize Strategies:** When generating "highProbabilitySetups", focus on:
   1.  **Range Trading (S/R Bounce):** Setups bouncing off clear support or resistance.

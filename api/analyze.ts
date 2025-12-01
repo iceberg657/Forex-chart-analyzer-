@@ -6,6 +6,26 @@ import { AnalysisResult, GroundingSource } from '../types';
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
 
+const getValidatedTextFromResponse = (response: any): string => {
+    const responseText = response.text;
+    
+    if (responseText && typeof responseText === 'string') {
+        return responseText;
+    }
+    
+    const finishReason = response.candidates?.[0]?.finishReason;
+    if (finishReason && finishReason !== 'STOP') {
+        if (finishReason === 'SAFETY') {
+            const safetyRatings = response.candidates?.[0]?.safetyRatings;
+            const blockedCategories = safetyRatings?.filter((r: any) => r.blocked).map((r: any) => r.category).join(', ');
+            throw new Error(`Request blocked for safety reasons. Categories: ${blockedCategories || 'Unknown'}.`);
+        }
+        throw new Error(`The AI's response was terminated. Reason: ${finishReason}.`);
+    }
+
+    throw new Error("The AI returned an empty or invalid response.");
+};
+
 const isAnalysisResult = (data: any): data is AnalysisResult => {
     return (
         data &&
@@ -73,8 +93,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 tools: [{ googleSearch: {} }]
             }
         });
+        
+        const responseText = getValidatedTextFromResponse(response);
+        const parsedResult = robustJsonParse(responseText);
 
-        const parsedResult = robustJsonParse(response.text);
         if (!isAnalysisResult(parsedResult)) {
             console.error("AI response for chart analysis failed schema validation on backend.", { response: parsedResult });
             throw new Error("The AI's analysis was incomplete or malformed.");

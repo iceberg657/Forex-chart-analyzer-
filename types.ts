@@ -29,6 +29,10 @@ export interface MarketSentimentResult {
     summary: string;
     keyPoints: string[];
     sources?: GroundingSource[];
+    // New fields for Alpha Vantage data
+    price?: string;
+    change?: string;
+    changePercent?: string;
 }
 
 export interface DailyBias {

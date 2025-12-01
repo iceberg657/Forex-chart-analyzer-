@@ -15,6 +15,26 @@ const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
 
 // --- Validation Helpers ---
 
+const getValidatedTextFromResponse = (response: any): string => {
+    const responseText = response.text;
+    
+    if (responseText && typeof responseText === 'string') {
+        return responseText;
+    }
+    
+    const finishReason = response.candidates?.[0]?.finishReason;
+    if (finishReason && finishReason !== 'STOP') {
+        if (finishReason === 'SAFETY') {
+            const safetyRatings = response.candidates?.[0]?.safetyRatings;
+            const blockedCategories = safetyRatings?.filter((r: any) => r.blocked).map((r: any) => r.category).join(', ');
+            throw new Error(`Request blocked for safety reasons. Categories: ${blockedCategories || 'Unknown'}.`);
+        }
+        throw new Error(`The AI's response was terminated. Reason: ${finishReason}.`);
+    }
+
+    throw new Error("The AI returned an empty or invalid response.");
+};
+
 const isDashboardOverview = (data: any): data is DashboardOverview => {
     return (
         data &&
@@ -175,7 +195,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     config: { tools: agentTools }
                 });
                 const functionCalls = response.functionCalls || null;
-                const text = functionCalls ? '' : response.text;
+                const text = functionCalls ? '' : (response.text || '');
                 return res.status(200).json({ text, functionCalls });
             }
             return res.status(400).json({ message: 'Missing action.' });
@@ -189,7 +209,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     config: { tools: agentTools }
                 });
                 const functionCalls = response.functionCalls || null;
-                const text = functionCalls ? '' : response.text;
+                const text = functionCalls ? '' : (response.text || '');
                 return res.status(200).json({ text, functionCalls });
             }
 
@@ -201,7 +221,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     contents: prompt, 
                     config: { tools: [{ googleSearch: {} }] } 
                 });
-                const parsedResult = robustJsonParse(response.text);
+                const responseText = getValidatedTextFromResponse(response);
+                const parsedResult = robustJsonParse(responseText);
                 if (!isDashboardOverview(parsedResult)) {
                     throw new Error("The AI's market overview was incomplete or malformed.");
                 }
@@ -216,7 +237,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     contents: prompt, 
                     config: { tools: [{ googleSearch: {} }] } 
                 });
-                const parsedResult = robustJsonParse(response.text);
+                const responseText = getValidatedTextFromResponse(response);
+                const parsedResult = robustJsonParse(responseText);
                 if (!isMarketSentimentResult(parsedResult)) {
                     throw new Error("The AI's market sentiment analysis was incomplete or malformed.");
                 }
@@ -235,7 +257,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     contents: prompt,
                     config: { tools: [{ googleSearch: {} }] }
                 });
-                const parsedResult = robustJsonParse(response.text);
+                const responseText = getValidatedTextFromResponse(response);
+                const parsedResult = robustJsonParse(responseText);
                 if (!isPredictedEventArray(parsedResult)) {
                     throw new Error("The AI's predictions were incomplete or malformed.");
                 }
@@ -257,7 +280,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     contents: prompt,
                     config: { responseMimeType: 'application/json' }
                 });
-                const parsedResult = robustJsonParse(response.text);
+                const responseText = getValidatedTextFromResponse(response);
+                const parsedResult = robustJsonParse(responseText);
                 if (!isJournalFeedback(parsedResult)) {
                     throw new Error("The AI's journal feedback was incomplete or malformed.");
                 }
@@ -267,13 +291,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             case 'createBot': {
                 const prompt = Prompts.getBotPrompt(payload.description, payload.language);
                 const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
-                return res.status(200).json({ code: response.text });
+                const code = getValidatedTextFromResponse(response);
+                return res.status(200).json({ code });
             }
 
             case 'createIndicator': {
                 const prompt = Prompts.getIndicatorPrompt(payload.description, payload.language);
                 const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
-                return res.status(200).json({ code: response.text });
+                const code = getValidatedTextFromResponse(response);
+                return res.status(200).json({ code });
             }
 
             default:
