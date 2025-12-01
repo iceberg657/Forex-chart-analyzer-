@@ -14,6 +14,7 @@ export interface AnalysisResult {
   entryPriceRange: string[]; // Distributed entry zone including current price. e.g., ["1.2360", "1.2345", "1.2350", "1.2355"] where the first element is the current price.
   stopLoss: string;
   takeProfits: string[]; // Can be one or more
+  estimatedDuration: string; // e.g., "45 mins - 2 hours"
   setupQuality?: 'A+ Setup' | 'A Setup' | 'B Setup' | 'C Setup' | 'N/A';
   confluenceScore?: number; // e.g., 8.5/10
   reasoning: string; // The main explanation

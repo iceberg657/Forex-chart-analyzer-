@@ -123,7 +123,7 @@ const robustJsonParse = (jsonString: string) => {
 };
 
 const isAnalysisResult = (data: any): data is AnalysisResult => {
-    return (data && typeof data.asset === 'string' && typeof data.timeframe === 'string' && ['BUY', 'SELL', 'NEUTRAL'].includes(data.signal));
+    return (data && typeof data.asset === 'string' && typeof data.timeframe === 'string' && ['BUY', 'SELL', 'NEUTRAL'].includes(data.signal) && typeof data.estimatedDuration === 'string');
 };
 const isMarketSentimentResult = (data: any): data is MarketSentimentResult => {
     return (data && typeof data.asset === 'string' && ['Bullish', 'Bearish', 'Neutral'].includes(data.sentiment));

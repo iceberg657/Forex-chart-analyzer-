@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AnalysisResult, GroundingSource } from '../types';
@@ -229,7 +230,7 @@ const Analysis: React.FC = () => {
                 <div className="w-full animate-fade-in">
                     <SignalCard signal={validatedSignal} confidence={result.confidence} />
                     <div className="mt-6 space-y-4">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                           <div className="bg-black/5 dark:bg-white/5 p-3 rounded-lg flex items-baseline justify-between">
                             <span className="font-semibold text-gray-600 dark:text-gray-400">Asset:</span> 
                             <span className="font-mono font-bold text-lg animated-gradient-text">{result.asset || 'N/A'}</span>
@@ -237,6 +238,10 @@ const Analysis: React.FC = () => {
                           <div className="bg-black/5 dark:bg-white/5 p-3 rounded-lg flex items-baseline justify-between">
                             <span className="font-semibold text-gray-600 dark:text-gray-400">Timeframe:</span> 
                             <span className="font-mono text-lg">{result.timeframe || 'N/A'}</span>
+                          </div>
+                          <div className="bg-black/5 dark:bg-white/5 p-3 rounded-lg flex items-baseline justify-between">
+                            <span className="font-semibold text-gray-600 dark:text-gray-400">Est. Duration:</span> 
+                            <span className="font-mono text-lg truncate max-w-[150px]" title={result.estimatedDuration}>{result.estimatedDuration || 'N/A'}</span>
                           </div>
                         </div>
 

@@ -186,6 +186,7 @@ Based on your complete analysis, provide a trade setup in the following JSON for
   "entryPriceRange": ["string (current price)", "string (price 1)", "string (price 2)", "string (price 3)"],
   "stopLoss": "string (The specific price for the stop loss, calculated based on the R/R ratio)",
   "takeProfits": ["string (The first take profit level, calculated based on the R/R ratio)", "string (optional second take profit level)"],
+  "estimatedDuration": "string (Estimate the trade holding time based on the '${tradingStyle}' style and current market volatility. For Day Trading/Seasonal Mode, aim for '30 minutes - 3 hours'. For Scalping, '15 - 45 minutes'. For Swing, '1 - 3 days'.)",
   "setupQuality": "'A+ Setup' | 'A Setup' | 'B Setup' | 'C Setup' | 'N/A' (Grade the quality of the trade setup based on confluence factors)",
   "confluenceScore": "number (A score from 0 to 10 based on your synthesis in STEP 5 of the ANALYSIS FRAMEWORK. Higher score means higher confluence.)",
   "reasoning": "string (Construct a compelling, detailed narrative for the trade that fits the '${tradingStyle}' style. Start by declaring the strategy you selected in STEP 1. Then, build the technical case by executing the full workflow from STEP 2. Start with the fundamental context, then the top-down technical story, explicitly mentioning if you used any indicators (OBV, RSI, etc) or if it was pure price action. Conclude by dismantling the alternative scenario, stating with certainty why it was invalidated.)",

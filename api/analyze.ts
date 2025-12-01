@@ -38,6 +38,7 @@ const isAnalysisResult = (data: any): data is AnalysisResult => {
         typeof data.stopLoss === 'string' &&
         Array.isArray(data.takeProfits) &&
         data.takeProfits.every((tp: any) => typeof tp === 'string') &&
+        typeof data.estimatedDuration === 'string' &&
         typeof data.reasoning === 'string' &&
         Array.isArray(data.tenReasons) &&
         data.tenReasons.every((r: any) => typeof r === 'string') &&
