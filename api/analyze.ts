@@ -1,7 +1,7 @@
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI } from '@google/genai';
-import { getAnalysisPrompt } from '../services/prompts';
+import { getAnalysisPrompt } from './_prompts';
 import { AnalysisResult, GroundingSource } from '../types';
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });

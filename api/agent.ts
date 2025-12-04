@@ -1,7 +1,7 @@
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI, Type } from '@google/genai';
-import * as Prompts from '../services/prompts';
+import * as Prompts from './_prompts';
 import { 
     DashboardOverview, 
     MarketSentimentResult, 
