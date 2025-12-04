@@ -1,10 +1,21 @@
 
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
+import { 
+  signInWithPopup, 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  signOut, 
+  onAuthStateChanged,
+  User as FirebaseUser,
+  AuthError
+} from 'firebase/auth';
+import { auth, googleProvider } from '../services/firebaseConfig';
 
 interface User {
   email?: string;
   plan: 'Free' | 'Pro' | 'Apex';
   isGuest?: boolean;
+  uid?: string;
 }
 
 interface AuthContextType {
@@ -15,131 +26,131 @@ interface AuthContextType {
   logout: () => void;
   error: string | null;
   clearError: () => void;
+  isLoading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User>(() => {
-    try {
-      const storedUser = localStorage.getItem('authUser');
-      if (storedUser) {
-        return JSON.parse(storedUser);
-      }
-    } catch (error) {
-      console.error("Could not parse auth user from localStorage", error);
-      localStorage.removeItem('authUser');
-    }
-    return { plan: 'Free', isGuest: true };
-  });
-
+  const [user, setUser] = useState<User>({ plan: 'Free', isGuest: true });
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    try {
-      if (!user.isGuest) {
-        localStorage.setItem('authUser', JSON.stringify(user));
-      } else {
-        localStorage.removeItem('authUser');
-      }
-    } catch (error) {
-      console.error("Could not save auth user to localStorage", error);
+    if (!auth) {
+      console.warn("Firebase config not found. Running in Guest Mode.");
+      setIsLoading(false);
+      return;
     }
-  }, [user]);
+
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        setUser({
+          email: firebaseUser.email || undefined,
+          uid: firebaseUser.uid,
+          plan: 'Free', // Default plan, in a real app this would come from a DB
+          isGuest: false
+        });
+      } else {
+        setUser({ plan: 'Free', isGuest: true });
+      }
+      setIsLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const clearError = () => setError(null);
 
-  // Helper to simulate DB delay
-  const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+  const getFriendlyErrorMessage = (err: AuthError) => {
+    console.error("Auth Error:", err.code, err.message);
+    switch (err.code) {
+        case 'auth/invalid-credential':
+        case 'auth/user-not-found':
+        case 'auth/wrong-password':
+            return "Invalid email or password.";
+        case 'auth/email-already-in-use':
+            return "That email is already in use.";
+        case 'auth/weak-password':
+            return "Password should be at least 6 characters.";
+        case 'auth/popup-closed-by-user':
+            return null; // Don't show error for voluntary close
+        case 'auth/cancelled-popup-request':
+            return null; // Multiple popups
+        case 'auth/operation-not-allowed':
+            return "Google Sign-In is not enabled in the Firebase Console. Please enable it in Authentication > Sign-in method.";
+        case 'auth/unauthorized-domain':
+            return "This domain is not authorized. Add it to Firebase Console > Authentication > Settings > Authorized domains.";
+        case 'auth/popup-blocked':
+            return "Sign-in popup was blocked. Please allow popups for this site.";
+        default:
+            return err.message || "Authentication failed.";
+    }
+  };
 
   const login = async (email: string, password?: string) => {
     setError(null);
-    await wait(800);
-
+    if (!auth) {
+        setError("Firebase not configured.");
+        throw new Error("Firebase not configured");
+    }
     if (!password) {
       setError("Password is required.");
       throw new Error("Password is required");
     }
-    
-    const storedCreds = localStorage.getItem(`user_creds_${email}`);
-    if (!storedCreds) {
-        setError("Account not found. Please sign up first.");
-        throw new Error("Account not found");
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch (err: any) {
+      const msg = getFriendlyErrorMessage(err);
+      if (msg) setError(msg);
+      throw err;
     }
-    
-    const credentials = JSON.parse(storedCreds);
-
-    if (credentials.provider === 'google') {
-         setError("This account was created with Google. Please use 'Sign in with Google'.");
-         throw new Error("Use Google Sign-In");
-    }
-    
-    if (credentials.password !== password) {
-        setError("The email and password do not match. Please try again.");
-        throw new Error("Invalid credentials");
-    }
-    
-    setUser({ email, plan: 'Free', isGuest: false });
   };
 
   const loginWithGoogle = async () => {
       setError(null);
-      await wait(800);
-      
-      const googleUserEmail = 'alex.trader@gmail.com';
-      const storedCreds = localStorage.getItem(`user_creds_${googleUserEmail}`);
-      
-      if (storedCreds) {
-          const credentials = JSON.parse(storedCreds);
-          if (credentials.provider === 'email') {
-               localStorage.setItem(`user_creds_${googleUserEmail}`, JSON.stringify({
-                  ...credentials,
-                  provider: 'google',
-               }));
-          }
-      } else {
-          localStorage.setItem(`user_creds_${googleUserEmail}`, JSON.stringify({ 
-              email: googleUserEmail, 
-              password: null,
-              provider: 'google',
-              createdAt: new Date().toISOString()
-          }));
+      if (!auth) {
+          setError("Firebase not configured. Please add VITE_FIREBASE keys to .env");
+          return;
       }
-      
-      setUser({ email: googleUserEmail, plan: 'Free', isGuest: false });
+      try {
+          await signInWithPopup(auth, googleProvider);
+      } catch (err: any) {
+          const msg = getFriendlyErrorMessage(err);
+          if (msg) setError(msg);
+          throw err;
+      }
   };
 
   const signup = async (email: string, password?: string) => {
     setError(null);
-    await wait(800);
-
-    if (localStorage.getItem(`user_creds_${email}`)) {
-        setError("An account with this email already exists. Please log in.");
-        throw new Error("User exists");
+    if (!auth) {
+        setError("Firebase not configured.");
+        throw new Error("Firebase not configured");
     }
-
-    if (password) {
-        localStorage.setItem(`user_creds_${email}`, JSON.stringify({ 
-            email, 
-            password,
-            provider: 'email',
-            createdAt: new Date().toISOString()
-        }));
-    } else {
-        setError("Password is required for email signup.");
+    if (!password) {
+        setError("Password is required.");
         throw new Error("Password is required");
     }
-
-    setUser({ email, plan: 'Free', isGuest: false });
+    try {
+        await createUserWithEmailAndPassword(auth, email, password);
+    } catch (err: any) {
+        const msg = getFriendlyErrorMessage(err);
+        if (msg) setError(msg);
+        throw err;
+    }
   };
   
-  const logout = () => {
+  const logout = async () => {
+    if (auth) {
+        await signOut(auth);
+    }
     setUser({ plan: 'Free', isGuest: true });
     setError(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, loginWithGoogle, signup, logout, error, clearError }}>
+    <AuthContext.Provider value={{ user, login, loginWithGoogle, signup, logout, error, clearError, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

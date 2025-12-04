@@ -236,12 +236,22 @@ Your response must contain ONLY the ${language} code, with no extra text, explan
 `;
 
 export const getMarketSentimentPrompt = (asset: string): string => `
-You are a specialized financial analyst AI. Your task is to analyze the latest news and market data for the asset "${asset}" and provide a concise market sentiment analysis. Use your Google Search tool to find real-time information.
+You are a specialized financial analyst AI. Your task is to analyze the latest news and market data for the asset "${asset}" and provide a concise market sentiment analysis.
+
+**MANDATORY: You MUST use the 'googleSearch' tool to find real-time information.**
+**DO NOT hallucinate price data.** You must perform a Google Search to find the actual current live price.
+
+Search for:
+1. "Live price of ${asset} and percentage change today"
+2. "${asset} latest market news and sentiment analysis"
 
 Your response MUST be a single, valid JSON object with the following structure:
 
 {
   "asset": "${asset}",
+  "price": "string (The current LIVE price found in the search results, e.g., '1.0845' or '$65,430'. Return 'N/A' if absolute not found)",
+  "change": "string (The price change value today. Return 'N/A' if not found)",
+  "changePercent": "string (The percentage change today. Return 'N/A' if not found)",
   "sentiment": "'Bullish' | 'Bearish' | 'Neutral'",
   "confidence": "number (A score from 0 to 100 representing your confidence in the sentiment)",
   "summary": "string (A 2-3 sentence summary of the current market sentiment and the key drivers behind it.)",
