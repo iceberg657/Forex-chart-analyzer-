@@ -5,6 +5,7 @@ import {
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
   signOut, 
+  sendPasswordResetEmail,
   onAuthStateChanged,
   User as FirebaseUser,
   AuthError
@@ -24,6 +25,7 @@ interface AuthContextType {
   loginWithGoogle: () => Promise<void>;
   signup: (email: string, password?: string) => Promise<void>;
   logout: () => void;
+  resetPassword: (email: string) => Promise<void>;
   error: string | null;
   clearError: () => void;
   isLoading: boolean;
@@ -83,6 +85,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             return "This domain is not authorized. Add it to Firebase Console > Authentication > Settings > Authorized domains.";
         case 'auth/popup-blocked':
             return "Sign-in popup was blocked. Please allow popups for this site.";
+        case 'auth/invalid-email':
+            return "Please enter a valid email address.";
+        case 'auth/missing-email':
+             return "Email is required.";
         default:
             return err.message || "Authentication failed.";
     }
@@ -149,8 +155,27 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setError(null);
   };
 
+  const resetPassword = async (email: string) => {
+    setError(null);
+    if (!auth) {
+        setError("Firebase not configured.");
+        throw new Error("Firebase not configured");
+    }
+    if (!email) {
+        setError("Email is required.");
+        throw new Error("Email is required");
+    }
+    try {
+        await sendPasswordResetEmail(auth, email);
+    } catch (err: any) {
+        const msg = getFriendlyErrorMessage(err);
+        if (msg) setError(msg);
+        throw err;
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, loginWithGoogle, signup, logout, error, clearError, isLoading }}>
+    <AuthContext.Provider value={{ user, login, loginWithGoogle, signup, logout, resetPassword, error, clearError, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

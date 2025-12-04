@@ -5,6 +5,7 @@ import Header from './components/Header';
 import Footer from './components/Footer';
 import Login from './pages/Login';
 import SignUp from './pages/SignUp';
+import ForgotPassword from './pages/ForgotPassword';
 import Landing from './pages/Landing';
 import Trader from './pages/Trader';
 import Analysis from './pages/Analysis';
@@ -71,6 +72,7 @@ const AppContent: React.FC = () => {
             <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<SignUp />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
           </Route>
           
           <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
