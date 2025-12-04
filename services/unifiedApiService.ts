@@ -32,6 +32,7 @@ const withRetry = async <T>(apiCall: () => Promise<T>, maxRetries = 3, initialDe
             attempt++;
             const errorMessage = (error.message || '').toLowerCase();
             const isOverloaded = errorMessage.includes('503') || 
+                                 errorMessage.includes('504') ||
                                  errorMessage.includes('overloaded') || 
                                  errorMessage.includes('unavailable') ||
                                  errorMessage.includes('rate limit');
@@ -186,7 +187,7 @@ export const analyzeChart = async (chartFiles: { [key: string]: File | null }, r
                 }
             }
             const response = await generateContentDirect({
-                model: 'gemini-flash-latest',
+                model: 'gemini-2.5-flash',
                 contents: { parts },
                 config: { temperature: 0, tools: [{ googleSearch: {} }] }
             });
@@ -248,7 +249,7 @@ export async function* sendMessageStream(history: ChatMessage[], newMessageParts
         contents.push({ role: 'user', parts: newMessageParts });
 
         const responseStream = await ai.models.generateContentStream({
-            model: 'gemini-flash-lite-latest',
+            model: 'gemini-2.5-flash',
             contents: contents,
             config: { systemInstruction: Prompts.getChatSystemInstruction(), tools: [{ googleSearch: {} }] },
         });
