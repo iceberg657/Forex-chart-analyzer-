@@ -273,7 +273,17 @@ export async function* sendMessageStream(history: ChatMessage[], newMessageParts
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ history, newMessageParts }),
         });
-        if (!res.ok || !res.body) throw new Error('Streaming API error');
+        
+        if (!res.ok || !res.body) {
+            let errorDetails = res.statusText;
+            try {
+                const errorJson = await res.json();
+                if (errorJson && errorJson.message) errorDetails = errorJson.message;
+            } catch (e) {
+                // Ignore json parse error, use statusText
+            }
+            throw new Error(`Streaming API Error (${res.status}): ${errorDetails}`);
+        }
 
         const reader = res.body.getReader();
         const decoder = new TextDecoder();

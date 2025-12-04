@@ -25,7 +25,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         contents.push({ role: 'user', parts: newMessageParts });
 
         const responseStream = await ai.models.generateContentStream({
-            model: 'gemini-flash-lite-latest',
+            model: 'gemini-2.5-flash',
             contents: contents,
             config: { systemInstruction: getChatSystemInstruction(), tools: [{ googleSearch: {} }] },
         });
