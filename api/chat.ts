@@ -1,7 +1,7 @@
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI } from '@google/genai';
-import { getChatSystemInstruction } from './_prompts';
+import { getChatSystemInstruction } from './_prompts.js';
 import { ChatMessage, GroundingSource } from '../types';
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
