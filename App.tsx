@@ -61,9 +61,24 @@ const AppContent: React.FC = () => {
   const isChartingPage = location.pathname === '/charting';
   
   // Calculate dynamic top spacing
-  // Base spacing (Header + Nav) is approx 7.5rem
-  // Seasonal Ribbon adds approx 2.5rem
-  const chartTopSpacing = isSeasonalModeActive ? '10rem' : '7.5rem';
+  // Header height logic: 2.5rem (h-10) for charting, 4rem (h-16) for standard
+  const headerHeight = isChartingPage ? 2.5 : 4; 
+  const navHeight = 3.5; // rem
+  const ribbonHeight = 2.5; // rem
+  
+  let topSpacingRem = headerHeight;
+  
+  // Add Nav height only if NOT on charting page
+  if (!isChartingPage) {
+      topSpacingRem += navHeight;
+  }
+  
+  // Add Ribbon height if active
+  if (isSeasonalModeActive) {
+      topSpacingRem += ribbonHeight;
+  }
+
+  const chartTopSpacing = `${topSpacingRem}rem`;
 
   useEffect(() => {
     const splashScreen = document.getElementById('splash-screen');
@@ -81,7 +96,6 @@ const AppContent: React.FC = () => {
         
         {/* Persistent Chart Container */}
         {/* This keeps the chart mounted but hidden when not on the charting page, preventing reloads/resets. */}
-        {/* Layout Update: Changed to flex-col to stack SignalOverlay on top of Widget */}
         <div 
           style={{ 
             visibility: isChartingPage ? 'visible' : 'hidden',
@@ -94,7 +108,7 @@ const AppContent: React.FC = () => {
           }}
           className="bg-gray-100 dark:bg-gray-900 transition-all duration-300 ease-in-out flex flex-col"
         >
-          {/* Signal Overlay serves as the Top Toolbar */}
+          {/* Signal Overlay serves as the Top Toolbar - only renders if active signal exists */}
           <SignalOverlay />
           <div className="flex-1 relative w-full h-full overflow-hidden">
             <TradingViewWidget />
@@ -174,7 +188,7 @@ const AppLayout: React.FC = () => (
 const ChartingLayout: React.FC = () => (
   <>
     <Header />
-    <TabbedNav />
+    {/* Removed TabbedNav for Charting Layout to give more space */}
     <main className="flex-grow w-full relative overflow-hidden pointer-events-none">
         {/* Content here is transparent/empty to let the persistent chart show through */}
         <Outlet />
