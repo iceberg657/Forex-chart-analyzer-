@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from './useAuth';
@@ -24,6 +25,8 @@ export const AppContextProvider: React.FC<{ children: ReactNode }> = ({ children
         home: '/',
         landing: '/',
         dashboard: '/dashboard',
+        charting: '/charting',
+        charts: '/charting',
         analysis: '/analysis',
         'market-news': '/market-news',
         journal: '/journal',

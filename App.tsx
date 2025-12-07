@@ -1,6 +1,6 @@
 
 import React, { useEffect } from 'react';
-import { HashRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import Login from './pages/Login';
@@ -18,6 +18,7 @@ import BotMaker from './pages/BotMaker';
 import IndicatorMaker from './pages/IndicatorMaker';
 import Pricing from './pages/Pricing';
 import Predictor from './pages/Predictor';
+import Charting from './pages/Charting';
 import TabbedNav from './components/TabbedNav';
 import Notifications from './components/Notifications';
 import SeasonalRibbon from './components/SeasonalRibbon';
@@ -27,9 +28,11 @@ import { EdgeLightingProvider } from './hooks/useEdgeLighting';
 import ResponsiveFix from './components/ResponsiveFix';
 import { AppContextProvider } from './hooks/useAppContext';
 import AIAgent from './components/AIAgent';
-import { PageDataProvider } from './hooks/usePageData';
+import { PageDataProvider, usePageData } from './hooks/usePageData';
 import { EnvironmentProvider, useEnvironment } from './hooks/useEnvironment';
 import ErrorLog from './components/ErrorLog';
+import TradingViewWidget from './components/TradingViewWidget';
+import SignalOverlay from './components/SignalOverlay';
 
 const App: React.FC = () => {
   return (
@@ -53,7 +56,15 @@ const App: React.FC = () => {
 
 const AppContent: React.FC = () => {
   const environment = useEnvironment();
+  const location = useLocation();
+  const { isSeasonalModeActive } = usePageData();
+  const isChartingPage = location.pathname === '/charting';
   
+  // Calculate dynamic top spacing
+  // Base spacing (Header + Nav) is approx 7.5rem
+  // Seasonal Ribbon adds approx 2.5rem
+  const chartTopSpacing = isSeasonalModeActive ? '10rem' : '7.5rem';
+
   useEffect(() => {
     const splashScreen = document.getElementById('splash-screen');
     if (splashScreen) {
@@ -64,9 +75,32 @@ const AppContent: React.FC = () => {
 
   return (
     <ResponsiveFix>
-      <div className="relative isolate flex flex-col min-h-screen text-gray-800 dark:text-gray-200 font-sans overflow-x-hidden">
+      <div className="relative isolate flex flex-col h-screen text-gray-800 dark:text-gray-200 font-sans overflow-hidden">
         <SeasonalRibbon />
         <Notifications />
+        
+        {/* Persistent Chart Container */}
+        {/* This keeps the chart mounted but hidden when not on the charting page, preventing reloads/resets. */}
+        {/* Layout Update: Changed to flex-col to stack SignalOverlay on top of Widget */}
+        <div 
+          style={{ 
+            visibility: isChartingPage ? 'visible' : 'hidden',
+            position: 'absolute',
+            top: chartTopSpacing, 
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 30, // Below Header (z-50) and Nav (z-40)
+          }}
+          className="bg-gray-100 dark:bg-gray-900 transition-all duration-300 ease-in-out flex flex-col"
+        >
+          {/* Signal Overlay serves as the Top Toolbar */}
+          <SignalOverlay />
+          <div className="flex-1 relative w-full h-full overflow-hidden">
+            <TradingViewWidget />
+          </div>
+        </div>
+
         <Routes>
           <Route element={<GuestLayout />}>
             <Route path="/" element={<Landing />} />
@@ -85,10 +119,17 @@ const AppContent: React.FC = () => {
             <Route path="/apex-ai" element={<ApexAI />} />
             <Route path="/coders" element={<CodersPage />} />
           </Route>
+
+          <Route element={<ProtectedRoute><ChartingLayout /></ProtectedRoute>}>
+            <Route path="/charting" element={<Charting />} />
+          </Route>
           
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
-        <AIAgent />
+        
+        {/* Hide AI Agent when on the charting page */}
+        {!isChartingPage && <AIAgent />}
+        
         {environment === 'aistudio' && <ErrorLog />}
       </div>
     </ResponsiveFix>
@@ -103,12 +144,14 @@ const GuestLayout: React.FC = () => {
   return (
     <>
       <Header />
-      <main className="flex-grow w-full flex flex-col py-4 sm:py-6 lg:py-8">
-        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:py-8 flex-1 flex flex-col justify-center">
-          <Outlet />
-        </div>
-      </main>
-      <Footer />
+      <div className="flex-grow overflow-y-auto flex flex-col">
+        <main className="flex-grow w-full flex flex-col py-4 sm:py-6 lg:py-8">
+            <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:py-8 flex-1 flex flex-col justify-center">
+            <Outlet />
+            </div>
+        </main>
+        <Footer />
+      </div>
     </>
   );
 };
@@ -117,12 +160,25 @@ const AppLayout: React.FC = () => (
   <>
     <Header />
     <TabbedNav />
-    <main className="flex-grow w-full flex flex-col py-4 sm:py-6 lg:py-8">
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:py-8 flex-1 flex flex-col justify-center">
+    <div className="flex-grow overflow-y-auto flex flex-col relative z-10">
+        <main className="flex-grow w-full flex flex-col py-4 sm:py-6 lg:py-8">
+            <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:py-8 flex-1 flex flex-col justify-center">
+                <Outlet />
+            </div>
+        </main>
+        <Footer />
+    </div>
+  </>
+);
+
+const ChartingLayout: React.FC = () => (
+  <>
+    <Header />
+    <TabbedNav />
+    <main className="flex-grow w-full relative overflow-hidden pointer-events-none">
+        {/* Content here is transparent/empty to let the persistent chart show through */}
         <Outlet />
-      </div>
     </main>
-    <Footer />
   </>
 );
 

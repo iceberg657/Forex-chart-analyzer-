@@ -10,6 +10,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
     { to: '/dashboard', label: 'Dashboard', icon: 'fas fa-chart-pie' },
+    { to: '/charting', label: 'Charts', icon: 'fas fa-chart-bar' },
     { to: '/apex-ai', label: 'Apex AI', icon: 'fas fa-robot' },
     { to: '/journal', label: 'Journal', icon: 'fas fa-book' },
     { to: '/history', label: 'History', icon: 'fas fa-history' },
