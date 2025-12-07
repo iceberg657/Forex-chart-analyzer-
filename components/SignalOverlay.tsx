@@ -62,7 +62,7 @@ const SignalOverlay: React.FC = () => {
     : '---';
 
   return (
-    <div className="w-full bg-[#0C0F1A] border-b border-white/10 flex items-center justify-between px-3 py-1 z-40 gap-3 shadow-md select-none overflow-x-auto no-scrollbar h-[48px]">
+    <div className="w-full bg-[#0C0F1A] border-b border-white/10 flex items-center justify-between px-3 py-1 relative z-40 gap-3 shadow-md select-none overflow-x-auto no-scrollbar h-[48px]">
         
         {/* Left Group: Asset & Signal */}
         <div className="flex items-center gap-3 flex-shrink-0">

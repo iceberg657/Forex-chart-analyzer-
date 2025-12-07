@@ -36,10 +36,13 @@ const TradingViewWidget: React.FC = () => {
         });
         container.current.appendChild(script);
     }
-  }, [theme]); // Re-run when theme changes to update the chart appearance
+  }, [theme]); 
 
   return (
-    <div className="tradingview-widget-container w-full h-full overflow-hidden" ref={container}>
+    <div 
+        className="tradingview-widget-container w-full h-full overflow-hidden" 
+        ref={container} 
+    >
       <div className="tradingview-widget-container__widget" style={{ height: "100%", width: "100%" }}></div>
     </div>
   );

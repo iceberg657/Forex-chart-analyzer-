@@ -88,6 +88,21 @@ const AppContent: React.FC = () => {
     }
   }, []);
 
+  // Lock body scroll when on charting page to ensure rigid application feel
+  useEffect(() => {
+    if (isChartingPage) {
+      document.body.style.overflow = 'hidden';
+      document.body.style.overscrollBehavior = 'none';
+    } else {
+      document.body.style.overflow = '';
+      document.body.style.overscrollBehavior = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.overscrollBehavior = '';
+    };
+  }, [isChartingPage]);
+
   return (
     <ResponsiveFix>
       <div className="relative isolate flex flex-col h-screen text-gray-800 dark:text-gray-200 font-sans overflow-hidden">
@@ -95,18 +110,18 @@ const AppContent: React.FC = () => {
         <Notifications />
         
         {/* Persistent Chart Container */}
-        {/* This keeps the chart mounted but hidden when not on the charting page, preventing reloads/resets. */}
+        {/* Changed to fixed positioning for absolute rigidity */}
         <div 
           style={{ 
             visibility: isChartingPage ? 'visible' : 'hidden',
-            position: 'absolute',
+            position: 'fixed',
             top: chartTopSpacing, 
             left: 0,
             right: 0,
             bottom: 0,
             zIndex: 30, // Below Header (z-50) and Nav (z-40)
           }}
-          className="bg-gray-100 dark:bg-gray-900 transition-all duration-300 ease-in-out flex flex-col"
+          className="bg-gray-100 dark:bg-gray-900 flex flex-col pointer-events-auto"
         >
           {/* Signal Overlay serves as the Top Toolbar - only renders if active signal exists */}
           <SignalOverlay />
