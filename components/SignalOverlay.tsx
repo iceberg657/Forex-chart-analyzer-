@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { usePageData } from '../hooks/usePageData';
 
 const ValueItem: React.FC<{ label: string, value: string, onCopy: () => void, copied: boolean, colorClass: string }> = ({ label, value, onCopy, copied, colorClass }) => (
@@ -31,9 +31,21 @@ const SignalOverlay: React.FC = () => {
   const { pageData } = usePageData();
   const latestAnalysis = pageData.analysisHistory.history[0];
   const [isCopied, setIsCopied] = useState<string | null>(null);
+  const [isVisible, setIsVisible] = useState(true);
 
-  // Requirement: Hide if no active signal
-  if (!latestAnalysis) return null;
+  useEffect(() => {
+    // Reset visibility when new analysis arrives or component mounts
+    setIsVisible(true);
+
+    const timer = setTimeout(() => {
+        setIsVisible(false);
+    }, 60000); // Hide after 1 minute (60,000 ms)
+
+    return () => clearTimeout(timer);
+  }, [latestAnalysis]);
+
+  // Requirement: Hide if no active signal OR if the timer has expired
+  if (!latestAnalysis || !isVisible) return null;
 
   const handleCopy = (text: string, label: string) => {
     if (!text || text === '---') return;

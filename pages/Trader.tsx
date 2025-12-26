@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback, DragEvent, useMemo } from 'react';
+import React, { useState, useCallback, DragEvent, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { analyzeChart } from '../services/apiClient';
 import { TRADING_STYLES } from '../constants';
@@ -86,7 +86,7 @@ const ChartUploadSlot: React.FC<{
                   Click to upload
                 </span>
                 <input id={inputId} name={inputId} type="file" className="sr-only" accept="image/png, image/jpeg, image/webp" onChange={handleInputChange} disabled={disabled} />
-                <p className="pl-1">or drag & drop</p>
+                <p className="pl-1">or drag & drop / paste (Ctrl+V)</p>
               </div>
               <p className="text-xs text-gray-500 dark:text-gray-500">{description}</p>
             </div>
@@ -119,7 +119,7 @@ const Trader: React.FC<TraderProps> = () => {
     return isDateInSeasonalWindow(new Date());
   }, [pageData.seasonalModeSetting]);
 
-  const handleFileChange = (file: File, timeframe: string) => {
+  const handleFileChange = useCallback((file: File, timeframe: string) => {
     setChartFiles(prev => ({ ...prev, [timeframe]: file }));
     const reader = new FileReader();
     reader.onloadend = () => {
@@ -127,12 +127,44 @@ const Trader: React.FC<TraderProps> = () => {
     };
     reader.readAsDataURL(file);
     setError(null);
-  };
+  }, []);
 
   const handleFileRemove = useCallback((timeframe: string) => {
     setChartFiles(prev => ({ ...prev, [timeframe]: null }));
     setPreviewUrls(prev => ({ ...prev, [timeframe]: null }));
   }, []);
+
+  useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      if (e.clipboardData && e.clipboardData.items) {
+        const items = e.clipboardData.items;
+        for (let i = 0; i < items.length; i++) {
+          if (items[i].type.indexOf('image') !== -1) {
+            const file = items[i].getAsFile();
+            if (file) {
+              e.preventDefault(); // Prevent default paste behavior
+
+              if (isSingleChartMode) {
+                 handleFileChange(file, 'primary');
+              } else {
+                 // Auto-fill logic for multi-timeframe
+                 if (!chartFiles.primary) handleFileChange(file, 'primary');
+                 else if (!chartFiles.higher) handleFileChange(file, 'higher');
+                 else if (!chartFiles.entry) handleFileChange(file, 'entry');
+                 else handleFileChange(file, 'primary'); // Default overwrite primary if all full
+              }
+              // Only handle the first image found in clipboard
+              return;
+            }
+          }
+        }
+      }
+    };
+
+    window.addEventListener('paste', handlePaste);
+    return () => window.removeEventListener('paste', handlePaste);
+  }, [chartFiles, isSingleChartMode, handleFileChange]);
+
 
   const toggleMode = () => {
     setIsSingleChartMode(prev => {
