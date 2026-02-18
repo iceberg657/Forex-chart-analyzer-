@@ -1,9 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { GoogleGenAI } from '@google/genai';
+import { ANALYSIS_KEYS } from './_env.js';
+import { makeResilientCall } from './_resilience.js';
 import { getAnalysisPrompt } from './_prompts.js';
-import { AnalysisResult, GroundingSource } from '../types';
-
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
+import { AnalysisResult } from '../types';
 
 const getValidatedTextFromResponse = (response: any): string => {
     const responseText = response.text;
@@ -36,6 +35,10 @@ const robustJsonParse = (jsonString: string) => {
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (req.method !== 'POST') return res.status(405).json({ message: 'Method Not Allowed' });
 
+    if (ANALYSIS_KEYS.length === 0) {
+        return res.status(503).json({ message: 'Service Unavailable: Chart Analysis API keys are not configured.' });
+    }
+
     try {
         const { imageParts, riskReward, tradingStyle, isSeasonal, userSettings } = req.body;
         const prompt = getAnalysisPrompt(tradingStyle, riskReward, isSeasonal, userSettings);
@@ -47,19 +50,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             }
         }
         
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash-lite',
+        const requestPayload = {
             contents: { parts },
             config: { 
                 temperature: 0,
                 tools: [{ googleSearch: {} }] 
             }
-        });
+        };
+
+        const response = await makeResilientCall(ANALYSIS_KEYS, requestPayload, false);
         const responseText = getValidatedTextFromResponse(response);
         const parsedResult = robustJsonParse(responseText);
         return res.status(200).json(parsedResult);
+
     } catch (error: any) {
         console.error("Error in /api/analyze:", error);
-        return res.status(500).json({ message: error.message || 'Error' });
+        return res.status(500).json({ message: error.message || 'Error processing analysis request.' });
     }
 }

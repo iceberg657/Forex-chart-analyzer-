@@ -1,9 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { GoogleGenAI } from '@google/genai';
+import { CHAT_KEYS } from './_env.js';
+import { makeResilientCall } from './_resilience.js';
 import { getChatSystemInstruction } from './_prompts.js';
 import { ChatMessage, GroundingSource } from '../types';
-
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (req.method !== 'POST') {
@@ -11,6 +10,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(405).json({ message: 'Method Not Allowed' });
     }
 
+    if (CHAT_KEYS.length === 0) {
+        return res.status(503).json({ message: 'Service Unavailable: Chat API keys are not configured.' });
+    }
+    
     try {
         const { history, newMessageParts } = req.body;
         if (!Array.isArray(history) || !Array.isArray(newMessageParts)) {
@@ -23,14 +26,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }));
         contents.push({ role: 'user', parts: newMessageParts });
 
-        const responseStream = await ai.models.generateContentStream({
-            model: 'gemini-2.5-flash-lite',
+        const requestPayload = {
             contents: contents,
             config: { 
                 systemInstruction: getChatSystemInstruction(),
                 tools: [{ googleSearch: {} }]
             },
-        });
+        };
+
+        const responseStream = await makeResilientCall(CHAT_KEYS, requestPayload, true);
 
         res.setHeader('Content-Type', 'application/json');
         res.setHeader('Transfer-Encoding', 'chunked');
@@ -62,7 +66,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     } catch (error: any) {
         console.error("Error in /api/chat:", error);
-        // If headers are not sent, send an error response. Otherwise, just end.
         if (!res.headersSent) {
             res.status(500).json({ message: error.message || 'An internal server error occurred.' });
         } else {
