@@ -52,6 +52,7 @@ const Journal: React.FC = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [feedback, setFeedback] = useState<JournalFeedback | null>(null);
+    const [retryMessage, setRetryMessage] = useState<string | null>(null);
 
     useEffect(() => {
         try {
@@ -113,13 +114,20 @@ const Journal: React.FC = () => {
         setIsLoading(true);
         setError(null);
         setFeedback(null);
+        setRetryMessage(null);
+        
+        const onRetryAttempt = (attempt: number, maxRetries: number) => {
+            setRetryMessage(`Retrying... (${attempt}/${maxRetries - 1})`);
+        };
+
         try {
-            const result = await getTradingJournalFeedback(trades);
+            const result = await getTradingJournalFeedback(trades, onRetryAttempt);
             setFeedback(result);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'An unknown error occurred.');
         } finally {
             setIsLoading(false);
+            setRetryMessage(null);
         }
     };
 
@@ -171,11 +179,11 @@ const Journal: React.FC = () => {
                  <div className="flex justify-between items-center mb-4">
                     <h2 className="text-2xl font-bold">Trade History</h2>
                     <button onClick={handleGetFeedback} disabled={isLoading || trades.length < 3} className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 disabled:bg-gray-500 disabled:cursor-not-allowed">
-                        {isLoading ? 'Analyzing...' : 'Analyze My Trading'}
+                        {isLoading ? (retryMessage || 'Analyzing...') : 'Analyze My Trading'}
                     </button>
                 </div>
                 {error && <ErrorDisplay error={error} />}
-                {isLoading && <div className="flex justify-center my-4"><Spinner /></div>}
+                {isLoading && !feedback && <div className="flex justify-center my-4"><Spinner /></div>}
                 {feedback && <JournalFeedbackDisplay feedback={feedback} />}
                 <div className="space-y-4 mt-8">
                     {trades.length > 0 ? tradeList : <p className="text-center text-gray-500 dark:text-gray-400 py-8">Your trade journal is empty. Add a trade to get started.</p>}

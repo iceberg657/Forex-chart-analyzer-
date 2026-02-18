@@ -13,6 +13,7 @@ const BotMaker: React.FC = () => {
   const [generatedCode, setGeneratedCode] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [retryMessage, setRetryMessage] = useState<string | null>(null);
   const { user } = useAuth();
   
   const handleSubmit = async (e: React.FormEvent) => {
@@ -25,14 +26,20 @@ const BotMaker: React.FC = () => {
     setIsLoading(true);
     setError(null);
     setGeneratedCode(null);
+    setRetryMessage(null);
+
+    const onRetryAttempt = (attempt: number, maxRetries: number) => {
+        setRetryMessage(`Retrying... (${attempt}/${maxRetries - 1})`);
+    };
 
     try {
-      const code = await createBot({ description, language });
+      const code = await createBot({ description, language }, onRetryAttempt);
       setGeneratedCode(code);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'An unknown error occurred.');
     } finally {
       setIsLoading(false);
+      setRetryMessage(null);
     }
   };
 
@@ -55,7 +62,7 @@ const BotMaker: React.FC = () => {
           <textarea id="description" rows={8} value={description} onChange={e => setDescription(e.target.value)} className="mt-1 block w-full bg-gray-500/10 dark:bg-gray-900/40 border-gray-400/30 dark:border-gray-500/50 focus:ring-red-500 focus:border-red-500 sm:text-sm rounded-md text-gray-900 dark:text-white p-2 disabled:opacity-50 disabled:cursor-not-allowed" placeholder="e.g., 'Open a buy trade when RSI is below 30 and a 50 EMA crosses above a 200 EMA. Close the trade when RSI is above 70...'"></textarea>
         </div>
         <button type="submit" disabled={isLoading} className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 dark:focus:ring-offset-gray-900 focus:ring-red-500 disabled:bg-gray-400 dark:disabled:bg-gray-500 disabled:cursor-not-allowed">
-          {isLoading ? 'Generating Code...' : 'Generate Bot'}
+          {isLoading ? (retryMessage || 'Generating Code...') : 'Generate Bot'}
         </button>
       </form>
 

@@ -109,14 +109,20 @@ const MarketNews: React.FC = () => {
 
     const [inputAsset, setInputAsset] = useState(savedAsset || '');
     const [isLoading, setIsLoading] = useState(false);
+    const [retryMessage, setRetryMessage] = useState<string | null>(null);
     
     useEffect(() => { if (savedAsset) setInputAsset(savedAsset); }, [savedAsset]);
 
     const performAnalysis = async (assetToAnalyze: string) => {
         setIsLoading(true);
+        setRetryMessage(null);
         setMarketNewsData({ result: null, asset: assetToAnalyze, error: null });
 
-        const sentimentPromise = getMarketNews(assetToAnalyze);
+        const onRetryAttempt = (attempt: number, maxRetries: number) => {
+            setRetryMessage(`Service busy. Retrying... (${attempt}/${maxRetries - 1})`);
+        };
+
+        const sentimentPromise = getMarketNews(assetToAnalyze, onRetryAttempt);
         const quotePromise = getRealTimeQuote(assetToAnalyze);
         
         const [sentimentResult, quoteResult] = await Promise.allSettled([sentimentPromise, quotePromise]);
@@ -140,6 +146,7 @@ const MarketNews: React.FC = () => {
         
         setMarketNewsData({ result: finalResult, asset: assetToAnalyze, error: errors.join('\n') || null });
         setIsLoading(false);
+        setRetryMessage(null);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -175,15 +182,15 @@ const MarketNews: React.FC = () => {
                         disabled={isLoading} 
                         className="w-full sm:w-auto flex-grow justify-center py-3 px-6 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 dark:focus:ring-offset-gray-900 focus:ring-red-500 disabled:bg-gray-400 dark:disabled:bg-gray-500 disabled:cursor-not-allowed transition-colors"
                     >
-                        {isLoading ? 'Analyzing...' : 'Get Sentiment'}
+                        {isLoading ? (retryMessage || 'Analyzing...') : 'Get Sentiment'}
                     </button>
                 </form>
             </div>
 
             <div className="mt-8 flex justify-center">
-                {isLoading && <Spinner />}
+                {isLoading && !result && <Spinner />}
                 {error && !isLoading && <ErrorDisplay error={error} />}
-                {result && !isLoading && <SentimentResultDisplay result={result} onRefresh={() => performAnalysis(savedAsset)} isLoading={isLoading} />}
+                {result && <SentimentResultDisplay result={result} onRefresh={() => performAnalysis(savedAsset)} isLoading={isLoading} />}
             </div>
         </div>
     );

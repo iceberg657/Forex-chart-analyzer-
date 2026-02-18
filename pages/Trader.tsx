@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, DragEvent, useMemo, useEffect } from 'react';
 import { useNavigate } from '../hooks/useAppContext';
 import { analyzeChart } from '../services/apiClient';
@@ -109,6 +108,7 @@ const Trader: React.FC<TraderProps> = () => {
   const [tradingStyle, setTradingStyle] = useState<string>(TRADING_STYLES[1]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [retryMessage, setRetryMessage] = useState<string | null>(null);
   const [isSingleChartMode, setIsSingleChartMode] = useState(false);
   const navigate = useNavigate();
   const { pageData, addAnalysisToHistory } = usePageData();
@@ -185,9 +185,20 @@ const Trader: React.FC<TraderProps> = () => {
 
     setError(null);
     setIsLoading(true);
+    setRetryMessage(null);
+
+    const onRetryAttempt = (attempt: number, maxRetries: number) => {
+        setRetryMessage(`AI service is busy. Retrying... (${attempt}/${maxRetries - 1})`);
+    };
 
     try {
-      const analysisResult = await analyzeChart(chartFiles, riskReward, tradingStyle, isSeasonalModeActive);
+      const analysisResult = await analyzeChart(
+        chartFiles, 
+        riskReward, 
+        tradingStyle, 
+        isSeasonalModeActive,
+        onRetryAttempt
+      );
       const resultWithMeta: AnalysisResult = {
         ...analysisResult,
         id: new Date().toISOString(),
@@ -198,10 +209,10 @@ const Trader: React.FC<TraderProps> = () => {
     } catch (err) {
       console.error("Analysis submission failed:", err);
       const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.';
-      // Don't navigate away, show error inline to allow retry/key change
       setError(errorMessage);
     } finally {
       setIsLoading(false);
+      setRetryMessage(null);
     }
   }, [chartFiles, riskReward, tradingStyle, isSeasonalModeActive, navigate, addAnalysisToHistory]);
   
@@ -214,7 +225,7 @@ const Trader: React.FC<TraderProps> = () => {
     <div className="space-y-12 relative">
       <NeuralNetworkBackground />
       <div className="relative z-10 space-y-12">
-        {isLoading && <CandleStickLoader />}
+        {isLoading && <CandleStickLoader statusMessage={retryMessage} />}
         <Dashboard />
         <div className="max-w-5xl mx-auto w-full px-2">
             <div className="bg-white/30 dark:bg-black/40 backdrop-blur-2xl border border-white/40 dark:border-white/10 rounded-[3rem] shadow-2xl p-8 space-y-10 animate-fade-in">

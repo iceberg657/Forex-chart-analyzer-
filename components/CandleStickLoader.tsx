@@ -9,20 +9,28 @@ const analysisSteps = [
   "Compiling A+ Setup...",
 ];
 
-const CandleStickLoader: React.FC = () => {
+interface CandleStickLoaderProps {
+  statusMessage?: string | null;
+}
+
+const CandleStickLoader: React.FC<CandleStickLoaderProps> = ({ statusMessage }) => {
   const [currentStep, setCurrentStep] = useState(analysisSteps[0]);
 
   useEffect(() => {
+    if (statusMessage) return; // Don't cycle internal messages if an external one is provided
+
     const intervalId = setInterval(() => {
       setCurrentStep(prevStep => {
         const currentIndex = analysisSteps.indexOf(prevStep);
         const nextIndex = (currentIndex + 1) % analysisSteps.length;
         return analysisSteps[nextIndex];
       });
-    }, 300); // Change step very quickly for perceived speed
+    }, 1800); 
 
-    return () => clearInterval(intervalId); // Cleanup on unmount
-  }, []);
+    return () => clearInterval(intervalId);
+  }, [statusMessage]);
+
+  const displayedMessage = statusMessage || currentStep;
 
   return (
     <div className="fixed inset-0 bg-gray-900/80 backdrop-blur-sm flex flex-col items-center justify-center z-[100]">
@@ -49,7 +57,7 @@ const CandleStickLoader: React.FC = () => {
         </div>
       </div>
       <p className="text-white text-xl mt-8 font-semibold animate-pulse">Executing Flash Analysis...</p>
-      <p className="text-gray-300 mt-2 h-6 transition-opacity duration-500 ease-in-out">{currentStep}</p>
+      <p className="text-gray-300 mt-2 h-6 transition-opacity duration-500 ease-in-out">{displayedMessage}</p>
     </div>
   );
 };

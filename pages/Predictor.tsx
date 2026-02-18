@@ -117,17 +117,25 @@ const Predictor: React.FC = () => {
     const { pageData, setPredictorData } = usePageData();
     const { events, error } = pageData.predictor;
     const [isLoading, setIsLoading] = useState(!events);
+    const [retryMessage, setRetryMessage] = useState<string | null>(null);
 
     const fetchPredictions = async () => {
         setIsLoading(true);
+        setRetryMessage(null);
+        
+        const onRetryAttempt = (attempt: number, maxRetries: number) => {
+            setRetryMessage(`Oracle link unstable. Retrying... (${attempt}/${maxRetries - 1})`);
+        };
+
         try {
-            const predictions = await getPredictions();
+            const predictions = await getPredictions(onRetryAttempt);
             setPredictorData({ events: predictions, error: null });
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.';
             setPredictorData({ events, error: errorMessage });
         } finally {
             setIsLoading(false);
+            setRetryMessage(null);
         }
     };
     
@@ -158,7 +166,9 @@ const Predictor: React.FC = () => {
             {isLoading && (
                 <div className="flex-1 flex flex-col items-center justify-center py-20">
                     <Spinner />
-                    <p className="mt-6 text-gray-500 dark:text-gray-400 font-black uppercase tracking-widest animate-pulse">Accessing Predictive Mainframe...</p>
+                    <p className="mt-6 text-gray-500 dark:text-gray-400 font-black uppercase tracking-widest animate-pulse">
+                        {retryMessage || 'Accessing Predictive Mainframe...'}
+                    </p>
                 </div>
             )}
 

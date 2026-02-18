@@ -21,12 +21,18 @@ function getAllApiKeys(): string[] {
 
 const ALL_KEYS = getAllApiKeys();
 
-// --- API Key Laning Strategy ---
-// Distribute the collected keys into their dedicated pools for different application features.
-// This isolates workloads and improves resilience.
-export const ANALYSIS_KEYS = ALL_KEYS.slice(0, 3);     // Uses API_KEY_1, API_KEY_2, API_KEY_3
-export const DASHBOARD_KEYS = ALL_KEYS.slice(3, 5);    // Uses API_KEY_4, API_KEY_5
-export const CHAT_KEYS = ALL_KEYS.slice(5, 7);         // Uses API_KEY_6, API_KEY_7
+// --- Resilient API Key Laning Strategy ---
+// Attempt to distribute keys into dedicated pools.
+const dedicatedAnalysisKeys = ALL_KEYS.slice(0, 3);
+const dedicatedDashboardKeys = ALL_KEYS.slice(3, 5);
+const dedicatedChatKeys = ALL_KEYS.slice(5, 7);
+
+// If a dedicated pool is empty (because not enough keys were provided),
+// it falls back to using the ENTIRE pool of available keys. This ensures
+// no service lane ever tries to operate with an empty key array, preventing crashes.
+export const ANALYSIS_KEYS = dedicatedAnalysisKeys.length > 0 ? dedicatedAnalysisKeys : ALL_KEYS;
+export const DASHBOARD_KEYS = dedicatedDashboardKeys.length > 0 ? dedicatedDashboardKeys : ALL_KEYS;
+export const CHAT_KEYS = dedicatedChatKeys.length > 0 ? dedicatedChatKeys : ALL_KEYS;
 
 // Log the distribution for debugging purposes during deployment.
 console.log(`[API Key Service] Initialized. Total keys found: ${ALL_KEYS.length}. Distribution: Analysis(${ANALYSIS_KEYS.length}), Dashboard(${DASHBOARD_KEYS.length}), Chat(${CHAT_KEYS.length})`);

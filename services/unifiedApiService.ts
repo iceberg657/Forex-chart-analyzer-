@@ -29,7 +29,16 @@ const getGenAIClient = () => {
 
 // --- Helper Functions for Backend Communication ---
 
-const withRetry = async <T>(apiCall: () => Promise<T>, maxRetries = 3, initialDelay = 2000): Promise<T> => {
+const withRetry = async <T>(
+    apiCall: () => Promise<T>, 
+    options: { 
+        maxRetries?: number; 
+        onRetryAttempt?: (attempt: number, maxRetries: number) => void;
+    } = {}
+): Promise<T> => {
+    const { maxRetries = 5, onRetryAttempt } = options;
+    const initialDelay = 2000;
+
     let attempt = 0;
     while (attempt < maxRetries) {
         try {
@@ -56,14 +65,18 @@ const withRetry = async <T>(apiCall: () => Promise<T>, maxRetries = 3, initialDe
                                  errorMessage.includes('unavailable');
             
             if ((isQuotaExceeded || isOverloaded) && attempt < maxRetries) {
+                if (onRetryAttempt) {
+                    onRetryAttempt(attempt, maxRetries);
+                }
                 const multiplier = isQuotaExceeded ? 5 : 2;
-                const delay = initialDelay * Math.pow(multiplier, attempt - 1);
+                const jitter = Math.random() * 1000;
+                const delay = initialDelay * Math.pow(multiplier, attempt - 1) + jitter;
                 console.warn(`API Quota/Load issue. Retrying in ${delay}ms... (Attempt ${attempt}/${maxRetries})`);
                 await new Promise(resolve => setTimeout(resolve, delay));
             } else if (isQuotaExceeded) {
                 throw new Error("Gemini API quota exceeded. Please wait 60 seconds before trying again to allow the rate limit to reset.");
             } else if (isOverloaded) {
-                throw new Error("The AI service is currently overloaded. Please try again in a few moments.");
+                throw new Error("The AI service is experiencing high traffic. We tried several times without success. Please wait a moment and try again.");
             } else {
                 throw error;
             }
@@ -71,6 +84,7 @@ const withRetry = async <T>(apiCall: () => Promise<T>, maxRetries = 3, initialDe
     }
     throw new Error('API call failed after multiple retries.');
 };
+
 
 async function postToApi<T>(endpoint: string, body: any): Promise<T> {
     const res = await fetch(endpoint, {
@@ -152,7 +166,13 @@ const generateContentDirect = async (params: any): Promise<any> => {
   return ai.models.generateContent(params);
 };
 
-export const analyzeChart = async (chartFiles: { [key: string]: File | null }, riskReward: string, tradingStyle: string, isSeasonal: boolean): Promise<AnalysisResult> => {
+export const analyzeChart = async (
+    chartFiles: { [key: string]: File | null }, 
+    riskReward: string, 
+    tradingStyle: string, 
+    isSeasonal: boolean,
+    onRetryAttempt?: (attempt: number, maxRetries: number) => void
+): Promise<AnalysisResult> => {
     const savedSettings = localStorage.getItem('userSettings');
     const userSettings: UserSettings | undefined = savedSettings ? JSON.parse(savedSettings) : undefined;
     
@@ -187,10 +207,13 @@ export const analyzeChart = async (chartFiles: { [key: string]: File | null }, r
             return postToApi<AnalysisResult>('/api/analyze', { imageParts, riskReward, tradingStyle, isSeasonal, userSettings });
         }
     };
-    return withRetry(apiCall);
+    return withRetry(apiCall, { onRetryAttempt });
 };
 
-export const createBot = async ({ description, language }: { description: string; language: BotLanguage; }): Promise<string> => {
+export const createBot = async (
+    { description, language }: { description: string; language: BotLanguage; },
+    onRetryAttempt?: (attempt: number, maxRetries: number) => void
+): Promise<string> => {
     const apiCall = async () => {
         if (environment === 'aistudio') {
             const prompt = Prompts.getBotPrompt(description, language);
@@ -201,10 +224,13 @@ export const createBot = async ({ description, language }: { description: string
             return result.code;
         }
     };
-    return withRetry(apiCall);
+    return withRetry(apiCall, { onRetryAttempt });
 };
 
-export const createIndicator = async ({ description, language }: { description: string; language: IndicatorLanguage; }): Promise<string> => {
+export const createIndicator = async (
+    { description, language }: { description: string; language: IndicatorLanguage; },
+    onRetryAttempt?: (attempt: number, maxRetries: number) => void
+): Promise<string> => {
     const apiCall = async () => {
         if (environment === 'aistudio') {
             const prompt = Prompts.getIndicatorPrompt(description, language);
@@ -215,7 +241,7 @@ export const createIndicator = async ({ description, language }: { description: 
             return result.code;
         }
     };
-    return withRetry(apiCall);
+    return withRetry(apiCall, { onRetryAttempt });
 };
 
 export async function* sendMessageStream(history: ChatMessage[], newMessageParts: ChatMessagePart[]): AsyncGenerator<{ textChunk?: string; sources?: GroundingSource[] }> {
@@ -252,6 +278,10 @@ export async function* sendMessageStream(history: ChatMessage[], newMessageParts
         if (!res.body) {
             throw new Error("Streaming response body is null.");
         }
+        if (!res.ok) {
+            const error = await res.json().catch(() => ({ message: res.statusText }));
+            throw new Error(`API Error (${res.status}): ${error.message || 'Streaming request failed.'}`);
+        }
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
         let buffer = '';
@@ -276,7 +306,7 @@ export const sendMessage = async (history: ChatMessage[], newMessageParts: ChatM
      return { id: Date.now().toString(), role: 'model', parts: [{ text: fullText }], sources: finalSources };
 };
 
-export const getMarketNews = async (asset: string): Promise<MarketSentimentResult> => {
+export const getMarketNews = async (asset: string, onRetryAttempt?: (attempt: number, maxRetries: number) => void): Promise<MarketSentimentResult> => {
     const apiCall = async () => {
         if (environment === 'aistudio') {
             const prompt = Prompts.getMarketSentimentPrompt(asset);
@@ -290,10 +320,10 @@ export const getMarketNews = async (asset: string): Promise<MarketSentimentResul
             return parsed;
         } else return postToApi<MarketSentimentResult>('/api/agent', { action: 'marketNews', payload: { asset } });
     };
-    return withRetry(apiCall);
+    return withRetry(apiCall, { onRetryAttempt });
 };
 
-export const getTradingJournalFeedback = async (trades: TradeEntry[]): Promise<JournalFeedback> => {
+export const getTradingJournalFeedback = async (trades: TradeEntry[], onRetryAttempt?: (attempt: number, maxRetries: number) => void): Promise<JournalFeedback> => {
     const apiCall = async () => {
         if (environment === 'aistudio') {
             const prompt = Prompts.getJournalFeedbackPrompt(trades);
@@ -301,7 +331,7 @@ export const getTradingJournalFeedback = async (trades: TradeEntry[]): Promise<J
             return robustJsonParse(getValidatedTextFromResponse(response));
         } else return postToApi<JournalFeedback>('/api/agent', { action: 'journalFeedback', payload: { trades } });
     };
-    return withRetry(apiCall);
+    return withRetry(apiCall, { onRetryAttempt });
 };
 
 export const processCommandWithAgent = async (command: string): Promise<{ text: string, functionCalls: any[] | null }> => {
@@ -315,7 +345,7 @@ export const processCommandWithAgent = async (command: string): Promise<{ text: 
     return withRetry(apiCall);
 };
 
-export const getPredictions = async (): Promise<PredictedEvent[]> => {
+export const getPredictions = async (onRetryAttempt?: (attempt: number, maxRetries: number) => void): Promise<PredictedEvent[]> => {
     const apiCall = async () => {
         if (environment === 'aistudio') {
             const response = await generateContentDirect({ 
@@ -328,10 +358,10 @@ export const getPredictions = async (): Promise<PredictedEvent[]> => {
             return parsed.map(p => ({ ...p, sources }));
         } else return postToApi<PredictedEvent[]>('/api/agent', { action: 'predictions', payload: {} });
     };
-    return withRetry(apiCall);
+    return withRetry(apiCall, { onRetryAttempt });
 };
 
-export const getDashboardOverview = async (isSeasonal: boolean): Promise<DashboardOverview> => {
+export const getDashboardOverview = async (isSeasonal: boolean, onRetryAttempt?: (attempt: number, maxRetries: number) => void): Promise<DashboardOverview> => {
     const apiCall = async () => {
         if (environment === 'aistudio') {
             const response = await generateContentDirect({ 
@@ -345,7 +375,7 @@ export const getDashboardOverview = async (isSeasonal: boolean): Promise<Dashboa
             return parsed;
         } else return postToApi<DashboardOverview>('/api/agent', { action: 'dashboardOverview', payload: { isSeasonal } });
     };
-    return withRetry(apiCall);
+    return withRetry(apiCall, { onRetryAttempt });
 };
 
 export const getAutoFixSuggestion = async (errors: any[]): Promise<string> => {
