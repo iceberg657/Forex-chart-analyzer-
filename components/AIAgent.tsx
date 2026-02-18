@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { processCommandWithAgent } from '../services/agentService';
 import { useAppContext } from '../hooks/useAppContext';
@@ -6,7 +5,11 @@ import Spinner from './Spinner';
 import ErrorDisplay from './ErrorDisplay';
 import { EdgeLightColor } from '../hooks/useEdgeLighting';
 
-const AIAgent: React.FC = () => {
+interface AIAgentProps {
+    inline?: boolean;
+}
+
+const AIAgent: React.FC<AIAgentProps> = ({ inline = false }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [command, setCommand] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -50,7 +53,7 @@ const AIAgent: React.FC = () => {
                     break;
                 case 'setEdgeLighting':
                     const color = call.args.color;
-                    const validColors: EdgeLightColor[] = ['default', 'green', 'red', 'orange', 'yellow', 'blue', 'purple', 'white'];
+                    const validColors: EdgeLightColor[] = ['default', 'green', 'red', 'orange', 'yellow', 'blue', 'purple', 'white', 'pink'];
                     if (typeof color === 'string' && validColors.includes(color as EdgeLightColor)) {
                         app.setEdgeLight(color as EdgeLightColor);
                         message = `Edge lighting set to ${color}.`;
@@ -73,10 +76,12 @@ const AIAgent: React.FC = () => {
       setResponseMessage(message);
       setCommand('');
 
-      setTimeout(() => {
-        setIsModalOpen(false);
-        setResponseMessage(null);
-      }, 3000);
+      if (!inline) {
+        setTimeout(() => {
+            setIsModalOpen(false);
+            setResponseMessage(null);
+        }, 3000);
+      }
 
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unknown error occurred.');
@@ -87,14 +92,46 @@ const AIAgent: React.FC = () => {
   
   // Close modal with Escape key
   useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setIsModalOpen(false);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+    if (!inline) {
+        const handleKeyDown = (event: KeyboardEvent) => {
+          if (event.key === 'Escape') {
+            setIsModalOpen(false);
+          }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [inline]);
+
+  if (inline) {
+    return (
+        <div className="w-full">
+            {isLoading ? (
+                <div className="py-4"><Spinner/></div>
+            ) : error ? (
+                <ErrorDisplay error={error}/>
+            ) : responseMessage ? (
+                <div className="text-center py-4 text-green-700 dark:text-green-300 font-bold uppercase tracking-widest text-xs animate-pulse">
+                    {responseMessage}
+                    <button onClick={() => setResponseMessage(null)} className="block mx-auto mt-2 text-[10px] text-gray-400 hover:text-gray-200">Reset</button>
+                </div>
+            ) : (
+                <form onSubmit={handleCommandSubmit} className="relative">
+                    <input
+                        type="text"
+                        value={command}
+                        onChange={e => setCommand(e.target.value)}
+                        placeholder="Command AI (e.g. 'Navigate to Dashboard')"
+                        className="w-full pl-4 pr-12 py-3.5 text-sm bg-black/20 dark:bg-white/5 border border-white/10 focus:ring-2 focus:ring-blue-500/30 rounded-2xl text-gray-900 dark:text-white font-medium"
+                    />
+                    <button type="submit" className="absolute right-2 top-1.5 bottom-1.5 w-10 bg-blue-600 hover:bg-blue-700 text-white rounded-xl flex items-center justify-center transition-colors shadow-lg">
+                        <i className="fas fa-chevron-right text-xs"></i>
+                    </button>
+                </form>
+            )}
+        </div>
+    );
+  }
 
   return (
     <>

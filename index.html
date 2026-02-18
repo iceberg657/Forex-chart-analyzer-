@@ -1,190 +1,136 @@
-
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/logo.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Forex Chart Analyzer | Grey Algo Apex Trader</title>
     <meta name="description" content="The ultimate Forex chart analyzer powered by AI. Get instant technical analysis, generate custom trading bots, and gain a trading edge with Grey Algo Apex Trader." />
     <meta name="keywords" content="forex chart analyzer, AI trading, technical analysis, trading bot, MQL4, MQL5, forex analysis, market sentiment, Gemini API" />
     <meta name="theme-color" content="#020617"/>
-    <script>
-      // Redirect to hash-based URL for PWA compatibility
-      if (window.location.pathname === '/' && window.location.hash === '') {
-        window.location.replace('/#/');
-      }
-    </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script>
       tailwind.config = {
         darkMode: 'class',
         theme: {
-          extend: {},
+          extend: {
+            animation: {
+              'pulse-fast': 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+              'shimmer': 'shimmer 2s infinite linear',
+            },
+            keyframes: {
+              shimmer: {
+                '0%': { transform: 'translateX(-100%)' },
+                '100%': { transform: 'translateX(100%)' }
+              }
+            }
+          },
         },
         plugins: [],
       }
     </script>
 <style>
-    /* Responsive Fix CSS */
-    html {
-      font-size: 16px;
-      scroll-behavior: smooth;
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
     }
+    ::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+        background: rgba(239, 68, 68, 0.2);
+        border-radius: 10px;
+        border: 2px solid transparent;
+        background-clip: padding-box;
+    }
+    .dark ::-webkit-scrollbar-thumb {
+        background: rgba(56, 189, 248, 0.2);
+        background-clip: padding-box;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+        background: rgba(239, 68, 68, 0.4);
+    }
+    .dark ::-webkit-scrollbar-thumb:hover {
+        background: rgba(56, 189, 248, 0.4);
+    }
+
     html, body, #root {
       margin: 0;
       padding: 0;
       width: 100%;
-      height: 100%; /* Critical for framed environments */
-      overflow-x: hidden; /* Prevent horizontal scroll */
-    }
-    img, video, canvas {
-      max-width: 100%;
-      height: auto;
+      height: 100%;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
     
     :root {
-        --logo-color-1: #ef4444;
-        --logo-color-2: #f97316;
-        --logo-color-3: #eab308;
-        --logo-color-4: #8b5cf6;
-        --glow-color-1: rgba(135, 206, 250, 0.4);
-        --glow-color-2: rgba(254, 226, 226, 0.3);
-        --seasonal-neon-green: #00FFAA;
-        --seasonal-emerald: #00C77A;
-        --seasonal-glow-overlay: rgba(0, 255, 150, 0.08);
+        --logo-color-1: #ef4444; /* Red */
+        --logo-color-2: #f97316; /* Orange */
+        --logo-color-3: #eab308; /* Yellow */
+        --logo-color-4: #8b5cf6; /* Purple */
+        --edge-glow-color: rgba(59, 130, 246, 0.5); /* Default Blue Glow */
+    }
+
+    /* Dark Mode Logo Colors & Default Glow: Sky Blue, Emerald Green, Purple */
+    .dark {
+        --logo-color-1: #38bdf8; 
+        --logo-color-2: #10b981; 
+        --logo-color-3: #a855f7; 
+        --logo-color-4: #6366f1; 
+        --edge-glow-color: rgba(59, 130, 246, 0.5); /* Default Blue Glow */
     }
 
     body {
         background: linear-gradient(135deg, #fef2f2 0%, #e0f2fe 100%);
         min-height: 100vh;
         transition: background-color 0.5s ease;
-        /* Added for better readability */
         line-height: 1.5;
-        text-rendering: optimizeLegibility;
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
+        position: relative;
     }
-    
-    body::after {
+
+    /* Edge Lighting */
+    body::before {
         content: '';
         position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
+        inset: 0;
         pointer-events: none;
         z-index: 9999;
-        box-shadow: inset 0 0 10px 2px var(--glow-color-1), inset 0 0 25px 8px var(--glow-color-2);
-        transition: box-shadow 0.7s ease-in-out;
+        box-shadow: inset 0 0 40px 10px var(--edge-glow-color);
+        transition: box-shadow 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        opacity: 0.6;
     }
 
-    .dark {
-        --logo-color-1: #34d399;
-        --logo-color-2: #38bdf8;
-        --logo-color-3: #8b5cf6;
-        --logo-color-4: #8b5cf6;
-        --glow-color-1: rgba(59, 130, 246, 0.3);
-        --glow-color-2: rgba(139, 92, 246, 0.25);
-    }
+    .edge-light-green { --edge-glow-color: rgba(34, 197, 94, 0.6); }
+    .edge-light-red { --edge-glow-color: rgba(239, 68, 68, 0.6); }
+    .edge-light-orange { --edge-glow-color: rgba(249, 115, 22, 0.6); }
+    .edge-light-yellow { --edge-glow-color: rgba(234, 179, 8, 0.6); }
+    .edge-light-blue { --edge-glow-color: rgba(59, 130, 246, 0.6); }
+    .edge-light-purple { --edge-glow-color: rgba(168, 85, 247, 0.6); }
+    .edge-light-pink { --edge-glow-color: rgba(236, 72, 153, 0.6); }
+    .edge-light-white { --edge-glow-color: rgba(255, 255, 255, 0.6); }
 
-    .dark body {
-        background: #0C0F1A;
-    }
-    
-    body.edge-light-green {
-      --glow-color-1: rgba(74, 222, 128, 0.5);
-      --glow-color-2: rgba(34, 197, 94, 0.4);
-    }
-    body.edge-light-red {
-      --glow-color-1: rgba(239, 68, 68, 0.5);
-      --glow-color-2: rgba(220, 38, 38, 0.4);
-    }
-     body.edge-light-orange {
-      --glow-color-1: rgba(251, 146, 60, 0.5);
-      --glow-color-2: rgba(249, 115, 22, 0.4);
-    }
-    body.edge-light-yellow {
-      --glow-color-1: rgba(250, 204, 21, 0.5);
-      --glow-color-2: rgba(234, 179, 8, 0.4);
-    }
-    body.edge-light-blue {
-      --glow-color-1: rgba(96, 165, 250, 0.5);
-      --glow-color-2: rgba(59, 130, 246, 0.4);
-    }
-    body.edge-light-purple {
-      --glow-color-1: rgba(167, 139, 250, 0.5);
-      --glow-color-2: rgba(139, 92, 246, 0.4);
-    }
-    body.edge-light-white {
-      --glow-color-1: rgba(229, 231, 235, 0.6);
-      --glow-color-2: rgba(209, 213, 219, 0.5);
-    }
-
-    .dark body.edge-light-green {
-        --glow-color-1: rgba(74, 222, 128, 0.4);
-        --glow-color-2: rgba(34, 197, 94, 0.3);
-    }
-    .dark body.edge-light-red {
-        --glow-color-1: rgba(248, 113, 113, 0.4);
-        --glow-color-2: rgba(220, 38, 38, 0.3);
-    }
-     .dark body.edge-light-orange {
-        --glow-color-1: rgba(251, 146, 60, 0.4);
-        --glow-color-2: rgba(249, 115, 22, 0.3);
-    }
-    .dark body.edge-light-yellow {
-        --glow-color-1: rgba(250, 204, 21, 0.4);
-        --glow-color-2: rgba(234, 179, 8, 0.3);
-    }
-    .dark body.edge-light-blue {
-        --glow-color-1: rgba(96, 165, 250, 0.4);
-        --glow-color-2: rgba(59, 130, 246, 0.3);
-    }
-    .dark body.edge-light-purple {
-        --glow-color-1: rgba(167, 139, 250, 0.4);
-        --glow-color-2: rgba(139, 92, 246, 0.3);
-    }
-    .dark body.edge-light-white {
-        --glow-color-1: rgba(229, 231, 235, 0.1);
-        --glow-color-2: rgba(209, 213, 219, 0.08);
-    }
+    .dark body { background: #0C0F1A; }
 
     .floating-element {
         position: fixed;
         border-radius: 50%;
-        background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(59, 130, 246, 0.15) 100%);
-        filter: blur(80px);
-        animation: float 40s infinite ease-in-out;
+        background: linear-gradient(135deg, rgba(239, 68, 68, 0.05) 0%, rgba(59, 130, 246, 0.05) 100%);
+        filter: blur(100px);
+        animation: float 45s infinite ease-in-out;
         z-index: 0;
+        pointer-events: none;
     }
 
     .dark .floating-element {
-       background: linear-gradient(135deg, rgba(56, 189, 248, 0.2) 0%, rgba(167, 139, 250, 0.2) 100%);
-    }
-
-    .floating-element:nth-child(1) {
-        top: -150px;
-        left: -150px;
-        width: 400px;
-        height: 400px;
-        animation-delay: 0s;
-        animation-duration: 45s;
-    }
-    
-    .floating-element:nth-child(2) {
-        bottom: -100px;
-        right: -150px;
-        width: 300px;
-        height: 300px;
-        animation-delay: -10s;
-        animation-duration: 40s;
+       background: linear-gradient(135deg, rgba(56, 189, 248, 0.1) 0%, rgba(167, 139, 250, 0.1) 100%);
     }
 
     @keyframes float {
         0% { transform: translate(0, 0) rotate(0deg); }
-        50% { transform: translate(60px, -80px) rotate(180deg); }
+        50% { transform: translate(40px, -60px) rotate(180deg); }
         100% { transform: translate(0, 0) rotate(360deg); }
     }
 
@@ -194,117 +140,26 @@
         background-clip: text;
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        color: transparent;
         animation: gradientText 4s linear infinite;
         background-image: linear-gradient(90deg, #ef4444, #f97316, #eab308, #8b5cf6, #d946ef, #ef4444);
     }
     .dark .animated-gradient-text {
-        background-image: linear-gradient(to right, #34d399, #38bdf8, #8b5cf6, #34d399);
+        background-image: linear-gradient(to right, #38bdf8, #10b981, #a855f7, #38bdf8);
     }
-    @keyframes gradientText {
-        to {
-            background-position: 200% center;
-        }
+    @keyframes gradientText { to { background-position: 200% center; } }
+
+    /* RENDERING STABILIZER for backdrop-filter */
+    .glass-fix {
+        transform: translate3d(0, 0, 0); 
+        backface-visibility: hidden;
+        perspective: 1000px;
+        will-change: transform, backdrop-filter;
+        isolation: isolate;
+        /* Using outline and transparent box-shadow forces browsers to snap to pixel grid */
+        outline: 1px solid transparent;
+        box-shadow: 0 0 0 1px transparent;
     }
 
-    .graph-path {
-        stroke: #ef4444;
-        stroke-width: 2;
-        fill: url(#graphGradientLight);
-        stroke-dasharray: 1500;
-        stroke-dashoffset: 1500;
-        animation: draw 5s ease-in-out forwards;
-    }
-    .dark .graph-path {
-        stroke: #38bdf8;
-        fill: url(#graphGradientDark);
-    }
-    @keyframes draw {
-        to { stroke-dashoffset: 0; }
-    }
-
-    .pulse {
-        display: block;
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-        background: #4ade80;
-        margin-right: 5px;
-        animation: pulse 2s infinite;
-    }
-    
-    @keyframes pulse {
-        0% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.7); }
-        70% { box-shadow: 0 0 0 10px rgba(74, 222, 128, 0); }
-        100% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0); }
-    }
-
-    .pulse-red {
-        display: block;
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-        background: #f87171;
-        margin-right: 5px;
-        animation: pulse-red 2s infinite;
-    }
-
-    @keyframes pulse-red {
-        0% { box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.7); }
-        70% { box-shadow: 0 0 0 10px rgba(248, 113, 113, 0); }
-        100% { box-shadow: 0 0 0 0 rgba(248, 113, 113, 0); }
-    }
-
-    .candlestick-loader {
-        display: flex;
-        align-items: flex-end;
-        height: 100px;
-        gap: 10px;
-    }
-
-    .candle {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        animation: bounce 1.5s infinite ease-in-out;
-    }
-
-    .candle:nth-child(2) { animation-delay: -0.2s; }
-    .candle:nth-child(3) { animation-delay: -0.4s; }
-    .candle:nth-child(4) { animation-delay: -0.6s; }
-    .candle:nth-child(5) { animation-delay: -0.8s; }
-
-    .candle .wick {
-        width: 2px;
-        height: 20px;
-        background-color: #9ca3af;
-    }
-
-    .candle .body {
-        width: 20px;
-        height: 50px;
-    }
-
-    .candle:nth-child(odd) .body {
-        background-color: #ef4444;
-    }
-    .candle:nth-child(even) .body {
-        background-color: #22c55e;
-    }
-    
-    .dark .candle:nth-child(odd) .body, #splash-screen .candle:nth-child(odd) .body {
-         background-color: #ef4444;
-    }
-     .dark .candle:nth-child(even) .body, #splash-screen .candle:nth-child(even) .body {
-         background-color: #22c55e;
-    }
-
-    @keyframes bounce {
-        0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-        40% { transform: translateY(-30px); }
-        60% { transform: translateY(-15px); }
-    }
-    
     #splash-screen {
         position: fixed;
         inset: 0;
@@ -316,117 +171,27 @@
         background: #0C0F1A;
         transition: opacity 0.5s ease-out;
         color: white;
-      }
-      #splash-screen .logo-container {
-        width: 150px;
-        height: 150px;
-      }
-      #splash-screen .candlestick-loader {
-        margin-top: 2rem;
-        transform: scale(0.8);
-      }
-      
-    /* --- Seasonal Mode Styles --- */
+    }
+
     .seasonal-ribbon {
-        position: sticky;
-        top: 0;
-        z-index: 55; /* Above header (50), below notifications (100) */
+        background: linear-gradient(to right, #064e3b, #065f46, #064e3b);
+        color: #d1fae5;
+        text-align: center;
+        padding: 0.5rem;
+        font-size: 0.75rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.15em;
+        height: 2.5rem;
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 0.5rem 1rem;
-        background-color: var(--seasonal-emerald);
-        color: #020617; /* Dark text for contrast */
-        font-size: 0.875rem;
-        font-weight: 600;
-        transform: translateY(-100%);
-        animation: slide-down 0.5s 0.2s ease-out forwards;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        z-index: 100;
+        position: relative;
+        transform: translate3d(0,0,0);
+        /* Use inset shadow to move the line effect to the bottom */
+        box-shadow: inset 0 -1px 0 0 rgba(16, 185, 129, 0.2);
     }
-
-    @keyframes slide-down {
-        to { transform: translateY(0); }
-    }
-
-    .seasonal-active .seasonal-glow {
-        box-shadow: 0 0 25px 5px var(--seasonal-glow-overlay), inset 0 0 15px 2px var(--seasonal-glow-overlay);
-        border-color: var(--seasonal-emerald) !important;
-        transition: box-shadow 0.4s ease-out, border-color 0.4s ease-out;
-    }
-    
-    .dark .seasonal-active .seasonal-glow {
-        box-shadow: 0 0 25px 5px var(--seasonal-glow-overlay), inset 0 0 15px 2px var(--seasonal-glow-overlay), 0 0 40px 10px rgba(0, 255, 170, 0.05);
-    }
-
-    .seasonal-badge {
-        position: absolute;
-        top: 0.75rem;
-        right: 0.75rem;
-        background-color: rgba(0, 199, 122, 0.1);
-        color: var(--seasonal-emerald);
-        padding: 0.2rem 0.6rem;
-        border-radius: 9999px;
-        font-size: 0.7rem;
-        font-weight: 700;
-        border: 1px solid rgba(0, 199, 122, 0.3);
-        opacity: 0;
-        transform: scale(0.9);
-        animation: fade-in-badge 0.5s 0.3s ease-out forwards;
-    }
-
-    @keyframes fade-in-badge {
-        to { opacity: 1; transform: scale(1); }
-    }
-
-    /* Green tint on borders - applied only in dark mode for seasonal effect */
-    .seasonal-active.dark .border,
-    .seasonal-active .dark .border-b,
-    .seasonal-active .dark .border-t,
-    .seasonal-active .dark .border-l-4 { /* For specific accent borders */
-        transition: border-color 0.4s ease-out;
-    }
-
-    .seasonal-active.dark .border-white\/5,
-    .seasonal-active.dark .dark\:border-white\/5,
-    .seasonal-active.dark .dark\:border-gray-700,
-    .seasonal-active.dark .dark\:border-gray-800 {
-       border-color: rgba(0, 255, 170, 0.1) !important;
-    }
-
-    .seasonal-active.dark .border-white\/10,
-    .seasonal-active.dark .dark\:border-white\/10,
-    .seasonal-active.dark .dark\:border-gray-200\/60 {
-       border-color: rgba(0, 255, 170, 0.15) !important;
-    }
-    
-    .seasonal-active.dark .border-white\/20,
-    .seasonal-active.dark .dark\:border-white\/20 {
-       border-color: rgba(0, 255, 170, 0.2) !important;
-    }
-    
-    .seasonal-active.dark .border-white\/30,
-    .seasonal-active.dark .dark\:border-white\/30,
-    .seasonal-active.dark .dark\:border-gray-400\/30,
-    .seasonal-active.dark .dark\:border-gray-500\/50 {
-       border-color: rgba(0, 255, 170, 0.25) !important;
-    }
-    
-    /* Hover states for interactive elements */
-    .seasonal-active.dark .hover\:border-white\/10:hover,
-    .seasonal-active.dark .dark\:hover\:border-white\/10:hover,
-    .seasonal-active.dark .hover\:border-red-400\/80:hover { /* from trader page */
-        border-color: rgba(0, 255, 170, 0.4) !important;
-    }
-    
-    /* Focus states for inputs */
-    .seasonal-active.dark .focus\:border-red-500:focus,
-    .seasonal-active.dark .focus\:border-green-500:focus,
-    .seasonal-active.dark .focus\:ring-red-500:focus,
-    .seasonal-active.dark .focus\:ring-green-500:focus {
-        border-color: var(--seasonal-emerald) !important;
-        --tw-ring-color: rgba(0, 255, 170, 0.4) !important;
-    }
-
 </style>
 <script type="importmap">
 {
@@ -446,48 +211,26 @@
   }
 }
 </script>
-</head>
+  </head>
   <body>
     <div id="splash-screen">
-      <div class="logo-container">
-        <svg
-          width="100%"
-          height="100%"
-          viewBox="0 0 100 100"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
+      <div class="logo-container" style="width: 120px; height: 120px;">
+        <svg width="100%" height="100%" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <linearGradient id="splashLogoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stop-color="#34d399" />
-              <stop offset="100%" stop-color="#38bdf8" />
+              <stop offset="0%" stop-color="#38bdf8" />
+              <stop offset="100%" stop-color="#10b981" />
             </linearGradient>
           </defs>
           <path d="M50 2.5 L95.5 26.25 V 73.75 L50 97.5 L4.5 73.75 V 26.25 Z" stroke="url(#splashLogoGradient)" stroke-width="5" />
-          <text x="50" y="68" font-family="Arial, sans-serif" font-size="50" font-weight="bold" fill="url(#splashLogoGradient)" text-anchor="middle" >GA</text>
-          <path d="M25 70 L40 60 L55 75 L75 55" stroke="url(#splashLogoGradient)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+          <text x="50" y="68" font-family="Arial, sans-serif" font-size="50" font-weight="bold" fill="url(#splashLogoGradient)" text-anchor="middle">GA</text>
         </svg>
       </div>
-      <div class="candlestick-loader">
-        <div class="candle"><div class="wick"></div><div class="body"></div></div>
-        <div class="candle"><div class="wick"></div><div class="body"></div></div>
-        <div class="candle"><div class="wick"></div><div class="body"></div></div>
-        <div class="candle"><div class="wick"></div><div class="body"></div></div>
-        <div class="candle"><div class="wick"></div><div class="body"></div></div>
-      </div>
+      <p style="margin-top: 2rem; font-weight: 900; letter-spacing: 0.2em; text-transform: uppercase; font-size: 0.75rem; color: #38bdf8; animation: pulse 2s infinite;">Syncing Neural Grid</p>
     </div>
     <div id="root"></div>
+    <div class="floating-element" style="top: -10%; left: -10%; width: 40vw; height: 40vw;"></div>
+    <div class="floating-element" style="bottom: -10%; right: -10%; width: 35vw; height: 35vw;"></div>
     <script type="module" src="/index.tsx"></script>
-    <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').then(registration => {
-            console.log('SW registered: ', registration);
-          }).catch(registrationError => {
-            console.log('SW registration failed: ', registrationError);
-          });
-        });
-      }
-    </script>
   </body>
 </html>

@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '../hooks/useAppContext';
 import { PRICING_PLANS } from '../constants';
 import { PricingPlan } from '../types';
 import { useAuth } from '../hooks/useAuth';

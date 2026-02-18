@@ -1,5 +1,3 @@
-
-
 import React, { createContext, useContext, ReactNode } from 'react';
 
 export type AppEnvironment = 'website' | 'pwa' | 'aistudio';
@@ -12,8 +10,13 @@ export const detectEnvironment = (): AppEnvironment => {
 
     // The presence of a client-side API_KEY is the definitive check for the AI Studio environment.
     // This allows for direct API calls without a backend proxy.
-    if (process.env.API_KEY) {
-        return 'aistudio';
+    // We must safely check for 'process' to avoid ReferenceErrors in standard browser environments.
+    try {
+        if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
+            return 'aistudio';
+        }
+    } catch (e) {
+        // process is not defined, ignore and proceed
     }
 
     // Check for PWA running in standalone mode on the client-side

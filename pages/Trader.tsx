@@ -1,12 +1,14 @@
 
 import React, { useState, useCallback, DragEvent, useMemo, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '../hooks/useAppContext';
 import { analyzeChart } from '../services/apiClient';
 import { TRADING_STYLES } from '../constants';
 import CandleStickLoader from '../components/CandleStickLoader';
 import { usePageData } from '../hooks/usePageData';
 import { AnalysisResult } from '../types';
 import Dashboard from '../components/Dashboard';
+import { useEnvironment } from '../hooks/useEnvironment';
+import NeuralNetworkBackground from '../components/NeuralNetworkBackground';
 
 interface TraderProps {}
 
@@ -52,22 +54,20 @@ const ChartUploadSlot: React.FC<{
 
   return (
     <div className="w-full">
-      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+      <label className="block text-xs font-black uppercase text-gray-500 dark:text-gray-400 mb-2 tracking-widest">
         {title} {isPrimary && <span className="text-red-500">*</span>}
       </label>
       <div className="relative">
         {previewUrl ? (
           <div className={`relative group ${disabled ? 'opacity-50' : ''}`}>
-            <img src={previewUrl} alt={`${title} preview`} className="rounded-md w-full h-48 object-cover border-2 border-white/30 dark:border-white/10" />
+            <img src={previewUrl} alt={`${title} preview`} className="rounded-2xl w-full h-48 object-cover border border-white/40 dark:border-white/10 shadow-xl" />
             <button
               onClick={() => onFileRemove(timeframe)}
               disabled={disabled}
-              className="absolute top-2 right-2 bg-black/50 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity disabled:cursor-not-allowed"
+              className="absolute top-3 right-3 bg-red-600 text-white rounded-full p-2 opacity-0 group-hover:opacity-100 transition-all hover:scale-110 shadow-lg disabled:cursor-not-allowed"
               aria-label={`Remove ${title} image`}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-              </svg>
+              <i className="fas fa-times text-xs"></i>
             </button>
           </div>
         ) : (
@@ -77,18 +77,19 @@ const ChartUploadSlot: React.FC<{
             onDragLeave={(e) => handleDrag(e, false)}
             onDragOver={(e) => e.preventDefault()}
             onDrop={handleDrop}
-            className={`mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-md transition-colors ${disabled ? 'opacity-50 cursor-not-allowed bg-gray-500/5' : 'cursor-pointer'} ${isDragging ? 'border-red-500 bg-red-500/10' : 'border-gray-400/50 dark:border-gray-500/50 hover:border-red-400/80'}`}
+            className={`mt-1 flex justify-center px-6 pt-8 pb-10 border-2 border-dashed rounded-[2rem] transition-all ${disabled ? 'opacity-50 cursor-not-allowed bg-gray-500/5' : 'cursor-pointer'} ${isDragging ? 'border-red-500 bg-red-500/10 scale-[0.98]' : 'border-white/30 dark:border-white/10 bg-white/5 hover:bg-white/10 hover:border-red-400/50'}`}
           >
-            <div className="space-y-1 text-center">
-              <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true"><path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" /></svg>
-              <div className="flex text-sm text-gray-600 dark:text-gray-400">
-                <span className={`relative bg-transparent rounded-md font-medium ${disabled ? '' : 'text-red-600 dark:text-red-500 hover:text-red-500'}`}>
-                  Click to upload
+            <div className="space-y-2 text-center">
+              <div className="w-12 h-12 rounded-2xl bg-gray-500/10 flex items-center justify-center mx-auto mb-2 text-gray-400">
+                <i className="fas fa-cloud-upload-alt text-2xl"></i>
+              </div>
+              <div className="flex flex-col text-sm text-gray-600 dark:text-gray-300">
+                <span className={`font-bold ${disabled ? '' : 'text-red-600 dark:text-red-400'}`}>
+                  Upload {title}
                 </span>
                 <input id={inputId} name={inputId} type="file" className="sr-only" accept="image/png, image/jpeg, image/webp" onChange={handleInputChange} disabled={disabled} />
-                <p className="pl-1">or drag & drop / paste (Ctrl+V)</p>
+                <p className="text-[10px] mt-1 text-gray-500 dark:text-gray-500 uppercase font-bold tracking-tighter">Drag & Drop or Ctrl+V</p>
               </div>
-              <p className="text-xs text-gray-500 dark:text-gray-500">{description}</p>
             </div>
           </label>
         )}
@@ -111,6 +112,7 @@ const Trader: React.FC<TraderProps> = () => {
   const [isSingleChartMode, setIsSingleChartMode] = useState(false);
   const navigate = useNavigate();
   const { pageData, addAnalysisToHistory } = usePageData();
+  const environment = useEnvironment();
 
   const isSeasonalModeActive = useMemo(() => {
     const { seasonalModeSetting } = pageData;
@@ -142,18 +144,16 @@ const Trader: React.FC<TraderProps> = () => {
           if (items[i].type.indexOf('image') !== -1) {
             const file = items[i].getAsFile();
             if (file) {
-              e.preventDefault(); // Prevent default paste behavior
+              e.preventDefault();
 
               if (isSingleChartMode) {
                  handleFileChange(file, 'primary');
               } else {
-                 // Auto-fill logic for multi-timeframe
                  if (!chartFiles.primary) handleFileChange(file, 'primary');
                  else if (!chartFiles.higher) handleFileChange(file, 'higher');
                  else if (!chartFiles.entry) handleFileChange(file, 'entry');
-                 else handleFileChange(file, 'primary'); // Default overwrite primary if all full
+                 else handleFileChange(file, 'primary'); 
               }
-              // Only handle the first image found in clipboard
               return;
             }
           }
@@ -170,7 +170,6 @@ const Trader: React.FC<TraderProps> = () => {
     setIsSingleChartMode(prev => {
         const newModeIsSingle = !prev;
         if (newModeIsSingle) {
-            // When switching TO single mode, clear other charts
             handleFileRemove('higher');
             handleFileRemove('entry');
         }
@@ -199,7 +198,8 @@ const Trader: React.FC<TraderProps> = () => {
     } catch (err) {
       console.error("Analysis submission failed:", err);
       const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.';
-      navigate('/analysis', { state: { error: errorMessage } });
+      // Don't navigate away, show error inline to allow retry/key change
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -208,108 +208,154 @@ const Trader: React.FC<TraderProps> = () => {
   const riskRewardOptions = ['1:1', '1:2', '1:3', '1:4', '1:5'];
   const isAnalyzeDisabled = isLoading || !chartFiles.primary;
 
+  const selectClassName = "mt-1 block w-full pl-4 pr-10 py-3 text-base bg-white/5 dark:bg-black/20 border border-white/20 dark:border-white/10 focus:ring-2 focus:ring-red-500/30 focus:border-red-500/50 rounded-2xl text-gray-900 dark:text-white font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed appearance-none";
+
   return (
-    <div className="space-y-12">
-      {isLoading && <CandleStickLoader />}
-      <Dashboard />
-      <div>
-        <div className="bg-white dark:bg-gray-900 border border-gray-200/60 dark:border-white/10 rounded-2xl shadow-lg p-6 space-y-6">
-          <div className="flex items-center justify-center space-x-3">
-              <span className={`text-sm font-medium ${!isSingleChartMode ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`}>Multi-Timeframe</span>
-              <button
-                  onClick={toggleMode}
-                  type="button"
-                  className={`relative inline-flex flex-shrink-0 h-6 w-11 border-2 border-transparent rounded-full cursor-pointer transition-colors ease-in-out duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 ${isSingleChartMode ? 'bg-red-600' : 'bg-gray-300 dark:bg-gray-600'}`}
-                  role="switch"
-                  aria-checked={isSingleChartMode}
-              >
-                  <span aria-hidden="true" className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transform ring-0 transition ease-in-out duration-200 ${isSingleChartMode ? 'translate-x-5' : 'translate-x-0'}`} />
-              </button>
-              <span className={`text-sm font-medium ${isSingleChartMode ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`}>Single Chart</span>
-          </div>
+    <div className="space-y-12 relative">
+      <NeuralNetworkBackground />
+      <div className="relative z-10 space-y-12">
+        {isLoading && <CandleStickLoader />}
+        <Dashboard />
+        <div className="max-w-5xl mx-auto w-full px-2">
+            <div className="bg-white/30 dark:bg-black/40 backdrop-blur-2xl border border-white/40 dark:border-white/10 rounded-[3rem] shadow-2xl p-8 space-y-10 animate-fade-in">
+            
+            {/* Mode Switcher */}
+            <div className="flex flex-col items-center space-y-4">
+                <h2 className="text-2xl font-black uppercase tracking-tighter text-gray-900 dark:text-white">Oracle Analyzer</h2>
+                <div className="flex items-center gap-4 bg-black/5 dark:bg-white/5 p-1.5 rounded-2xl border border-white/10">
+                    <button 
+                        onClick={() => !isSingleChartMode || toggleMode()}
+                        className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${!isSingleChartMode ? 'bg-white dark:bg-white/10 text-red-600 shadow-lg' : 'text-gray-500'}`}
+                    >
+                        Multi-TF
+                    </button>
+                    <button 
+                        onClick={() => isSingleChartMode || toggleMode()}
+                        className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${isSingleChartMode ? 'bg-white dark:bg-white/10 text-red-600 shadow-lg' : 'text-gray-500'}`}
+                    >
+                        Single Chart
+                    </button>
+                </div>
+            </div>
 
-          {isSingleChartMode ? (
-            <div>
-              <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-1 text-center">1. Upload Your Chart</h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 text-center">Provide a single chart for a focused analysis.</p>
-              <div className="mt-4 max-w-md mx-auto">
-                <ChartUploadSlot
-                  timeframe="primary"
-                  title="Trading Chart"
-                  description="Required for analysis"
-                  previewUrl={previewUrls.primary}
-                  onFileChange={handleFileChange}
-                  onFileRemove={handleFileRemove}
-                  isPrimary
-                />
-              </div>
+            {/* Upload Section */}
+            <div className="space-y-6">
+                {!isSingleChartMode ? (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <ChartUploadSlot
+                    timeframe="higher"
+                    title="Macro TF"
+                    description="4H / Daily"
+                    previewUrl={previewUrls.higher}
+                    onFileChange={handleFileChange}
+                    onFileRemove={handleFileRemove}
+                    />
+                    <ChartUploadSlot
+                    timeframe="primary"
+                    title="Main TF"
+                    description="H1 / M15"
+                    previewUrl={previewUrls.primary}
+                    onFileChange={handleFileChange}
+                    onFileRemove={handleFileRemove}
+                    isPrimary
+                    />
+                    <ChartUploadSlot
+                    timeframe="entry"
+                    title="Execution TF"
+                    description="M15 / M5"
+                    previewUrl={previewUrls.entry}
+                    onFileChange={handleFileChange}
+                    onFileRemove={handleFileRemove}
+                    />
+                </div>
+                ) : (
+                <div className="max-w-md mx-auto w-full">
+                    <ChartUploadSlot
+                    timeframe="primary"
+                    title="Technical Snapshot"
+                    description="Required"
+                    previewUrl={previewUrls.primary}
+                    onFileChange={handleFileChange}
+                    onFileRemove={handleFileRemove}
+                    isPrimary
+                    />
+                </div>
+                )}
             </div>
-          ) : (
-            <div>
-              <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-1">1. Upload Charts for Top-Down Analysis</h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Provide charts from different timeframes for the most accurate analysis.</p>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <ChartUploadSlot
-                  timeframe="higher"
-                  title="Higher Timeframe"
-                  description="Optional (e.g., 4H, 1D)"
-                  previewUrl={previewUrls.higher}
-                  onFileChange={handleFileChange}
-                  onFileRemove={handleFileRemove}
-                />
-                <ChartUploadSlot
-                  timeframe="primary"
-                  title="Primary Timeframe"
-                  description="Required (e.g., 1H, 15m)"
-                  previewUrl={previewUrls.primary}
-                  onFileChange={handleFileChange}
-                  onFileRemove={handleFileRemove}
-                  isPrimary
-                />
-                <ChartUploadSlot
-                  timeframe="entry"
-                  title="Entry Timeframe"
-                  description="Optional (e.g., 15m, 5m)"
-                  previewUrl={previewUrls.entry}
-                  onFileChange={handleFileChange}
-                  onFileRemove={handleFileRemove}
-                />
-              </div>
+            
+            {/* Parameters Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 p-6 rounded-[2.5rem] bg-black/5 dark:bg-white/5 border border-white/10">
+                <div className="relative">
+                <label className="block text-[10px] font-black uppercase text-gray-500 dark:text-gray-400 mb-1 tracking-widest ml-1">Trading Strategy</label>
+                <select value={tradingStyle} onChange={e => setTradingStyle(e.target.value)} className={selectClassName}>
+                    {TRADING_STYLES.map(style => <option key={style} value={style}>{style}</option>)}
+                </select>
+                <div className="absolute right-4 bottom-3.5 pointer-events-none text-gray-400">
+                    <i className="fas fa-chevron-down text-xs"></i>
+                </div>
+                </div>
+                <div className="relative">
+                <label className="block text-[10px] font-black uppercase text-gray-500 dark:text-gray-400 mb-1 tracking-widest ml-1">Risk Profile</label>
+                <select value={riskReward} onChange={e => setRiskReward(e.target.value)} className={selectClassName}>
+                    {riskRewardOptions.map(option => <option key={option} value={option}>{option}</option>)}
+                </select>
+                <div className="absolute right-4 bottom-3.5 pointer-events-none text-gray-400">
+                    <i className="fas fa-chevron-down text-xs"></i>
+                </div>
+                </div>
             </div>
-          )}
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="trading-style" className="block text-sm font-medium text-gray-700 dark:text-gray-300">2. Trading Style</label>
-              <select id="trading-style" value={tradingStyle} onChange={e => setTradingStyle(e.target.value)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-gray-500/10 dark:bg-gray-900/40 border-gray-400/30 dark:border-gray-500/50 focus:ring-red-500/50 focus:border-red-500 sm:text-sm rounded-md text-gray-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed">
-                {TRADING_STYLES.map(style => <option key={style} value={style}>{style}</option>)}
-              </select>
-            </div>
-            <div>
-              <label htmlFor="risk-reward" className="block text-sm font-medium text-gray-700 dark:text-gray-300">3. Risk/Reward Ratio</label>
-              <select id="risk-reward" value={riskReward} onChange={e => setRiskReward(e.target.value)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-gray-500/10 dark:bg-gray-900/40 border-gray-400/30 dark:border-gray-500/50 focus:ring-red-500/50 focus:border-red-500 sm:text-sm rounded-md text-gray-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed">
-                {riskRewardOptions.map(option => <option key={option} value={option}>{option}</option>)}
-              </select>
-            </div>
-          </div>
 
-          <div className="bg-blue-500/10 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-500/20 dark:border-blue-500/30 flex items-start gap-3">
-              <i className="fas fa-lightbulb text-blue-600 dark:text-blue-400 mt-1"></i>
-              <div className="text-sm text-gray-700 dark:text-gray-300">
-                  <strong className="text-blue-700 dark:text-blue-300 block mb-1">Pro Tip for Maximum Accuracy:</strong>
-                  Include indicators in your screenshot for better confluence. The AI specifically looks for:
-                  <ul className="list-disc list-inside mt-1 space-y-0.5 text-xs opacity-90">
-                      <li><b>OBV (On-Balance Volume):</b> Best for volume confirmation.</li>
-                      <li><b>RSI:</b> For detecting momentum divergence.</li>
-                      <li><b>EMAs (50/200):</b> For trend direction and dynamic support.</li>
-                  </ul>
-              </div>
-          </div>
+            {/* Pro-Tip Box */}
+            <div className="bg-blue-600/10 dark:bg-blue-500/5 p-5 rounded-3xl border border-blue-500/20 flex items-start gap-4 shadow-inner backdrop-blur-md">
+                <div className="w-10 h-10 rounded-2xl bg-blue-600/20 flex items-center justify-center text-blue-500 flex-shrink-0">
+                    <i className="fas fa-lightbulb"></i>
+                </div>
+                <div className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed font-medium">
+                    <strong className="text-blue-600 dark:text-blue-400 uppercase tracking-tighter block mb-1">Precision Protocol</strong>
+                    Include RSI, EMAs, or OBV in your capture. The Oracle cross-references these for institutional confluence verification.
+                </div>
+            </div>
 
-          {error && <div className="text-center text-red-700 dark:text-red-400 bg-red-500/10 p-3 rounded-lg text-sm">{error}</div>}
-          <button onClick={handleSubmit} disabled={isAnalyzeDisabled} className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 dark:focus:ring-offset-gray-900 focus:ring-red-500 disabled:bg-gray-400 dark:disabled:bg-gray-500 disabled:cursor-not-allowed transition-colors">
-            {isLoading ? 'Analyzing...' : 'Analyze Chart'}
-          </button>
+            {/* Execution Button */}
+            <div className="space-y-4 pt-4">
+                {error && (
+                <div className="text-center text-red-500 bg-red-500/10 p-4 rounded-2xl border border-red-500/20 text-xs font-bold uppercase tracking-widest animate-shake">
+                    <div className="flex flex-col items-center gap-2">
+                        <span><i className="fas fa-exclamation-triangle mr-2"></i> {error}</span>
+                        {(error.toLowerCase().includes('permission denied') || error.toLowerCase().includes('api key')) && environment === 'aistudio' && (
+                            <button 
+                                onClick={() => (window as any).aistudio?.openSelectKey()}
+                                className="mt-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-colors shadow-lg"
+                            >
+                                Select Paid API Key
+                            </button>
+                        )}
+                    </div>
+                </div>
+                )}
+                <button 
+                    onClick={handleSubmit} 
+                    disabled={isAnalyzeDisabled} 
+                    className="w-full relative group overflow-hidden py-5 bg-gradient-to-r from-red-600 to-rose-700 text-white font-black uppercase tracking-[0.2em] rounded-[2rem] shadow-2xl shadow-red-600/30 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed"
+                >
+                    <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+                    <span className="relative flex items-center justify-center gap-3">
+                        {isLoading ? (
+                            <>
+                                <i className="fas fa-circle-notch animate-spin"></i>
+                                Processing Neural Data...
+                            </>
+                        ) : (
+                            <>
+                                <i className="fas fa-bolt"></i>
+                                Initiate Analysis
+                            </>
+                        )}
+                    </span>
+                </button>
+            </div>
+
+            </div>
         </div>
       </div>
     </div>

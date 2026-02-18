@@ -1,7 +1,15 @@
-
 export interface GroundingSource {
   uri: string;
   title: string;
+}
+
+export interface UserSettings {
+  accountType: 'Live Account' | 'Funded Account';
+  balance: number;
+  targetPercent: number;
+  dailyDrawdown: number;
+  maxDrawdown: number;
+  tradingDays?: number; // Only for Funded Accounts
 }
 
 export interface AnalysisResult {
@@ -10,16 +18,46 @@ export interface AnalysisResult {
   asset: string;
   timeframe: string;
   signal: 'BUY' | 'SELL' | 'NEUTRAL';
-  confidence: number; // e.g., 85
-  entryPriceRange: string[]; // Distributed entry zone including current price. e.g., ["1.2360", "1.2345", "1.2350", "1.2355"] where the first element is the current price.
+  confidence: number; 
+  entryPriceRange: string[]; 
+  entryType: 'Market Execution' | 'Pullback' | 'Breakout';
   stopLoss: string;
-  takeProfits: string[]; // Can be one or more
-  estimatedDuration: string; // e.g., "45 mins - 2 hours"
+  takeProfits: string[]; 
+  estimatedDuration: string; 
   setupQuality?: 'A+ Setup' | 'A Setup' | 'B Setup' | 'C Setup' | 'N/A';
-  confluenceScore?: number; // e.g., 8.5/10
-  reasoning: string; // The main explanation
-  tenReasons: string[]; // e.g., ["✅ Bullish engulfing pattern identified."]
-  alternativeScenario?: string; // What would invalidate the thesis
+  confluenceScore?: number; 
+  reasoning: string; 
+  tenReasons: string[]; 
+  alternativeScenario?: string; 
+  sources?: GroundingSource[];
+}
+
+export interface ActivityItem {
+  type: 'news' | 'alert' | 'calendar';
+  title: string;
+  content: string;
+  time: string;
+  asset?: string;
+  impact?: 'High' | 'Medium' | 'Low';
+}
+
+export interface HeatmapAsset {
+  symbol: string;
+  change24h: number;
+  volumeRatio: number; // 1.0 is average
+  rsi: number;
+  zScore: number;
+  shortInterest?: number;
+  liquidityScore: number;
+}
+
+export interface DashboardOverview {
+  activityFeed: ActivityItem[];
+  watchlist: { symbol: string; price: string; change24h: string }[];
+  sectorHeatmap: { sector: string; strength: number; status: 'hot' | 'cold' }[];
+  opportunityHeatmap: HeatmapAsset[];
+  nextBigEvent: { title: string; timeUntil: string; importance: string };
+  lastUpdated: number;
   sources?: GroundingSource[];
 }
 
@@ -30,57 +68,9 @@ export interface MarketSentimentResult {
     summary: string;
     keyPoints: string[];
     sources?: GroundingSource[];
-    // New fields for Alpha Vantage data
     price?: string;
     change?: string;
     changePercent?: string;
-}
-
-export interface DailyBias {
-  pair: string;
-  bias: 'Bullish' | 'Bearish' | 'Neutral';
-  strength: 'Strong' | 'Moderate' | 'Weak';
-  reasoning: string;
-}
-
-export interface DashboardOverview {
-  marketCondition: {
-    sentiment: 'Bullish' | 'Bearish' | 'Neutral';
-    trendingPairs: { name: string; strength: 'Strong' | 'Weak' }[];
-    volatility: 'High' | 'Medium' | 'Low';
-    dominantSession: string; // e.g., "London/New York Overlap"
-    marketDriver: string; // e.g., "Upcoming FOMC Meeting"
-  };
-  dailyBiases: DailyBias[];
-  economicData: {
-    recentEvents: { event: string; impact: 'High' | 'Medium' | 'Low'; result: string }[];
-    upcomingEvents: { time: string; event: string; expectedImpact: 'High' | 'Medium' | 'Low' }[];
-  };
-  technicalSummary: {
-    dominantTrends: { pair: string; direction: 'Uptrend' | 'Downtrend' | 'Ranging'; sparkline: number[] }[];
-    keyLevels: { pair: string; level: string; type: 'Support' | 'Resistance' }[];
-  };
-  tradingOpportunities: {
-    highProbabilitySetups: { 
-      pair: string; 
-      strategy: string; 
-      confidence: number; 
-      riskLevel: 'High' | 'Medium' | 'Low'; 
-      signal: 'Buy' | 'Sell';
-      entry: string;
-      stopLoss: string;
-      takeProfit: string;
-      rrRatio: string;
-      support1H: string;
-      resistance1H: string;
-    }[];
-    riskAssessment: {
-      marketRisk: 'High' | 'Medium' | 'Low';
-      positionSizing: 'Conservative' | 'Moderate' | 'Aggressive';
-    };
-  };
-  next24hOutlook: { pair: string; outlook: string; bias: 'Bullish' | 'Bearish' | 'Neutral' }[];
-  lastUpdated: number; // Timestamp
 }
 
 export interface GeneratedCode {
@@ -124,7 +114,6 @@ export interface JournalFeedback {
   suggestions: string[];
 }
 
-// New types for chat
 export interface ChatMessagePart {
   text?: string;
   inlineData?: {
@@ -143,12 +132,12 @@ export interface ChatMessage {
 
 export interface PredictedEvent {
   event_description: string;
-  day: string; // "Monday", "Tuesday", etc.
-  date: string; // e.g., "July 26, 2024"
-  time: string; // e.g., "08:30 AM EST"
+  day: string; 
+  date: string; 
+  time: string; 
   direction: 'BUY' | 'SELL';
-  currencyPairs: string[]; // e.g., ["EUR/USD", "GBP/USD"]
-  confidence: number; // 75-90
+  currencyPairs: string[]; 
+  confidence: number; 
   potential_effect: string;
   sources?: GroundingSource[];
 }

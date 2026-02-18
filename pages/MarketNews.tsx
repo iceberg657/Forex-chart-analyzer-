@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { getMarketNews } from '../services/newsService';
 import { getRealTimeQuote } from '../services/alphaVantageService';
@@ -7,17 +6,24 @@ import Spinner from '../components/Spinner';
 import ErrorDisplay from '../components/ErrorDisplay';
 import { usePageData } from '../hooks/usePageData';
 
+const safeArray = (val: any): any[] => {
+    if (Array.isArray(val)) return val;
+    if (val === null || val === undefined) return [];
+    return [val];
+};
+
 const SourcesCard: React.FC<{ sources: GroundingSource[] }> = ({ sources }) => {
-  if (!sources || sources.length === 0) return null;
+  const sourcesArr = safeArray(sources);
+  if (sourcesArr.length === 0) return null;
 
   return (
     <div className="mt-8">
       <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Sources</h3>
       <div className="bg-black/5 dark:bg-white/5 p-4 rounded-lg">
         <ul className="space-y-2">
-          {sources.map((source, index) => (
+          {sourcesArr.map((source, index) => (
             <li key={index} className="flex items-center">
-              <svg className="w-4 h-4 text-blue-500 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0l-1-1a2 2 0 112.828-2.828L14 7.172a.5.5 0 00-.707-.707L12.586 4.586zM9 12a1 1 0 011-1h1a1 1 0 110 2H9a1 1 0 01-1-1zm-1 4a1 1 0 100 2h3a1 1 0 100-2H8z" clipRule="evenodd" /><path d="M4.586 15.414a2 2 0 010-2.828l3-3a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0zM8 9a1 1 0 011-1h1a1 1 0 110 2H9a1 1 0 01-1-1z" /></svg>
+              <i className="fas fa-link text-blue-500 mr-2 text-xs"></i>
               <a href={source.uri} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline text-sm truncate" title={source.title}>
                 {source.title}
               </a>
@@ -37,7 +43,7 @@ const SentimentResultDisplay: React.FC<{ result: MarketSentimentResult, onRefres
         Neutral: { icon: <i className="fas fa-arrows-left-right"></i>, bgColor: 'bg-gray-500/10 dark:bg-gray-500/20', textColor: 'text-gray-800 dark:text-gray-200', borderColor: 'border-gray-500/50' }
     };
 
-    const info = sentimentInfo[result.sentiment];
+    const info = sentimentInfo[result.sentiment] || sentimentInfo.Neutral;
     const priceChange = parseFloat(result.change || '0');
     const priceColor = priceChange >= 0 ? 'text-green-500' : 'text-red-500';
     const priceIcon = priceChange >= 0 ? <i className="fas fa-caret-up"></i> : <i className="fas fa-caret-down"></i>;
@@ -83,7 +89,7 @@ const SentimentResultDisplay: React.FC<{ result: MarketSentimentResult, onRefres
                 <div>
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Key Points from News</h3>
                     <ul className="space-y-2 text-sm">
-                        {result.keyPoints.map((point, index) => (
+                        {safeArray(result.keyPoints).map((point, index) => (
                             <li key={index} className="flex items-start p-2 rounded-md bg-black/5 dark:bg-white/5">
                                 <i className="fas fa-newspaper text-red-500/80 dark:text-red-400/80 mt-1 mr-3"></i>
                                 <span className="flex-1 text-gray-700 dark:text-gray-300">{point}</span>

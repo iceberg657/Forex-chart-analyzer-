@@ -26,6 +26,27 @@ interface ChatBubbleProps {
     onRate: (messageId: string, rating: 'up' | 'down') => void;
 }
 
+const GALogoIcon: React.FC<{ size?: string }> = ({ size = "1.5rem" }) => (
+    <svg
+        width={size}
+        height={size}
+        viewBox="0 0 100 100"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+    >
+        <defs>
+            <linearGradient id="logoGradientChat" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style={{ stopColor: 'var(--logo-color-1)' }} />
+                <stop offset="33%" style={{ stopColor: 'var(--logo-color-2)' }} />
+                <stop offset="66%" style={{ stopColor: 'var(--logo-color-3)' }} />
+                <stop offset="100%" style={{ stopColor: 'var(--logo-color-4)' }} />
+            </linearGradient>
+        </defs>
+        <path d="M50 2.5 L95.5 26.25 V 73.75 L50 97.5 L4.5 73.75 V 26.25 Z" stroke="url(#logoGradientChat)" strokeWidth="8" />
+        <text x="50" y="68" fontFamily="Arial, sans-serif" fontSize="50" fontWeight="bold" fill="url(#logoGradientChat)" textAnchor="middle" >GA</text>
+    </svg>
+);
+
 const ChatBubble: React.FC<ChatBubbleProps> = ({ message, onRate }) => {
     const { id, role, parts, sources, rating } = message;
     const isModel = role === 'model';
@@ -80,8 +101,12 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({ message, onRate }) => {
 
     return (
         <div className={`flex items-start gap-3 ${!isModel && 'flex-row-reverse'}`}>
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${isModel ? 'bg-red-500' : 'bg-gray-600'}`}>
-                <i className={`fas ${isModel ? 'fa-robot' : 'fa-user'} text-white text-sm`}></i>
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${isModel ? 'bg-transparent' : 'bg-gray-600'}`}>
+                {isModel ? (
+                    <GALogoIcon size="2rem" />
+                ) : (
+                    <i className="fas fa-user text-white text-sm"></i>
+                )}
             </div>
             <div className={`max-w-xl rounded-xl overflow-hidden ${isModel ? 'bg-gray-200 dark:bg-[#262626] text-gray-800 dark:text-gray-200' : 'bg-blue-600 rounded-br-none text-white'}`}>
                 <div className="p-3 text-sm space-y-3">

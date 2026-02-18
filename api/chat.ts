@@ -1,4 +1,3 @@
-
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI } from '@google/genai';
 import { getChatSystemInstruction } from './_prompts.js';
@@ -25,9 +24,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         contents.push({ role: 'user', parts: newMessageParts });
 
         const responseStream = await ai.models.generateContentStream({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-2.5-flash-lite',
             contents: contents,
-            config: { systemInstruction: getChatSystemInstruction(), tools: [{ googleSearch: {} }] },
+            config: { 
+                systemInstruction: getChatSystemInstruction(),
+                tools: [{ googleSearch: {} }]
+            },
         });
 
         res.setHeader('Content-Type', 'application/json');

@@ -1,4 +1,3 @@
-
 import * as Prompts from './prompts';
 import {
   AnalysisResult,
@@ -12,18 +11,25 @@ import {
   ChatMessagePart,
   PredictedEvent,
   DashboardOverview,
+  UserSettings,
 } from '../types';
 import { GoogleGenAI, Type } from '@google/genai';
 import { detectEnvironment } from '../hooks/useEnvironment';
 
 const environment = detectEnvironment();
 
-// This client is used ONLY in the AI Studio environment.
-const ai = environment === 'aistudio' ? new GoogleGenAI({ apiKey: process.env.API_KEY! }) : null;
+// --- Helper to get a fresh GenAI client on every call ---
+const getGenAIClient = () => {
+    if (environment !== 'aistudio') {
+        throw new Error("Direct GenAI client calls are only available in the AI Studio environment.");
+    }
+    // CRITICAL: Create a new instance for each call to ensure the latest API key is used.
+    return new GoogleGenAI({ apiKey: process.env.API_KEY! });
+};
 
 // --- Helper Functions for Backend Communication ---
 
-const withRetry = async <T>(apiCall: () => Promise<T>, maxRetries = 3, initialDelay = 1000): Promise<T> => {
+const withRetry = async <T>(apiCall: () => Promise<T>, maxRetries = 3, initialDelay = 2000): Promise<T> => {
     let attempt = 0;
     while (attempt < maxRetries) {
         try {
@@ -31,18 +37,33 @@ const withRetry = async <T>(apiCall: () => Promise<T>, maxRetries = 3, initialDe
         } catch (error: any) {
             attempt++;
             const errorMessage = (error.message || '').toLowerCase();
+            
+            if (errorMessage.includes('permission denied') || errorMessage.includes('requested entity was not found')) {
+                 if (environment === 'aistudio') {
+                    console.warn("Permission denied error detected. Dispatching event to reset API key selection.");
+                    window.dispatchEvent(new CustomEvent('resetApiKeySelection'));
+                 }
+                 throw new Error("API Key Permission Denied. Please re-select a valid API key from a project with billing enabled and try again.");
+            }
+            
+            const isQuotaExceeded = errorMessage.includes('429') || 
+                                   errorMessage.includes('quota') || 
+                                   errorMessage.includes('rate limit');
+                                   
             const isOverloaded = errorMessage.includes('503') || 
                                  errorMessage.includes('504') ||
                                  errorMessage.includes('overloaded') || 
-                                 errorMessage.includes('unavailable') ||
-                                 errorMessage.includes('rate limit');
+                                 errorMessage.includes('unavailable');
             
-            if (isOverloaded && attempt < maxRetries) {
-                const delay = initialDelay * Math.pow(2, attempt - 1);
-                console.warn(`API is busy. Retrying in ${delay}ms... (Attempt ${attempt}/${maxRetries})`);
+            if ((isQuotaExceeded || isOverloaded) && attempt < maxRetries) {
+                const multiplier = isQuotaExceeded ? 5 : 2;
+                const delay = initialDelay * Math.pow(multiplier, attempt - 1);
+                console.warn(`API Quota/Load issue. Retrying in ${delay}ms... (Attempt ${attempt}/${maxRetries})`);
                 await new Promise(resolve => setTimeout(resolve, delay));
+            } else if (isQuotaExceeded) {
+                throw new Error("Gemini API quota exceeded. Please wait 60 seconds before trying again to allow the rate limit to reset.");
             } else if (isOverloaded) {
-                throw new Error("The AI service is currently experiencing high demand. Please try again in a few moments.");
+                throw new Error("The AI service is currently overloaded. Please try again in a few moments.");
             } else {
                 throw error;
             }
@@ -68,32 +89,25 @@ async function postToApi<T>(endpoint: string, body: any): Promise<T> {
 // --- Validation Utilities ---
 const getValidatedTextFromResponse = (response: any): string => {
     const responseText = response.text;
-    
-    if (responseText && typeof responseText === 'string') {
-        return responseText;
-    }
-
+    if (responseText && typeof responseText === 'string') return responseText;
     const finishReason = response.candidates?.[0]?.finishReason;
     if (finishReason && finishReason !== 'STOP') {
-        if (finishReason === 'SAFETY') {
-            const safetyRatings = response.candidates?.[0]?.safetyRatings;
-            const blockedCategories = safetyRatings?.filter((r: any) => r.blocked).map((r: any) => r.category).join(', ');
-            throw new Error(`Request blocked for safety reasons. Categories: ${blockedCategories || 'Unknown'}. Please revise your input.`);
-        }
-        if (finishReason === 'RECITATION') {
-            throw new Error(`Request blocked due to potential recitation from a copyrighted source.`);
-        }
+        if (finishReason === 'SAFETY') throw new Error(`Request blocked for safety reasons.`);
         throw new Error(`The AI's response was terminated. Reason: ${finishReason}.`);
     }
-    
-    throw new Error("The AI returned an empty or invalid response. This can happen if a request is blocked for safety reasons or due to an internal error.");
+    throw new Error("The AI returned an empty response.");
+};
+
+const extractSources = (response: any): GroundingSource[] => {
+    if (response.candidates?.[0]?.groundingMetadata?.groundingChunks) {
+        return response.candidates[0].groundingMetadata.groundingChunks
+            .map((c: any) => ({ uri: c.web?.uri || '', title: c.web?.title || 'Source' }))
+            .filter((s: GroundingSource) => s.uri);
+    }
+    return [];
 };
 
 const robustJsonParse = (jsonString: string) => {
-    if (typeof jsonString !== 'string' || !jsonString) {
-        console.error("AI Response Error: robustJsonParse was called with an invalid argument.", { type: typeof jsonString, value: jsonString });
-        throw new Error("The AI returned an empty or invalid response. This can happen if a request is blocked for safety reasons.");
-    }
     let cleanJsonString = jsonString.trim();
     const markdownMatch = cleanJsonString.match(/```(json)?\s*([\s\S]*?)\s*```/);
     if (markdownMatch && markdownMatch[2]) {
@@ -105,51 +119,22 @@ const robustJsonParse = (jsonString: string) => {
         if (firstBracket === -1) start = firstSquare;
         else if (firstSquare === -1) start = firstBracket;
         else start = Math.min(firstBracket, firstSquare);
-
         if (start !== -1) {
             const lastBracket = cleanJsonString.lastIndexOf('}');
             const lastSquare = cleanJsonString.lastIndexOf(']');
             const end = Math.max(lastBracket, lastSquare);
-            if (end > start) {
-                cleanJsonString = cleanJsonString.substring(start, end + 1);
-            }
+            if (end > start) cleanJsonString = cleanJsonString.substring(start, end + 1);
         }
     }
     try {
         return JSON.parse(cleanJsonString);
     } catch (e) {
-        console.error("Failed to parse JSON from AI response.", { original: jsonString, cleaned: cleanJsonString });
-        throw new Error("The AI's response was unclear or in an unexpected format. Please try again.");
+        throw new Error("The AI's response was malformed.");
     }
 };
 
 const isAnalysisResult = (data: any): data is AnalysisResult => {
-    return (data && typeof data.asset === 'string' && typeof data.timeframe === 'string' && ['BUY', 'SELL', 'NEUTRAL'].includes(data.signal) && typeof data.estimatedDuration === 'string');
-};
-const isMarketSentimentResult = (data: any): data is MarketSentimentResult => {
-    return (data && typeof data.asset === 'string' && ['Bullish', 'Bearish', 'Neutral'].includes(data.sentiment));
-};
-const isJournalFeedback = (data: any): data is JournalFeedback => {
-    return (data && typeof data.overallPnl === 'number' && Array.isArray(data.suggestions));
-};
-const isPredictedEventArray = (data: any): data is PredictedEvent[] => {
-    return Array.isArray(data) && data.length > 0 ? typeof data[0].event_description === 'string' : Array.isArray(data);
-};
-const isDashboardOverview = (data: any): data is DashboardOverview => {
-    return (
-        data && 
-        data.marketCondition && 
-        typeof data.marketCondition.dominantSession === 'string' && 
-        Array.isArray(data.dailyBiases) && 
-        data.economicData && 
-        data.tradingOpportunities &&
-        Array.isArray(data.tradingOpportunities.highProbabilitySetups) &&
-        data.tradingOpportunities.highProbabilitySetups.length >= 2 && // Strict check for at least 2 setups
-        data.tradingOpportunities.highProbabilitySetups.every((setup: any) => 
-            setup.support1H && setup.resistance1H
-        ) && 
-        Array.isArray(data.next24hOutlook)
-    );
+    return (data && typeof data.asset === 'string' && typeof data.timeframe === 'string' && ['BUY', 'SELL', 'NEUTRAL'].includes(data.signal));
 };
 
 const clientFileToImagePart = async (file: File): Promise<ChatMessagePart> => {
@@ -163,22 +148,17 @@ const clientFileToImagePart = async (file: File): Promise<ChatMessagePart> => {
 };
 
 const generateContentDirect = async (params: any): Promise<any> => {
-  if (!ai) throw new Error("GenAI client not initialized for direct call.");
-  try {
-    return await ai.models.generateContent(params);
-  } catch (e) {
-    console.error("Gemini API direct call failed:", e);
-    throw new Error(`Gemini API error: ${e instanceof Error ? e.message : String(e)}`);
-  }
+  const ai = getGenAIClient();
+  return ai.models.generateContent(params);
 };
 
-
-// --- Unified API Functions ---
-
 export const analyzeChart = async (chartFiles: { [key: string]: File | null }, riskReward: string, tradingStyle: string, isSeasonal: boolean): Promise<AnalysisResult> => {
+    const savedSettings = localStorage.getItem('userSettings');
+    const userSettings: UserSettings | undefined = savedSettings ? JSON.parse(savedSettings) : undefined;
+    
     const apiCall = async () => {
         if (environment === 'aistudio') {
-            const prompt = Prompts.getAnalysisPrompt(tradingStyle, riskReward, isSeasonal);
+            const prompt = Prompts.getAnalysisPrompt(tradingStyle, riskReward, isSeasonal, userSettings);
             const parts: any[] = [{ text: prompt }];
             for (const key of ['higher', 'primary', 'entry']) {
                 if (chartFiles[key]) {
@@ -187,25 +167,24 @@ export const analyzeChart = async (chartFiles: { [key: string]: File | null }, r
                 }
             }
             const response = await generateContentDirect({
-                model: 'gemini-2.5-flash',
+                model: 'gemini-2.5-flash-lite',
                 contents: { parts },
-                config: { temperature: 0, tools: [{ googleSearch: {} }] }
+                config: { 
+                    temperature: 0,
+                    tools: [{ googleSearch: {} }] 
+                }
             });
             const responseText = getValidatedTextFromResponse(response);
             const parsedResult = robustJsonParse(responseText);
-            if (!isAnalysisResult(parsedResult)) throw new Error("The AI's analysis was incomplete.");
-            if (response.candidates?.[0]?.groundingMetadata?.groundingChunks) {
-                parsedResult.sources = response.candidates[0].groundingMetadata.groundingChunks
-                    .map((c: any) => ({ uri: c.web?.uri || '', title: c.web?.title || 'Source' }))
-                    .filter((s: GroundingSource) => s.uri);
-            }
+            if (!isAnalysisResult(parsedResult)) throw new Error("Analysis incomplete.");
+            parsedResult.sources = extractSources(response);
             return parsedResult;
         } else {
             const imageParts: { [key: string]: ChatMessagePart } = {};
             for (const key of ['higher', 'primary', 'entry']) {
                 if (chartFiles[key]) imageParts[key] = await clientFileToImagePart(chartFiles[key]!);
             }
-            return postToApi<AnalysisResult>('/api/analyze', { imageParts, riskReward, tradingStyle, isSeasonal });
+            return postToApi<AnalysisResult>('/api/analyze', { imageParts, riskReward, tradingStyle, isSeasonal, userSettings });
         }
     };
     return withRetry(apiCall);
@@ -215,7 +194,7 @@ export const createBot = async ({ description, language }: { description: string
     const apiCall = async () => {
         if (environment === 'aistudio') {
             const prompt = Prompts.getBotPrompt(description, language);
-            const response = await generateContentDirect({ model: 'gemini-2.5-flash', contents: prompt });
+            const response = await generateContentDirect({ model: 'gemini-2.5-flash-lite', contents: prompt });
             return getValidatedTextFromResponse(response);
         } else {
             const result = await postToApi<{ code: string }>('/api/agent', { action: 'createBot', payload: { description, language } });
@@ -229,7 +208,7 @@ export const createIndicator = async ({ description, language }: { description: 
     const apiCall = async () => {
         if (environment === 'aistudio') {
             const prompt = Prompts.getIndicatorPrompt(description, language);
-            const response = await generateContentDirect({ model: 'gemini-2.5-flash', contents: prompt });
+            const response = await generateContentDirect({ model: 'gemini-2.5-flash-lite', contents: prompt });
             return getValidatedTextFromResponse(response);
         } else {
             const result = await postToApi<{ code: string }>('/api/agent', { action: 'createIndicator', payload: { description, language } });
@@ -241,7 +220,7 @@ export const createIndicator = async ({ description, language }: { description: 
 
 export async function* sendMessageStream(history: ChatMessage[], newMessageParts: ChatMessagePart[]): AsyncGenerator<{ textChunk?: string; sources?: GroundingSource[] }> {
     if (environment === 'aistudio') {
-        if (!ai) throw new Error("GenAI client not initialized for direct stream call.");
+        const ai = getGenAIClient();
         const contents = history.map((msg: ChatMessage) => ({ 
             role: msg.role, 
             parts: msg.parts.map(p => p.text ? { text: p.text } : p)
@@ -249,24 +228,20 @@ export async function* sendMessageStream(history: ChatMessage[], newMessageParts
         contents.push({ role: 'user', parts: newMessageParts });
 
         const responseStream = await ai.models.generateContentStream({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-2.5-flash-lite',
             contents: contents,
-            config: { systemInstruction: Prompts.getChatSystemInstruction(), tools: [{ googleSearch: {} }] },
+            config: { 
+                systemInstruction: Prompts.getChatSystemInstruction(),
+                tools: [{ googleSearch: {} }] 
+            },
         });
 
-        let allSources: GroundingSource[] = [];
         for await (const chunk of responseStream) {
-            if (chunk.text) yield { textChunk: chunk.text };
-            if (chunk.candidates?.[0]?.groundingMetadata?.groundingChunks) {
-                const chunkSources = chunk.candidates[0].groundingMetadata.groundingChunks
-                    .map((c: any) => ({ uri: c.web?.uri || '', title: c.web?.title || 'Source' }))
-                    .filter((s: GroundingSource) => s.uri);
-                const newSources = chunkSources.filter((cs: GroundingSource) => !allSources.some(as => as.uri === cs.uri));
-                if (newSources.length > 0) {
-                    allSources = [...allSources, ...newSources];
-                    yield { sources: allSources };
-                }
-            }
+            const result: { textChunk?: string; sources?: GroundingSource[] } = {};
+            if (chunk.text) result.textChunk = chunk.text;
+            const sources = extractSources(chunk);
+            if (sources.length > 0) result.sources = sources;
+            yield result;
         }
     } else {
         const res = await fetch('/api/chat', {
@@ -274,18 +249,9 @@ export async function* sendMessageStream(history: ChatMessage[], newMessageParts
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ history, newMessageParts }),
         });
-        
-        if (!res.ok || !res.body) {
-            let errorDetails = res.statusText;
-            try {
-                const errorJson = await res.json();
-                if (errorJson && errorJson.message) errorDetails = errorJson.message;
-            } catch (e) {
-                // Ignore json parse error, use statusText
-            }
-            throw new Error(`Streaming API Error (${res.status}): ${errorDetails}`);
+        if (!res.body) {
+            throw new Error("Streaming response body is null.");
         }
-
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
         let buffer = '';
@@ -295,16 +261,14 @@ export async function* sendMessageStream(history: ChatMessage[], newMessageParts
             buffer += decoder.decode(value, { stream: true });
             const jsonChunks = buffer.split('\n');
             buffer = jsonChunks.pop() || '';
-            for (const jsonChunk of jsonChunks) {
-                if (jsonChunk) try { yield JSON.parse(jsonChunk); } catch (e) {}
-            }
+            for (const jsonChunk of jsonChunks) if (jsonChunk) yield JSON.parse(jsonChunk);
         }
     }
 }
 
 export const sendMessage = async (history: ChatMessage[], newMessageParts: ChatMessagePart[]): Promise<ChatMessage> => {
      let fullText = '';
-     let finalSources: GroundingSource[] | undefined = undefined;
+     let finalSources: GroundingSource[] = [];
      for await (const chunk of sendMessageStream(history, newMessageParts)) {
         if(chunk.textChunk) fullText += chunk.textChunk;
         if(chunk.sources) finalSources = chunk.sources;
@@ -317,22 +281,14 @@ export const getMarketNews = async (asset: string): Promise<MarketSentimentResul
         if (environment === 'aistudio') {
             const prompt = Prompts.getMarketSentimentPrompt(asset);
             const response = await generateContentDirect({ 
-                model: 'gemini-2.5-flash', 
-                contents: prompt, 
-                config: { tools: [{ googleSearch: {} }] } 
+                model: 'gemini-2.5-flash-lite', 
+                contents: prompt,
+                config: { tools: [{ googleSearch: {} }] }
             });
-            const responseText = getValidatedTextFromResponse(response);
-            const parsedResult = robustJsonParse(responseText);
-            if (!isMarketSentimentResult(parsedResult)) throw new Error("Incomplete market sentiment analysis.");
-            if (response.candidates?.[0]?.groundingMetadata?.groundingChunks) {
-                parsedResult.sources = response.candidates[0].groundingMetadata.groundingChunks
-                    .map((c: any) => ({ uri: c.web?.uri || '', title: c.web?.title || 'Source' }))
-                    .filter((s: GroundingSource) => s.uri);
-            }
-            return parsedResult;
-        } else {
-            return postToApi<MarketSentimentResult>('/api/agent', { action: 'marketNews', payload: { asset } });
-        }
+            const parsed = robustJsonParse(getValidatedTextFromResponse(response));
+            parsed.sources = extractSources(response);
+            return parsed;
+        } else return postToApi<MarketSentimentResult>('/api/agent', { action: 'marketNews', payload: { asset } });
     };
     return withRetry(apiCall);
 };
@@ -341,14 +297,9 @@ export const getTradingJournalFeedback = async (trades: TradeEntry[]): Promise<J
     const apiCall = async () => {
         if (environment === 'aistudio') {
             const prompt = Prompts.getJournalFeedbackPrompt(trades);
-            const response = await generateContentDirect({ model: 'gemini-2.5-flash', contents: prompt, config: { responseMimeType: 'application/json' } });
-            const responseText = getValidatedTextFromResponse(response);
-            const parsedResult = robustJsonParse(responseText);
-            if (!isJournalFeedback(parsedResult)) throw new Error("Incomplete journal feedback.");
-            return parsedResult;
-        } else {
-            return postToApi<JournalFeedback>('/api/agent', { action: 'journalFeedback', payload: { trades } });
-        }
+            const response = await generateContentDirect({ model: 'gemini-2.5-flash-lite', contents: prompt, config: { responseMimeType: 'application/json' } });
+            return robustJsonParse(getValidatedTextFromResponse(response));
+        } else return postToApi<JournalFeedback>('/api/agent', { action: 'journalFeedback', payload: { trades } });
     };
     return withRetry(apiCall);
 };
@@ -356,22 +307,10 @@ export const getTradingJournalFeedback = async (trades: TradeEntry[]): Promise<J
 export const processCommandWithAgent = async (command: string): Promise<{ text: string, functionCalls: any[] | null }> => {
     const apiCall = async () => {
         if (environment === 'aistudio') {
-            if (!ai) throw new Error("GenAI client not initialized.");
-            const agentTools = [{
-                functionDeclarations: [
-                    { name: "navigate", description: "Navigates to a page.", parameters: { type: Type.OBJECT, properties: { page: { type: Type.STRING } }, required: ['page'] } },
-                    { name: "changeTheme", description: "Switches theme.", parameters: { type: Type.OBJECT, properties: { theme: { type: Type.STRING, enum: ['light', 'dark'] } }, required: ['theme'] } },
-                    { name: "setEdgeLighting", description: "Changes edge lighting.", parameters: { type: Type.OBJECT, properties: { color: { type: Type.STRING, enum: ['default', 'green', 'red', 'orange', 'yellow', 'blue', 'purple', 'white'] } }, required: ['color'] } },
-                    { name: "logout", description: "Logs out.", parameters: { type: Type.OBJECT, properties: {} } }
-                ]
-            }];
-            const response = await generateContentDirect({ model: 'gemini-2.5-flash', contents: command, config: { tools: agentTools } });
-            const functionCalls = response.functionCalls || null;
-            const text = functionCalls ? '' : (response.text || ''); // Ensure text is always a string
-            return { text, functionCalls };
-        } else {
-            return postToApi<{ text: string, functionCalls: any[] | null }>('/api/agent', { action: 'agent', payload: { command } });
-        }
+            const agentTools = [{ functionDeclarations: [{ name: "navigate", parameters: { type: Type.OBJECT, properties: { page: { type: Type.STRING } }, required: ['page'] } }] }];
+            const response = await generateContentDirect({ model: 'gemini-2.5-flash-lite', contents: command, config: { tools: agentTools } });
+            return { text: response.text || '', functionCalls: response.functionCalls || null };
+        } else return postToApi<{ text: string, functionCalls: any[] | null }>('/api/agent', { action: 'agent', payload: { command } });
     };
     return withRetry(apiCall);
 };
@@ -379,21 +318,15 @@ export const processCommandWithAgent = async (command: string): Promise<{ text: 
 export const getPredictions = async (): Promise<PredictedEvent[]> => {
     const apiCall = async () => {
         if (environment === 'aistudio') {
-            const prompt = Prompts.getPredictorPrompt();
-            const response = await generateContentDirect({ model: 'gemini-2.5-flash', contents: prompt, config: { tools: [{ googleSearch: {} }] } });
-            const responseText = getValidatedTextFromResponse(response);
-            const parsedResult = robustJsonParse(responseText);
-            if (!isPredictedEventArray(parsedResult)) throw new Error("Incomplete predictions.");
-            if (response.candidates?.[0]?.groundingMetadata?.groundingChunks) {
-                const sources = response.candidates[0].groundingMetadata.groundingChunks
-                    .map((c: any) => ({ uri: c.web?.uri || '', title: c.web?.title || 'Source' }))
-                    .filter((s: GroundingSource) => s.uri);
-                if (sources.length > 0 && parsedResult.length > 0) parsedResult[0].sources = sources;
-            }
-            return parsedResult;
-        } else {
-            return postToApi<PredictedEvent[]>('/api/agent', { action: 'predictions', payload: {} });
-        }
+            const response = await generateContentDirect({ 
+                model: 'gemini-2.5-flash-lite', 
+                contents: Prompts.getPredictorPrompt(),
+                config: { tools: [{ googleSearch: {} }] }
+            });
+            const parsed = robustJsonParse(getValidatedTextFromResponse(response)) as PredictedEvent[];
+            const sources = extractSources(response);
+            return parsed.map(p => ({ ...p, sources }));
+        } else return postToApi<PredictedEvent[]>('/api/agent', { action: 'predictions', payload: {} });
     };
     return withRetry(apiCall);
 };
@@ -401,28 +334,22 @@ export const getPredictions = async (): Promise<PredictedEvent[]> => {
 export const getDashboardOverview = async (isSeasonal: boolean): Promise<DashboardOverview> => {
     const apiCall = async () => {
         if (environment === 'aistudio') {
-            const prompt = Prompts.getDashboardOverviewPrompt(isSeasonal);
             const response = await generateContentDirect({ 
-                model: 'gemini-2.5-flash', 
-                contents: prompt, 
-                config: { tools: [{ googleSearch: {} }] } 
+                model: 'gemini-2.5-flash-lite', 
+                contents: Prompts.getDashboardOverviewPrompt(isSeasonal),
+                config: { tools: [{ googleSearch: {} }] }
             });
-            const responseText = getValidatedTextFromResponse(response);
-            const parsedResult = robustJsonParse(responseText);
-            if (!isDashboardOverview(parsedResult)) throw new Error("Incomplete market overview.");
-            parsedResult.lastUpdated = Date.now();
-            return parsedResult;
-        } else {
-            return postToApi<DashboardOverview>('/api/agent', { action: 'dashboardOverview', payload: { isSeasonal } });
-        }
+            const parsed = robustJsonParse(getValidatedTextFromResponse(response));
+            parsed.lastUpdated = Date.now();
+            parsed.sources = extractSources(response);
+            return parsed;
+        } else return postToApi<DashboardOverview>('/api/agent', { action: 'dashboardOverview', payload: { isSeasonal } });
     };
     return withRetry(apiCall);
 };
 
 export const getAutoFixSuggestion = async (errors: any[]): Promise<string> => {
-    if (environment !== 'aistudio' || !ai) return "Auto-fix is only available in the AI Studio environment.";
-    const errorLog = errors.map(e => `Type: ${e.type}\nMessage: ${e.message}\nStack: ${e.stack || 'N/A'}`).join('\n\n---\n\n');
-    const prompt = Prompts.getAutoFixPrompt(errorLog);
-    const response = await generateContentDirect({ model: 'gemini-2.5-flash', contents: prompt });
+    if (environment !== 'aistudio') return "AI Studio only.";
+    const response = await generateContentDirect({ model: 'gemini-2.5-flash-lite', contents: Prompts.getAutoFixPrompt(JSON.stringify(errors)) });
     return getValidatedTextFromResponse(response);
 };

@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef } from 'react';
 import { useTheme } from '../hooks/useTheme';
 
@@ -44,8 +43,22 @@ const NeuralNetworkBackground: React.FC = () => {
       }
 
       update() {
+        // Natural movement
         this.x += this.vx;
         this.y += this.vy;
+
+        // Interactive drift: particles drift in the direction of the cursor relative to center
+        // This adds a "wind" effect based on mouse position
+        if (mouseX > 0 && mouseY > 0) {
+            const centerX = canvas!.width / 2;
+            const centerY = canvas!.height / 2;
+            // Normalized offset from center (-1 to 1 range roughly)
+            const driftX = (mouseX - centerX) * 0.0001; 
+            const driftY = (mouseY - centerY) * 0.0001;
+            
+            this.x += driftX;
+            this.y += driftY;
+        }
 
         // Bounce off edges
         if (this.x < 0 || this.x > canvas!.width) this.vx *= -1;

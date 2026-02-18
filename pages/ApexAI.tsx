@@ -1,13 +1,11 @@
-
-
 import React, { useState, useRef, useEffect } from 'react';
 import { ChatMessage, ChatMessagePart } from '../types';
 import { sendMessageStream, fileToImagePart } from '../services/chatService';
 import ErrorDisplay from '../components/ErrorDisplay';
 import ChatBubble from '../components/ChatBubble';
 import TypingIndicator from '../components/TypingIndicator';
-import ChatHeader from '../components/ChatHeader';
 import { usePageData } from '../hooks/usePageData';
+import NeuralNetworkBackground from '../components/NeuralNetworkBackground';
 
 const ApexAI: React.FC = () => {
     const { pageData, setApexAIMessages, clearApexChat } = usePageData();
@@ -28,10 +26,8 @@ const ApexAI: React.FC = () => {
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
         if (files) {
-            // FIX: Explicitly typing `newFiles` as `File[]` ensures correct type inference for the `map` function below.
             const newFiles: File[] = Array.from(files);
             setImageFiles(prev => [...prev, ...newFiles]);
-
             const newPreviews = newFiles.map(file => URL.createObjectURL(file));
             setImagePreviews(prev => [...prev, ...newPreviews]);
         }
@@ -39,25 +35,17 @@ const ApexAI: React.FC = () => {
     
     const removeImage = (index: number) => {
         const urlToRevoke = imagePreviews[index];
-        if (urlToRevoke) {
-            URL.revokeObjectURL(urlToRevoke);
-        }
-
+        if (urlToRevoke) URL.revokeObjectURL(urlToRevoke);
         setImageFiles(prev => prev.filter((_, i) => i !== index));
         setImagePreviews(prev => prev.filter((_, i) => i !== index));
-        
-        if (fileInputRef.current) {
-            fileInputRef.current.value = '';
-        }
+        if (fileInputRef.current) fileInputRef.current.value = '';
     };
     
     const clearImages = () => {
         imagePreviews.forEach(url => URL.revokeObjectURL(url));
         setImageFiles([]);
         setImagePreviews([]);
-        if (fileInputRef.current) {
-            fileInputRef.current.value = '';
-        }
+        if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
     const handleRating = (messageId: string, newRating: 'up' | 'down') => {
@@ -72,74 +60,47 @@ const ApexAI: React.FC = () => {
 
     const handleSubmit = async () => {
         if (!input.trim() && imageFiles.length === 0) return;
-
         setIsLoading(true);
         setError(null);
-
         const userParts: ChatMessagePart[] = [];
         if (imageFiles.length > 0) {
             try {
                 const imageParts = await Promise.all(imageFiles.map(fileToImagePart));
                 userParts.push(...imageParts);
             } catch (err) {
-                setError("Failed to process one or more image files.");
+                setError("Failed to process images.");
                 setIsLoading(false);
                 return;
             }
         }
-        if (input.trim()) {
-            userParts.push({ text: input });
-        }
-        
-        const userMessage: ChatMessage = {
-            id: Date.now().toString(),
-            role: 'user',
-            parts: userParts,
-        };
-        
+        if (input.trim()) userParts.push({ text: input });
+        const userMessage: ChatMessage = { id: Date.now().toString(), role: 'user', parts: userParts };
         const modelMessageId = (Date.now() + 1).toString();
-        const modelPlaceholder: ChatMessage = {
-            id: modelMessageId,
-            role: 'model',
-            parts: [{ text: '' }],
-        };
-
+        const modelPlaceholder: ChatMessage = { id: modelMessageId, role: 'model', parts: [{ text: '' }] };
         setApexAIMessages(prevMessages => [...prevMessages, userMessage, modelPlaceholder]);
-        
         setInput('');
         clearImages();
-
         try {
             let fullText = '';
             for await (const chunk of sendMessageStream(messages, userParts)) {
                 if (chunk.textChunk) {
                     fullText += chunk.textChunk;
                     setApexAIMessages((prevMessages: ChatMessage[]) => 
-                        prevMessages.map(msg => 
-                            msg.id === modelMessageId 
-                            ? { ...msg, parts: [{ text: fullText }] } 
-                            : msg
-                        )
+                        prevMessages.map(msg => msg.id === modelMessageId ? { ...msg, parts: [{ text: fullText }] } : msg)
                     );
                 }
                 if (chunk.sources) {
                     setApexAIMessages((prevMessages: ChatMessage[]) => 
-                        prevMessages.map(msg => 
-                            msg.id === modelMessageId 
-                            ? { ...msg, sources: chunk.sources } 
-                            : msg
-                        )
+                        prevMessages.map(msg => msg.id === modelMessageId ? { ...msg, sources: chunk.sources } : msg)
                     );
                 }
             }
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'An unknown error occurred with the AI assistant.');
+            setError(err instanceof Error ? err.message : 'AI error occurred.');
             const errorText = 'Sorry, I encountered an error. Please try again.';
             setApexAIMessages((prevMessages: ChatMessage[]) => 
                 prevMessages.map(msg => 
-                    msg.id === modelMessageId 
-                    ? { ...msg, parts: [{ text: errorText }] } 
-                    : msg
+                    msg.id === modelMessageId ? { ...msg, parts: [{ text: errorText }] } : msg
                 )
             );
         } finally {
@@ -160,89 +121,94 @@ const ApexAI: React.FC = () => {
     };
 
     return (
-        <div className="relative flex flex-col flex-1 h-full bg-transparent text-gray-900 dark:text-white rounded-xl overflow-hidden">
-            <ChatHeader />
+        <div className="relative flex flex-col flex-1 h-full bg-transparent text-gray-900 dark:text-white overflow-hidden">
+            <NeuralNetworkBackground />
+            
             {messages.length === 0 ? (
-                <div className="flex-1 flex flex-col items-center justify-center text-center p-4">
-                    <div className="w-16 h-16 mb-4">
+                <div className="relative z-10 flex-1 flex flex-col items-center justify-center text-center p-4">
+                    <div className="w-14 h-14 mb-3 drop-shadow-lg">
                          <svg
                             width="100%"
                             height="100%"
                             viewBox="0 0 100 100"
                             fill="none"
                             xmlns="http://www.w3.org/2000/svg"
+                            aria-label="Grey Algo Apex Trader Logo"
                           >
                             <defs>
-                              <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                 <stop offset="0%" stopColor="#34d399" />
-                                <stop offset="33%" stopColor="#38bdf8" />
-                                <stop offset="66%" stopColor="#8b5cf6" />
-                                <stop offset="100%" stopColor="#8b5cf6" />
+                              <linearGradient id="logoGradientLanding" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style={{ stopColor: 'var(--logo-color-1)' }} />
+                                <stop offset="33%" style={{ stopColor: 'var(--logo-color-2)' }} />
+                                <stop offset="66%" style={{ stopColor: 'var(--logo-color-3)' }} />
+                                <stop offset="100%" style={{ stopColor: 'var(--logo-color-4)' }} />
                               </linearGradient>
                             </defs>
-                            <path d="M50 2.5 L95.5 26.25 V 73.75 L50 97.5 L4.5 73.75 V 26.25 Z" stroke="url(#logoGradient)" strokeWidth="5" />
-                            <text x="50" y="68" fontFamily="Arial, sans-serif" fontSize="50" fontWeight="bold" fill="url(#logoGradient)" textAnchor="middle" >GA</text>
-                            <path d="M25 70 L40 60 L55 75 L75 55" stroke="url(#logoGradient)" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+                            <path d="M50 2.5 L95.5 26.25 V 73.75 L50 97.5 L4.5 73.75 V 26.25 Z" stroke="url(#logoGradientLanding)" strokeWidth="5" />
+                            <text x="50" y="68" fontFamily="Arial, sans-serif" fontSize="50" fontWeight="bold" fill="url(#logoGradientLanding)" textAnchor="middle" >GA</text>
+                            <path d="M25 70 L40 60 L55 75 L75 55" stroke="url(#logoGradientLanding)" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
                           </svg>
                     </div>
-                    <h1 className="text-3xl font-bold">Hi, I'm Apex AI</h1>
-                    <p className="text-gray-500 dark:text-gray-400 mt-2">How can I help you today?</p>
+                    <h1 className="text-xl font-bold uppercase tracking-tight">Hi, I'm Apex AI</h1>
+                    <p className="text-gray-500 dark:text-gray-400 mt-1 font-medium text-xs">How can I help you today?</p>
                 </div>
             ) : (
-                <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                <div className="relative z-10 flex-1 overflow-y-auto p-6 space-y-6 max-w-5xl mx-auto w-full no-scrollbar">
                     {messages.map(msg => <ChatBubble key={msg.id} message={msg} onRate={handleRating} />)}
                     {isLoading && <TypingIndicator />}
                     <div ref={messagesEndRef} />
                 </div>
             )}
             
-            <footer className="p-4 flex-shrink-0">
-                 {error && <div className="mb-2"><ErrorDisplay error={error} /></div>}
-                <form onSubmit={handleFormSubmit} className="bg-white/20 dark:bg-black/20 backdrop-blur-sm border border-white/30 dark:border-white/10 shadow-sm rounded-2xl p-2 flex flex-col gap-2">
-                     {imagePreviews.length > 0 && (
-                        <div className="flex items-center gap-2 overflow-x-auto p-2 border-b border-black/10 dark:border-white/10">
-                            {imagePreviews.map((preview, index) => (
-                                <div key={index} className="relative w-16 h-16 flex-shrink-0">
-                                    <img src={preview} alt={`upload preview ${index + 1}`} className="w-full h-full object-cover rounded-md" />
-                                    <button type="button" onClick={() => removeImage(index)} className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs z-10">&times;</button>
-                                </div>
-                            ))}
+            <footer className="relative z-20 p-6 flex-shrink-0">
+                <div className="max-w-3xl mx-auto w-full">
+                    {error && <div className="mb-4"><ErrorDisplay error={error} /></div>}
+                    <form onSubmit={handleFormSubmit} className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border border-white/30 dark:border-white/10 shadow-2xl rounded-[2rem] p-3 flex flex-col gap-2 transition-all group focus-within:ring-2 focus-within:ring-red-500/30">
+                         {imagePreviews.length > 0 && (
+                            <div className="flex items-center gap-3 overflow-x-auto p-3 border-b border-white/10">
+                                {imagePreviews.map((preview, index) => (
+                                    <div key={index} className="relative w-20 h-20 flex-shrink-0 group/img">
+                                        <img src={preview} alt="preview" className="w-full h-full object-cover rounded-xl border border-white/20" />
+                                        <button type="button" onClick={() => removeImage(index)} className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-7 h-7 flex items-center justify-center text-sm z-10 shadow-lg">&times;</button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        <div className="flex items-center gap-3 px-4">
+                            <textarea
+                                value={input}
+                                onChange={e => setInput(e.target.value)}
+                                onKeyDown={handleKeyDown}
+                                placeholder="Message Apex AI..."
+                                rows={1}
+                                style={{ maxHeight: '150px' }}
+                                className="flex-1 w-full py-4 bg-transparent border-none focus:ring-0 placeholder-gray-500 dark:placeholder-gray-400 resize-none font-medium text-base"
+                                disabled={isLoading}
+                            />
+                            <div className="flex items-center gap-2">
+                                 <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" id="file-upload-chat" multiple />
+                                <button type="button" onClick={() => fileInputRef.current?.click()} className="p-3 rounded-full hover:bg-white/10 text-gray-500 transition-all hover:text-white" aria-label="Attach context">
+                                    <i className="fas fa-plus-circle text-xl"></i>
+                                </button>
+                                <button type="submit" disabled={isLoading || (!input.trim() && imageFiles.length === 0)} className="w-12 h-12 flex items-center justify-center rounded-full bg-red-600 text-white hover:bg-red-700 disabled:bg-gray-700 transition-all active:scale-90 shadow-lg shadow-red-500/20">
+                                    <i className="fas fa-paper-plane"></i>
+                                </button>
+                            </div>
                         </div>
-                    )}
-                    <div className="flex items-end gap-2">
-                        <textarea
-                            value={input}
-                            onChange={e => setInput(e.target.value)}
-                            onKeyDown={handleKeyDown}
-                            placeholder="Message Apex AI..."
-                            rows={1}
-                            style={{ maxHeight: '150px' }}
-                            className="flex-1 w-full p-3 bg-transparent border-none focus:ring-0 placeholder-gray-500 dark:placeholder-gray-400 resize-none"
-                            disabled={isLoading}
-                        />
-                        <div className="flex items-center gap-1">
-                             <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" id="file-upload-chat" multiple />
-                            <button type="button" onClick={() => fileInputRef.current?.click()} className="p-3 rounded-full hover:bg-black/5 dark:hover:bg-white/10" aria-label="Attach file">
-                                <i className="fas fa-plus text-lg text-gray-500 dark:text-gray-400"></i>
-                            </button>
-                            <button type="submit" disabled={isLoading || (!input.trim() && imageFiles.length === 0)} className="w-10 h-10 flex items-center justify-center rounded-full bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-500">
-                                <i className="fas fa-arrow-up text-lg"></i>
-                            </button>
-                        </div>
-                    </div>
-                </form>
+                    </form>
+                </div>
             </footer>
 
             {messages.length > 0 && (
                  <button
                     onClick={clearApexChat}
-                    className="absolute bottom-24 right-6 bg-red-600 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center hover:bg-red-700 transition-transform transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 z-10"
-                    aria-label="Start new chat"
-                    title="Start new chat"
+                    className="fixed bottom-28 right-8 bg-black dark:bg-white text-white dark:text-black w-14 h-14 rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-transform z-30"
+                    aria-label="New Session"
+                    title="New Session"
                 >
                     <i className="fas fa-plus text-xl"></i>
                 </button>
             )}
+            <style>{`.no-scrollbar::-webkit-scrollbar { display: none; }`}</style>
         </div>
     );
 };

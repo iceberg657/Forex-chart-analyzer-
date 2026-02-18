@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '../hooks/useAppContext';
 import NeuralNetworkBackground from '../components/NeuralNetworkBackground';
 
 const FeatureCard: React.FC<{ icon: string | React.ReactNode; title: string; children: React.ReactNode; delay?: string }> = ({ icon, title, children, delay = "0s" }) => (

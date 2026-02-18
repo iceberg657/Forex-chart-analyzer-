@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from '../hooks/useAppContext';
 import { useAuth } from '../hooks/useAuth';
 
 const ForgotPassword: React.FC = () => {

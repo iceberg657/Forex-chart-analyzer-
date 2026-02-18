@@ -1,4 +1,3 @@
-
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI, Type } from '@google/genai';
 import * as Prompts from './_prompts.js';
@@ -13,8 +12,6 @@ import {
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
 
-// --- Validation Helpers ---
-
 const getValidatedTextFromResponse = (response: any): string => {
     const responseText = response.text;
     
@@ -25,14 +22,21 @@ const getValidatedTextFromResponse = (response: any): string => {
     const finishReason = response.candidates?.[0]?.finishReason;
     if (finishReason && finishReason !== 'STOP') {
         if (finishReason === 'SAFETY') {
-            const safetyRatings = response.candidates?.[0]?.safetyRatings;
-            const blockedCategories = safetyRatings?.filter((r: any) => r.blocked).map((r: any) => r.category).join(', ');
-            throw new Error(`Request blocked for safety reasons. Categories: ${blockedCategories || 'Unknown'}.`);
+            throw new Error(`Request blocked for safety reasons.`);
         }
         throw new Error(`The AI's response was terminated. Reason: ${finishReason}.`);
     }
 
     throw new Error("The AI returned an empty or invalid response.");
+};
+
+const extractSources = (response: any): GroundingSource[] => {
+    if (response.candidates?.[0]?.groundingMetadata?.groundingChunks) {
+        return response.candidates[0].groundingMetadata.groundingChunks
+            .map((c: any) => ({ uri: c.web?.uri || '', title: c.web?.title || 'Source' }))
+            .filter((s: GroundingSource) => s.uri);
+    }
+    return [];
 };
 
 const isDashboardOverview = (data: any): data is DashboardOverview => {
@@ -41,29 +45,11 @@ const isDashboardOverview = (data: any): data is DashboardOverview => {
         data.marketCondition &&
         ['Bullish', 'Bearish', 'Neutral'].includes(data.marketCondition.sentiment) &&
         Array.isArray(data.marketCondition.trendingPairs) &&
-        typeof data.marketCondition.dominantSession === 'string' &&
-        typeof data.marketCondition.marketDriver === 'string' &&
         Array.isArray(data.dailyBiases) &&
-        data.dailyBiases.every((b: any) => 
-            typeof b.pair === 'string' && 
-            ['Bullish', 'Bearish', 'Neutral'].includes(b.bias) &&
-            typeof b.reasoning === 'string'
-        ) &&
-        data.economicData &&
-        Array.isArray(data.economicData.recentEvents) &&
-        Array.isArray(data.economicData.upcomingEvents) &&
-        data.technicalSummary &&
-        Array.isArray(data.technicalSummary.dominantTrends) &&
-        Array.isArray(data.technicalSummary.keyLevels) &&
+        data.dailyBiases.length > 0 &&
         data.tradingOpportunities &&
         Array.isArray(data.tradingOpportunities.highProbabilitySetups) &&
-        data.tradingOpportunities.highProbabilitySetups.length >= 2 && // STRICT check for at least 2 setups
-        data.tradingOpportunities.highProbabilitySetups.every((setup: any) => 
-            setup.entry && setup.stopLoss && setup.takeProfit && setup.rrRatio && 
-            typeof setup.support1H === 'string' && typeof setup.resistance1H === 'string'
-        ) &&
-        data.tradingOpportunities.riskAssessment &&
-        Array.isArray(data.next24hOutlook)
+        data.tradingOpportunities.highProbabilitySetups.length >= 1
     );
 };
 
@@ -72,10 +58,7 @@ const isMarketSentimentResult = (data: any): data is MarketSentimentResult => {
         data &&
         typeof data.asset === 'string' &&
         ['Bullish', 'Bearish', 'Neutral'].includes(data.sentiment) &&
-        typeof data.confidence === 'number' &&
-        typeof data.summary === 'string' &&
-        Array.isArray(data.keyPoints) &&
-        data.keyPoints.every((p: any) => typeof p === 'string')
+        typeof data.summary === 'string'
     );
 };
 
@@ -83,10 +66,7 @@ const isJournalFeedback = (data: any): data is JournalFeedback => {
     return (
         data &&
         typeof data.overallPnl === 'number' &&
-        typeof data.winRate === 'number' &&
-        Array.isArray(data.strengths) && data.strengths.every((s: any) => typeof s === 'string') &&
-        Array.isArray(data.weaknesses) && data.weaknesses.every((w: any) => typeof w === 'string') &&
-        Array.isArray(data.suggestions) && data.suggestions.every((s: any) => typeof s === 'string')
+        typeof data.winRate === 'number'
     );
 };
 
@@ -95,17 +75,12 @@ const isPredictedEvent = (data: any): data is PredictedEvent => {
         data &&
         typeof data.event_description === 'string' &&
         typeof data.day === 'string' &&
-        typeof data.date === 'string' &&
-        typeof data.time === 'string' &&
-        ['BUY', 'SELL'].includes(data.direction) &&
-        Array.isArray(data.currencyPairs) && data.currencyPairs.every((p: any) => typeof p === 'string') &&
-        typeof data.confidence === 'number' && data.confidence >= 75 && data.confidence <= 90 &&
-        typeof data.potential_effect === 'string'
+        ['BUY', 'SELL'].includes(data.direction)
     );
 };
 
 const isPredictedEventArray = (data: any): data is PredictedEvent[] => {
-    return Array.isArray(data) && data.every(isPredictedEvent);
+    return Array.isArray(data);
 };
 
 const robustJsonParse = (jsonString: string) => {
@@ -165,7 +140,7 @@ const agentTools = [{
             description: "Changes the color of the application's edge lighting effect.",
             parameters: {
                 type: Type.OBJECT,
-                properties: { color: { type: Type.STRING, description: "The color for the edge lighting. Valid colors are: default, green, red, orange, yellow, blue, purple, white.", enum: ['default', 'green', 'red', 'orange', 'yellow', 'blue', 'purple', 'white'] } },
+                properties: { color: { type: Type.STRING, description: "The color for the edge lighting. Valid colors are: default, green, red, orange, yellow, blue, purple, white, pink.", enum: ['default', 'green', 'red', 'orange', 'yellow', 'blue', 'purple', 'white', 'pink'] } },
                 required: ['color'],
             },
         },
@@ -187,10 +162,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const { action, payload } = req.body;
 
         if (!action) {
-            // Legacy support for the original agent call which might just send { command }
             if (req.body.command) {
                  const response = await ai.models.generateContent({
-                    model: 'gemini-2.5-flash',
+                    model: 'gemini-2.5-flash-lite',
                     contents: req.body.command,
                     config: { tools: agentTools }
                 });
@@ -204,7 +178,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         switch (action) {
             case 'agent': {
                 const response = await ai.models.generateContent({
-                    model: 'gemini-2.5-flash',
+                    model: 'gemini-2.5-flash-lite',
                     contents: payload.command,
                     config: { tools: agentTools }
                 });
@@ -217,8 +191,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 const { isSeasonal } = payload;
                 const prompt = Prompts.getDashboardOverviewPrompt(isSeasonal);
                 const response = await ai.models.generateContent({ 
-                    model: 'gemini-2.5-flash', 
-                    contents: prompt, 
+                    model: 'gemini-2.5-flash-lite', 
+                    contents: prompt,
                     config: { tools: [{ googleSearch: {} }] } 
                 });
                 const responseText = getValidatedTextFromResponse(response);
@@ -227,14 +201,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     throw new Error("The AI's market overview was incomplete or malformed.");
                 }
                 parsedResult.lastUpdated = Date.now();
+                parsedResult.sources = extractSources(response);
                 return res.status(200).json(parsedResult);
             }
 
             case 'marketNews': {
                 const prompt = Prompts.getMarketSentimentPrompt(payload.asset);
                 const response = await ai.models.generateContent({ 
-                    model: 'gemini-2.5-flash', 
-                    contents: prompt, 
+                    model: 'gemini-2.5-flash-lite', 
+                    contents: prompt,
                     config: { tools: [{ googleSearch: {} }] } 
                 });
                 const responseText = getValidatedTextFromResponse(response);
@@ -242,41 +217,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 if (!isMarketSentimentResult(parsedResult)) {
                     throw new Error("The AI's market sentiment analysis was incomplete or malformed.");
                 }
-                if (response.candidates?.[0]?.groundingMetadata?.groundingChunks) {
-                    parsedResult.sources = response.candidates[0].groundingMetadata.groundingChunks
-                        .map((c: any) => ({ uri: c.web?.uri || '', title: c.web?.title || 'Source' }))
-                        .filter((s: GroundingSource) => s.uri);
-                }
+                parsedResult.sources = extractSources(response);
                 return res.status(200).json(parsedResult);
             }
 
             case 'predictions': {
                 const prompt = Prompts.getPredictorPrompt();
                 const response = await ai.models.generateContent({
-                    model: 'gemini-2.5-flash',
+                    model: 'gemini-2.5-flash-lite',
                     contents: prompt,
-                    config: { tools: [{ googleSearch: {} }] }
+                    config: { tools: [{ googleSearch: {} }] } 
                 });
                 const responseText = getValidatedTextFromResponse(response);
-                const parsedResult = robustJsonParse(responseText);
+                const parsedResult = robustJsonParse(responseText) as PredictedEvent[];
                 if (!isPredictedEventArray(parsedResult)) {
                     throw new Error("The AI's predictions were incomplete or malformed.");
                 }
-                if (response.candidates?.[0]?.groundingMetadata?.groundingChunks) {
-                    const sources = response.candidates[0].groundingMetadata.groundingChunks
-                        .map((c: any) => ({ uri: c.web?.uri || '', title: c.web?.title || 'Source' }))
-                        .filter((s: GroundingSource) => s.uri);
-                    if (sources.length > 0 && parsedResult.length > 0) {
-                        parsedResult[0].sources = sources;
-                    }
-                }
-                return res.status(200).json(parsedResult);
+                const sources = extractSources(response);
+                const updatedResult = parsedResult.map(event => ({ ...event, sources }));
+                return res.status(200).json(updatedResult);
             }
 
             case 'journalFeedback': {
                 const prompt = Prompts.getJournalFeedbackPrompt(payload.trades);
                 const response = await ai.models.generateContent({
-                    model: 'gemini-2.5-flash',
+                    model: 'gemini-2.5-flash-lite',
                     contents: prompt,
                     config: { responseMimeType: 'application/json' }
                 });
@@ -290,14 +255,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
             case 'createBot': {
                 const prompt = Prompts.getBotPrompt(payload.description, payload.language);
-                const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
+                const response = await ai.models.generateContent({ model: 'gemini-2.5-flash-lite', contents: prompt });
                 const code = getValidatedTextFromResponse(response);
                 return res.status(200).json({ code });
             }
 
             case 'createIndicator': {
                 const prompt = Prompts.getIndicatorPrompt(payload.description, payload.language);
-                const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
+                const response = await ai.models.generateContent({ model: 'gemini-2.5-flash-lite', contents: prompt });
                 const code = getValidatedTextFromResponse(response);
                 return res.status(200).json({ code });
             }

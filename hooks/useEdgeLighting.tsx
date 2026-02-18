@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 
-export type EdgeLightColor = 'default' | 'green' | 'red' | 'orange' | 'yellow' | 'blue' | 'purple' | 'white';
+export type EdgeLightColor = 'default' | 'green' | 'red' | 'orange' | 'yellow' | 'blue' | 'purple' | 'white' | 'pink';
 
 const ALL_EDGE_LIGHT_CLASSES = [
   'edge-light-green', 
@@ -9,7 +9,8 @@ const ALL_EDGE_LIGHT_CLASSES = [
   'edge-light-yellow', 
   'edge-light-blue', 
   'edge-light-purple', 
-  'edge-light-white'
+  'edge-light-white',
+  'edge-light-pink'
 ];
 
 
