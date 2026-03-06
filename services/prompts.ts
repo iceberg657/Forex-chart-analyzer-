@@ -50,7 +50,6 @@ Follow SMC/ICT methodologies (Order Blocks, BOS, CHoCH, Liquidity, FVG).
   "entryType": "'Market Execution' | 'Pullback' | 'Breakout'",
   "stopLoss": "string",
   "takeProfits": ["string"],
-  "estimatedDuration": "string",
   "setupQuality": "'A+ Setup' | 'A Setup' | 'B Setup' | 'C Setup' | 'N/A'",
   "confluenceScore": number,
   "reasoning": "string (Start with Strategy. Include technical case. MANDATORY: Include the lot size calculation and risk advice based on the $${userSettings?.balance || 'user'} account profile provided above. Explain how this setup helps achieve the ${userSettings?.targetPercent || 'target'} while protecting against the ${userSettings?.dailyDrawdown || 'drawdown'}.)",

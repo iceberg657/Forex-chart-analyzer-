@@ -23,7 +23,6 @@ export interface AnalysisResult {
   entryType: 'Market Execution' | 'Pullback' | 'Breakout';
   stopLoss: string;
   takeProfits: string[]; 
-  estimatedDuration: string; 
   setupQuality?: 'A+ Setup' | 'A Setup' | 'B Setup' | 'C Setup' | 'N/A';
   confluenceScore?: number; 
   reasoning: string; 
