@@ -43,6 +43,7 @@ console.log(`[API Key Service] Initialized. Total keys found: ${ALL_KEYS.length}
 export const MODEL_FALLBACK_CHAIN = [
     'gemini-3-pro-preview',
     'gemini-3-flash-preview',
+    'gemini-3.1-flash-lite-preview',
     'gemini-2.5-flash-lite', 
 ];
 
@@ -50,5 +51,6 @@ export const MODEL_FALLBACK_CHAIN = [
 export const STREAM_MODEL_FALLBACK_CHAIN = [
     'gemini-3-pro-preview',
     'gemini-3-flash-preview',
+    'gemini-3.1-flash-lite-preview',
     'gemini-2.5-flash-lite',
 ];

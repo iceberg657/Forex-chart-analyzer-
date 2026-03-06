@@ -18,6 +18,11 @@ import { detectEnvironment } from '../hooks/useEnvironment';
 
 const environment = detectEnvironment();
 
+const FALLBACK_MODELS = [
+    'gemini-3.1-flash-lite-preview',
+    'gemini-2.5-flash-lite'
+];
+
 // --- Helper to get a fresh GenAI client on every call ---
 const getGenAIClient = () => {
     if (environment !== 'aistudio') {
@@ -163,7 +168,28 @@ const clientFileToImagePart = async (file: File): Promise<ChatMessagePart> => {
 
 const generateContentDirect = async (params: any): Promise<any> => {
   const ai = getGenAIClient();
-  return ai.models.generateContent(params);
+  let lastError;
+  
+  // Prioritize the requested model, then fallback to others
+  const requestedModel = params.model;
+  const modelsToTry = [requestedModel, ...FALLBACK_MODELS.filter(m => m !== requestedModel)].filter(Boolean);
+  
+  for (const model of modelsToTry) {
+      try {
+          // console.log(`Attempting generation with model: ${model}`);
+          return await ai.models.generateContent({ ...params, model });
+      } catch (error: any) {
+          lastError = error;
+          console.warn(`Model ${model} failed, trying next...`, error);
+          
+          // If it's a permission error, don't retry other models, just fail
+          const errorMessage = (error.message || '').toLowerCase();
+          if (errorMessage.includes('permission denied') || errorMessage.includes('requested entity was not found')) {
+              throw error;
+          }
+      }
+  }
+  throw lastError;
 };
 
 export const analyzeChart = async (
@@ -187,7 +213,7 @@ export const analyzeChart = async (
                 }
             }
             const response = await generateContentDirect({
-                model: 'gemini-2.5-flash-lite',
+                model: 'gemini-3.1-flash-lite-preview', // Use new model as primary
                 contents: { parts },
                 config: { 
                     temperature: 0,
@@ -217,7 +243,7 @@ export const createBot = async (
     const apiCall = async () => {
         if (environment === 'aistudio') {
             const prompt = Prompts.getBotPrompt(description, language);
-            const response = await generateContentDirect({ model: 'gemini-2.5-flash-lite', contents: prompt });
+            const response = await generateContentDirect({ model: 'gemini-3.1-flash-lite-preview', contents: prompt });
             return getValidatedTextFromResponse(response);
         } else {
             const result = await postToApi<{ code: string }>('/api/agent', { action: 'createBot', payload: { description, language } });
@@ -234,7 +260,7 @@ export const createIndicator = async (
     const apiCall = async () => {
         if (environment === 'aistudio') {
             const prompt = Prompts.getIndicatorPrompt(description, language);
-            const response = await generateContentDirect({ model: 'gemini-2.5-flash-lite', contents: prompt });
+            const response = await generateContentDirect({ model: 'gemini-3.1-flash-lite-preview', contents: prompt });
             return getValidatedTextFromResponse(response);
         } else {
             const result = await postToApi<{ code: string }>('/api/agent', { action: 'createIndicator', payload: { description, language } });
@@ -253,16 +279,35 @@ export async function* sendMessageStream(history: ChatMessage[], newMessageParts
         }));
         contents.push({ role: 'user', parts: newMessageParts });
 
-        const responseStream = await ai.models.generateContentStream({
-            model: 'gemini-2.5-flash-lite',
-            contents: contents,
-            config: { 
-                systemInstruction: Prompts.getChatSystemInstruction(),
-                tools: [{ googleSearch: {} }] 
-            },
-        });
+        let stream;
+        let lastError;
+        
+        // Try fallback models for streaming
+        for (const model of FALLBACK_MODELS) {
+            try {
+                stream = await ai.models.generateContentStream({
+                    model: model,
+                    contents: contents,
+                    config: { 
+                        systemInstruction: Prompts.getChatSystemInstruction(),
+                        tools: [{ googleSearch: {} }] 
+                    },
+                });
+                break;
+            } catch (error: any) {
+                lastError = error;
+                console.warn(`Stream model ${model} failed to start, trying next...`, error);
+                
+                const errorMessage = (error.message || '').toLowerCase();
+                if (errorMessage.includes('permission denied') || errorMessage.includes('requested entity was not found')) {
+                    throw error;
+                }
+            }
+        }
 
-        for await (const chunk of responseStream) {
+        if (!stream) throw lastError;
+
+        for await (const chunk of stream) {
             const result: { textChunk?: string; sources?: GroundingSource[] } = {};
             if (chunk.text) result.textChunk = chunk.text;
             const sources = extractSources(chunk);
@@ -311,7 +356,7 @@ export const getMarketNews = async (asset: string, onRetryAttempt?: (attempt: nu
         if (environment === 'aistudio') {
             const prompt = Prompts.getMarketSentimentPrompt(asset);
             const response = await generateContentDirect({ 
-                model: 'gemini-2.5-flash-lite', 
+                model: 'gemini-3.1-flash-lite-preview', 
                 contents: prompt,
                 config: { tools: [{ googleSearch: {} }] }
             });
@@ -327,7 +372,7 @@ export const getTradingJournalFeedback = async (trades: TradeEntry[], onRetryAtt
     const apiCall = async () => {
         if (environment === 'aistudio') {
             const prompt = Prompts.getJournalFeedbackPrompt(trades);
-            const response = await generateContentDirect({ model: 'gemini-2.5-flash-lite', contents: prompt, config: { responseMimeType: 'application/json' } });
+            const response = await generateContentDirect({ model: 'gemini-3.1-flash-lite-preview', contents: prompt, config: { responseMimeType: 'application/json' } });
             return robustJsonParse(getValidatedTextFromResponse(response));
         } else return postToApi<JournalFeedback>('/api/agent', { action: 'journalFeedback', payload: { trades } });
     };
@@ -338,7 +383,7 @@ export const processCommandWithAgent = async (command: string): Promise<{ text: 
     const apiCall = async () => {
         if (environment === 'aistudio') {
             const agentTools = [{ functionDeclarations: [{ name: "navigate", parameters: { type: Type.OBJECT, properties: { page: { type: Type.STRING } }, required: ['page'] } }] }];
-            const response = await generateContentDirect({ model: 'gemini-2.5-flash-lite', contents: command, config: { tools: agentTools } });
+            const response = await generateContentDirect({ model: 'gemini-3.1-flash-lite-preview', contents: command, config: { tools: agentTools } });
             return { text: response.text || '', functionCalls: response.functionCalls || null };
         } else return postToApi<{ text: string, functionCalls: any[] | null }>('/api/agent', { action: 'agent', payload: { command } });
     };
@@ -349,7 +394,7 @@ export const getPredictions = async (onRetryAttempt?: (attempt: number, maxRetri
     const apiCall = async () => {
         if (environment === 'aistudio') {
             const response = await generateContentDirect({ 
-                model: 'gemini-2.5-flash-lite', 
+                model: 'gemini-3.1-flash-lite-preview', 
                 contents: Prompts.getPredictorPrompt(),
                 config: { tools: [{ googleSearch: {} }] }
             });
@@ -365,7 +410,7 @@ export const getDashboardOverview = async (isSeasonal: boolean, onRetryAttempt?:
     const apiCall = async () => {
         if (environment === 'aistudio') {
             const response = await generateContentDirect({ 
-                model: 'gemini-2.5-flash-lite', 
+                model: 'gemini-3.1-flash-lite-preview', 
                 contents: Prompts.getDashboardOverviewPrompt(isSeasonal),
                 config: { tools: [{ googleSearch: {} }] }
             });
@@ -380,6 +425,6 @@ export const getDashboardOverview = async (isSeasonal: boolean, onRetryAttempt?:
 
 export const getAutoFixSuggestion = async (errors: any[]): Promise<string> => {
     if (environment !== 'aistudio') return "AI Studio only.";
-    const response = await generateContentDirect({ model: 'gemini-2.5-flash-lite', contents: Prompts.getAutoFixPrompt(JSON.stringify(errors)) });
+    const response = await generateContentDirect({ model: 'gemini-3.1-flash-lite-preview', contents: Prompts.getAutoFixPrompt(JSON.stringify(errors)) });
     return getValidatedTextFromResponse(response);
 };
