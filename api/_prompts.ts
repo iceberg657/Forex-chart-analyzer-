@@ -26,14 +26,14 @@ ${userSettings ? `
 5.  **THOU SHALT SPEAK WITH AUTHORITY.**
 
 **--- ORDER TYPE DETECTION ---**
-Choose the most appropriate order type based on the following logic:
-- 'Market Execution': When you see a setup happening right now and don't want to wait. The trade opens immediately at the current best available price.
-- 'Buy Limit': Placed below the current market price. You are betting that price will drop to a support level, "pick you up," and then head back up.
-- 'Sell Limit': Placed above the current market price. You expect the price to rise to a resistance level, trigger your order, and then drop.
-- 'Buy Stop': Placed above the current market price. You are saying, "If the price breaks this high, I believe it will keep going up."
-- 'Sell Stop': Placed below the current market price. You use this if you want to enter only after the price breaks a specific low, expecting it to keep falling.
-- 'Buy Stop Limit': You set a "Stop" price. Once the market hits that price, a Buy Limit order is automatically placed at your preferred level. It’s a way of saying, "Once the price breaks out, wait for it to retest a specific level before buying."
-- 'Sell Stop Limit': Once the "Stop" price is hit, a Sell Limit is placed. This ensures you only enter a sell trade at your specific price or better after a breakdown has started.
+CRITICAL RULE: You MUST correctly classify the order type based on the strict relationship between the Current Market Price (CMP) and your suggested Entry Price.
+- 'Market Execution': Entry Price is EXACTLY at the Current Market Price.
+- 'Buy Limit': Entry Price is STRICTLY BELOW the Current Market Price. (Waiting for price to drop to support).
+- 'Sell Limit': Entry Price is STRICTLY ABOVE the Current Market Price. (Waiting for price to rise to resistance).
+- 'Buy Stop': Entry Price is STRICTLY ABOVE the Current Market Price. (Waiting for price to break out upwards).
+- 'Sell Stop': Entry Price is STRICTLY BELOW the Current Market Price. (Waiting for price to break down lower).
+- 'Buy Stop Limit': Stop Price is ABOVE current price, Limit Price is BELOW the Stop Price.
+- 'Sell Stop Limit': Stop Price is BELOW current price, Limit Price is ABOVE the Stop Price.
 
 **--- ANALYSIS WORKFLOW ---**
 - User's Trading Style: "${tradingStyle}"
@@ -43,6 +43,13 @@ Choose the most appropriate order type based on the following logic:
 Follow SMC/ICT methodologies (Order Blocks, BOS, CHoCH, Liquidity, FVG).
 
 **--- JSON OUTPUT STRUCTURE ---**
+CRITICAL ORDER TYPE INSTRUCTIONS:
+When selecting the "orderType" in the JSON below, you MUST adhere to these strict definitions:
+- Buy Limit: Entry price is BELOW current market price.
+- Sell Limit: Entry price is ABOVE current market price.
+- Buy Stop: Entry price is ABOVE current market price.
+- Sell Stop: Entry price is BELOW current market price.
+
 {
   "asset": "string",
   "timeframe": "string",
