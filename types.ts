@@ -20,7 +20,7 @@ export interface AnalysisResult {
   signal: 'BUY' | 'SELL' | 'NEUTRAL';
   confidence: number; 
   entryPriceRange: string[]; 
-  entryType: 'Market Execution' | 'Pullback' | 'Breakout';
+  orderType: 'Market Execution' | 'Buy Limit' | 'Sell Limit' | 'Buy Stop' | 'Sell Stop' | 'Buy Stop Limit' | 'Sell Stop Limit';
   stopLoss: string;
   takeProfits: string[]; 
   setupQuality?: 'A+ Setup' | 'A Setup' | 'B Setup' | 'C Setup' | 'N/A';

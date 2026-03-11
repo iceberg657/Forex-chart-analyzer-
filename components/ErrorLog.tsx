@@ -22,7 +22,7 @@ const ErrorLog: React.FC = () => {
 
     const handleRejection = (event: PromiseRejectionEvent) => {
       let message = 'Unhandled promise rejection.';
-      let stack;
+      let stack: string | undefined;
       if (event.reason instanceof Error) {
         message = event.reason.message;
         stack = event.reason.stack;

@@ -109,17 +109,18 @@ const SignalCard: React.FC<{ signal: 'BUY' | 'SELL' | 'NEUTRAL'; confidence: num
     )
 }
 
-const EntryTypeBadge: React.FC<{ type: AnalysisResult['entryType'] }> = ({ type }) => {
+const OrderTypeBadge: React.FC<{ type: AnalysisResult['orderType'] }> = ({ type }) => {
     if (!type) return null;
     let colorClass = 'bg-blue-600';
     let label: string = type;
     
     if (type === 'Market Execution') colorClass = 'bg-blue-600 animate-pulse';
-    else if (type === 'Pullback') {
-        colorClass = 'bg-orange-500';
-        label = 'Pullback Strategy';
-    }
-    else if (type === 'Breakout') colorClass = 'bg-purple-600';
+    else if (type === 'Buy Limit') colorClass = 'bg-green-600';
+    else if (type === 'Sell Limit') colorClass = 'bg-red-600';
+    else if (type === 'Buy Stop') colorClass = 'bg-emerald-500';
+    else if (type === 'Sell Stop') colorClass = 'bg-rose-500';
+    else if (type === 'Buy Stop Limit') colorClass = 'bg-lime-500';
+    else if (type === 'Sell Stop Limit') colorClass = 'bg-orange-500';
 
     return (
         <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold text-white uppercase tracking-wider shadow-lg ${colorClass}`}>
@@ -275,7 +276,7 @@ const Analysis: React.FC = () => {
                     <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Analysis Result</h1>
                     <p className="text-gray-600 dark:text-gray-400 mt-1">Institutional Execution Protocol</p>
                     <div className="mt-4">
-                         <EntryTypeBadge type={result.entryType} />
+                         <OrderTypeBadge type={result.orderType} />
                     </div>
                 </div>
                 <div className="bg-white/20 dark:bg-black/20 backdrop-blur-xl border border-white/30 dark:border-white/10 rounded-2xl shadow-lg p-6">
