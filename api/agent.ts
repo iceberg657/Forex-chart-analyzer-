@@ -8,7 +8,8 @@ import {
     MarketSentimentResult, 
     JournalFeedback, 
     PredictedEvent, 
-    GroundingSource 
+    GroundingSource,
+    SessionFilterResult
 } from '../types';
 
 const getValidatedTextFromResponse = (response: any): string => {
@@ -45,6 +46,16 @@ const isDashboardOverview = (data: any): data is DashboardOverview => {
 const isMarketSentimentResult = (data: any): data is MarketSentimentResult => (data && typeof data.asset === 'string' && ['Bullish', 'Bearish', 'Neutral'].includes(data.sentiment));
 const isJournalFeedback = (data: any): data is JournalFeedback => (data && typeof data.overallPnl === 'number' && typeof data.winRate === 'number');
 const isPredictedEventArray = (data: any): data is PredictedEvent[] => (Array.isArray(data));
+const isSessionFilterResult = (data: any): data is SessionFilterResult => (
+    data && 
+    typeof data.currentSession === 'string' && 
+    Array.isArray(data.majorEvents) && 
+    Array.isArray(data.affectedPairs) && 
+    Array.isArray(data.volatilePairs) && 
+    Array.isArray(data.bullishPairs) && 
+    Array.isArray(data.bearishPairs) && 
+    Array.isArray(data.desiredAssets)
+);
 
 
 const robustJsonParse = (jsonString: string) => {
@@ -137,6 +148,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 const response = await executeAgentCall({ contents: prompt, config: { responseMimeType: 'application/json' } });
                 const parsedResult = robustJsonParse(getValidatedTextFromResponse(response));
                 if (!isJournalFeedback(parsedResult)) throw new Error("Malformed journal feedback.");
+                return res.status(200).json(parsedResult);
+            }
+            case 'sessionFilter': {
+                const prompt = Prompts.getSessionFilterPrompt();
+                // Use API_KEY_8 specifically for this call
+                const apiKey8 = process.env.API_KEY_8;
+                if (!apiKey8) {
+                    throw new Error("API_KEY_8 is not configured in the environment.");
+                }
+                const ai = new GoogleGenAI({ apiKey: apiKey8 });
+                const response = await ai.models.generateContent({
+                    model: 'gemini-3.1-flash-lite-preview',
+                    contents: prompt,
+                    config: { tools: [{ googleSearch: {} }] }
+                });
+                const parsedResult = robustJsonParse(getValidatedTextFromResponse(response));
+                if (!isSessionFilterResult(parsedResult)) throw new Error("Malformed session filter result.");
+                parsedResult.lastUpdated = Date.now();
+                parsedResult.sources = extractSources(response);
                 return res.status(200).json(parsedResult);
             }
             case 'createBot': {

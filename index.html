@@ -8,8 +8,26 @@
     <meta name="description" content="The ultimate Forex chart analyzer powered by AI. Get instant technical analysis, generate custom trading bots, and gain a trading edge with Grey Algo Apex Trader." />
     <meta name="keywords" content="forex chart analyzer, AI trading, technical analysis, trading bot, MQL4, MQL5, forex analysis, market sentiment, Gemini API" />
     <meta name="theme-color" content="#020617"/>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="manifest" href="/manifest.json" />
+    <script type="importmap">
+{
+  "imports": {
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.21.0",
+    "react-router-dom": "https://aistudiocdn.com/react-router-dom@^7.9.3",
+    "vite": "https://aistudiocdn.com/vite@^7.1.8",
+    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.0.4",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "@vercel/node": "https://aistudiocdn.com/@vercel/node@^5.3.24",
+    "firebase/app": "https://aistudiocdn.com/firebase@10.8.0/app",
+    "firebase/auth": "https://aistudiocdn.com/firebase@10.8.0/auth",
+    "firebase/analytics": "https://aistudiocdn.com/firebase@10.8.0/analytics"
+  }
+}
+</script>
+    <script src="https://cdn.tailwindcss.com" crossorigin></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <script>
       tailwind.config = {
         darkMode: 'class',
@@ -193,23 +211,19 @@
         box-shadow: inset 0 -1px 0 0 rgba(16, 185, 129, 0.2);
     }
 </style>
-<script type="importmap">
-{
-  "imports": {
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.21.0",
-    "react-router-dom": "https://aistudiocdn.com/react-router-dom@^7.9.3",
-    "vite": "https://aistudiocdn.com/vite@^7.1.8",
-    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.0.4",
-    "react/": "https://aistudiocdn.com/react@^19.2.0/",
-    "react": "https://aistudiocdn.com/react@^19.2.0",
-    "@vercel/node": "https://aistudiocdn.com/@vercel/node@^5.3.24",
-    "firebase/app": "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js",
-    "firebase/auth": "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js",
-    "firebase/analytics": "https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js",
-    "firebase/": "https://aistudiocdn.com/firebase@^12.6.0/"
+<script>
+  // Service Worker Registration
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js', { scope: '/' })
+        .then(registration => {
+          console.log('SW registered: ', registration);
+        })
+        .catch(registrationError => {
+          console.error('SW registration failed: ', registrationError);
+        });
+    });
   }
-}
 </script>
   </head>
   <body>

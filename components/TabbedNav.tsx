@@ -14,6 +14,7 @@ const navItems: NavItem[] = [
     { to: '/apex-ai', label: 'Apex AI', icon: 'fas fa-robot' },
     { to: '/history', label: 'History', icon: 'fas fa-history' },
     { to: '/predictor', label: 'Predictor', icon: 'fas fa-bolt' },
+    { to: '/session-filter', label: 'Sessions', icon: 'fas fa-globe' },
     { to: '/coders', label: 'AI Coders', icon: 'fas fa-code' },
 ];
 

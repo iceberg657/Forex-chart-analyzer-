@@ -27,6 +27,7 @@ const Header: React.FC = () => {
     if (path === '/history') return 'Analysis History';
     if (path === '/apex-ai') return 'Apex AI Assistant';
     if (path === '/coders') return 'AI Coders Hub';
+    if (path === '/session-filter') return 'Session Filter';
     return '';
   }, [location.pathname]);
 

@@ -17,6 +17,7 @@ import IndicatorMaker from './pages/IndicatorMaker';
 import Predictor from './pages/Predictor';
 import Charting from './pages/Charting';
 import Settings from './pages/Settings';
+import SessionFilter from './pages/SessionFilter';
 import TabbedNav from './components/TabbedNav';
 import Notifications from './components/Notifications';
 import SeasonalRibbon from './components/SeasonalRibbon';
@@ -130,6 +131,7 @@ const AppContent: React.FC = () => {
             <Route path="/apex-ai" element={<ApexAI />} />
             <Route path="/coders" element={<CodersPage />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/session-filter" element={<SessionFilter />} />
           </Route>
 
           <Route element={<ProtectedRoute><ChartingLayout /></ProtectedRoute>}>

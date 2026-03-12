@@ -2,14 +2,12 @@
 // and returns them as an array of strings, sorted numerically.
 function getAllApiKeys(): string[] {
     const allKeys: string[] = [];
-    let i = 1;
-    // Loop to find all API_KEY_n variables until one is not found.
-    while (process.env[`API_KEY_${i}`]) {
+    // Check for keys up to API_KEY_10 to be robust against gaps
+    for (let i = 1; i <= 10; i++) {
         const key = process.env[`API_KEY_${i}`];
         if (key) {
-           allKeys.push(key);
+            allKeys.push(key);
         }
-        i++;
     }
     
     if (allKeys.length === 0) {

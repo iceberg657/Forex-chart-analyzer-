@@ -12,6 +12,7 @@ import {
   PredictedEvent,
   DashboardOverview,
   UserSettings,
+  SessionFilterResult,
 } from '../types';
 import { GoogleGenAI, Type } from '@google/genai';
 import { detectEnvironment } from '../hooks/useEnvironment';
@@ -30,6 +31,18 @@ const getGenAIClient = () => {
     }
     // CRITICAL: Create a new instance for each call to ensure the latest API key is used.
     return new GoogleGenAI({ apiKey: process.env.API_KEY! });
+};
+
+const getGenAIClientKey8 = () => {
+    if (environment !== 'aistudio') {
+        throw new Error("Direct GenAI client calls are only available in the AI Studio environment.");
+    }
+    // Prioritize API_KEY_8 as requested, fallback to API_KEY if needed in AI Studio
+    const key = process.env.API_KEY_8 || process.env.API_KEY;
+    if (!key) {
+        throw new Error("API_KEY_8 is not configured. Please add it to your environment variables.");
+    }
+    return new GoogleGenAI({ apiKey: key });
 };
 
 // --- Helper Functions for Backend Communication ---
@@ -419,6 +432,24 @@ export const getDashboardOverview = async (isSeasonal: boolean, onRetryAttempt?:
             parsed.sources = extractSources(response);
             return parsed;
         } else return postToApi<DashboardOverview>('/api/agent', { action: 'dashboardOverview', payload: { isSeasonal } });
+    };
+    return withRetry(apiCall, { onRetryAttempt });
+};
+
+export const getSessionFilter = async (onRetryAttempt?: (attempt: number, maxRetries: number) => void): Promise<SessionFilterResult> => {
+    const apiCall = async () => {
+        if (environment === 'aistudio') {
+            const ai = getGenAIClientKey8();
+            const response = await ai.models.generateContent({
+                model: 'gemini-3.1-flash-lite-preview',
+                contents: Prompts.getSessionFilterPrompt(),
+                config: { tools: [{ googleSearch: {} }] }
+            });
+            const parsed = robustJsonParse(getValidatedTextFromResponse(response));
+            parsed.lastUpdated = Date.now();
+            parsed.sources = extractSources(response);
+            return parsed;
+        } else return postToApi<SessionFilterResult>('/api/agent', { action: 'sessionFilter', payload: {} });
     };
     return withRetry(apiCall, { onRetryAttempt });
 };

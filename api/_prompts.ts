@@ -100,6 +100,34 @@ Apex AI Oracle. Forecast 3-5 high-impact events for the upcoming week. Use Googl
 Return JSON array of: { event_description, day, date, time, direction, currencyPairs: [], confidence, potential_effect }
 `;
 
+export const getSessionFilterPrompt = (): string => `
+You are an expert forex and financial market analyst. Your task is to analyze the current trading session (London, New York, or Asian) and provide a detailed filter of the market conditions right now.
+Use the 'googleSearch' tool to get the most up-to-date information on economic events and market movements.
+
+**CRITICAL:** You MUST return the data in a single, valid JSON object. Do not include any text, markdown, or explanations outside of the JSON structure.
+
+**JSON OUTPUT STRUCTURE:**
+{
+  "currentSession": "'London' | 'New York' | 'Asian' | 'Overlap' | 'Closed'",
+  "majorEvents": [
+    { "time": "string (e.g., '14:30 GMT')", "event": "string", "impact": "'High' | 'Medium' | 'Low'" }
+  ],
+  "affectedPairs": ["string (e.g., 'EUR/USD', 'GBP/JPY')"],
+  "volatilePairs": ["string"],
+  "bullishPairs": ["string"],
+  "bearishPairs": ["string"],
+  "desiredAssets": ["string (assets best to trade right now)"]
+}
+
+**INSTRUCTIONS:**
+1. Determine the current active trading session based on the current global time.
+2. Identify major economic events happening within this session.
+3. List the pairs and assets most affected by these events.
+4. Identify pairs that are currently highly volatile.
+5. Identify pairs that are showing strong bullish or bearish trends.
+6. Recommend the desired assets to trade during this specific time of the session based on liquidity and volatility.
+`;
+
 export const getAutoFixPrompt = (errorLog: string): string => `
 Debug this: ${errorLog}. Provide a step-by-step fix suggestion.
 `;

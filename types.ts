@@ -141,6 +141,18 @@ export interface PredictedEvent {
   sources?: GroundingSource[];
 }
 
+export interface SessionFilterResult {
+  currentSession: 'London' | 'New York' | 'Asian' | 'Overlap' | 'Closed';
+  majorEvents: { time: string; event: string; impact: 'High' | 'Medium' | 'Low' }[];
+  affectedPairs: string[];
+  volatilePairs: string[];
+  bullishPairs: string[];
+  bearishPairs: string[];
+  desiredAssets: string[];
+  lastUpdated: number;
+  sources?: GroundingSource[];
+}
+
 export type SeasonalModeSetting = 'Auto' | 'On' | 'Off';
 
 export interface AppNotification {
