@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/logo.svg" />
@@ -48,28 +48,7 @@
         window.location.replace('/#/');
       }
     </script>
-    <script src="https://cdn.tailwindcss.com" crossorigin></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <script>
-      tailwind.config = {
-        darkMode: 'class',
-        theme: {
-          extend: {
-            animation: {
-              'pulse-fast': 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-              'shimmer': 'shimmer 2s infinite linear',
-            },
-            keyframes: {
-              shimmer: {
-                '0%': { transform: 'translateX(-100%)' },
-                '100%': { transform: 'translateX(100%)' }
-              }
-            }
-          },
-        },
-        plugins: [],
-      }
-    </script>
 <style>
     /* Custom Scrollbar */
     ::-webkit-scrollbar {
@@ -115,7 +94,7 @@
     }
 
     /* Dark Mode Logo Colors & Default Glow: Sky Blue, Emerald Green, Purple */
-    .dark {
+    html.dark {
         --logo-color-1: #38bdf8; 
         --logo-color-2: #10b981; 
         --logo-color-3: #a855f7; 
@@ -152,7 +131,7 @@
     .edge-light-pink { --edge-glow-color: rgba(236, 72, 153, 0.6); }
     .edge-light-white { --edge-glow-color: rgba(255, 255, 255, 0.6); }
 
-    .dark body { background: #0C0F1A; }
+    html.dark body { background: #0C0F1A; }
 
     .floating-element {
         position: fixed;

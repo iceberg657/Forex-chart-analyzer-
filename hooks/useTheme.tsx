@@ -15,10 +15,12 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     if (storedTheme) {
       return storedTheme as Theme;
     }
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    // Default to dark theme for a better initial experience
+    return 'dark';
   });
 
   useEffect(() => {
+    console.log("Applying theme:", theme);
     const root = window.document.documentElement;
     if (theme === 'dark') {
       root.classList.add('dark');
